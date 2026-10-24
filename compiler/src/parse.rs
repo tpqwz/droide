@@ -922,7 +922,7 @@ mod tests {
         assert_eq!(fib.locals.len(), 2);
         assert_eq!(fib.locals[0].name, "N");
         assert_eq!(fib.locals[1].name, "F");
-        assert_eq!(fib.end_line, 36);
+        assert_eq!(fib.end_line, 40);
     }
 
     #[test]

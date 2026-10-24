@@ -65,7 +65,7 @@
         "TextSize": 15
       },
       "events": {
-        "OnClick": "AboutClick"
+        "OnClick": "AboutButtonClick"
       }
     },
     {
@@ -117,7 +117,7 @@
       "width": 176,
       "height": 76,
       "props": {
-        "Hint": "Notes",
+        "Hint": "Notes go here",
         "Text": "",
         "TextSize": 16
       },
@@ -145,6 +145,19 @@
       "height": 36,
       "props": {
         "Text": "Radio",
+        "TextSize": 15
+      },
+      "events": {}
+    },
+    {
+      "type": "Button",
+      "name": "Button1",
+      "left": 184,
+      "top": 196,
+      "width": 160,
+      "height": 44,
+      "props": {
+        "Text": "Button",
         "TextSize": 15
       },
       "events": {}

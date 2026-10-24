@@ -1,0 +1,11 @@
+{
+  "name": "Swatch",
+  "package": "com.droide.swatch",
+  "title": "Swatch",
+  "versionCode": 1,
+  "versionName": "1.0",
+  "mainForm": "Main",
+  "minSdk": 24,
+  "targetSdk": 28,
+  "permissions": []
+}

@@ -339,7 +339,7 @@ fn write_u64(mem: &mut [u8], addr: u64, value: u64) -> Result<(), CompileError> 
     Ok(())
 }
 
-fn jni_escape(text: &str) -> String {
+pub(crate) fn jni_escape(text: &str) -> String {
     let mut out = String::new();
     for ch in text.chars() {
         match ch {
@@ -354,7 +354,7 @@ fn jni_escape(text: &str) -> String {
     out
 }
 
-fn jni_symbol(package: &str, name: &str) -> String {
+pub(crate) fn jni_symbol(package: &str, name: &str) -> String {
     format!("Java_{}_Native_{}", jni_escape(package), jni_escape(name))
 }
 

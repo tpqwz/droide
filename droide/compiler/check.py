@@ -6,13 +6,50 @@ from .widgets import GETTERS, PROP_TYPES, WIDGETS
 
 BUILTINS = {
     "Toast": {"args": ["String"], "ret": None, "where": "form"},
+    "Message": {"args": ["String"], "ret": None, "where": "form"},
+    "Question": {"args": ["String", "String"], "ret": None, "where": "form"},
     "Log": {"args": ["String"], "ret": None, "where": "any"},
     "OpenForm": {"args": ["String"], "ret": None, "where": "form"},
     "Finish": {"args": [], "ret": None, "where": "form"},
     "IntToStr": {"args": ["Integer"], "ret": "String", "where": "any"},
     "StrToInt": {"args": ["String"], "ret": "Integer", "where": "any"},
+    "IsInt": {"args": ["String"], "ret": "Boolean", "where": "any"},
     "Length": {"args": ["String"], "ret": "Integer", "where": "any"},
+    "WriteText": {"args": ["String", "String"], "ret": None, "where": "form"},
+    "ReadText": {"args": ["String"], "ret": "String", "where": "form"},
+    "Where": {"args": [], "ret": "String", "where": "form"},
+    "OpenCamera": {"args": [], "ret": None, "where": "form"},
+    "Share": {"args": ["String"], "ret": None, "where": "form"},
+    "CopyText": {"args": ["String"], "ret": None, "where": "form"},
+    "PasteText": {"args": [], "ret": "String", "where": "form"},
+    "Search": {"args": ["String"], "ret": "String", "where": "form"},
+    "Lookup": {"args": ["String"], "ret": "String", "where": "form"},
+    "Ingest": {"args": ["String", "String", "String"], "ret": "String", "where": "form"},
 }
+
+
+def _event_param_ok(event, kind, ty):
+    if event in ("OnItemClick", "OnItemLongClick", "OnItemSelected"):
+        return ty in ("View", "String", "Integer")
+    if event == "OnChange":
+        if kind in ("Edit", "Memo", "Number", "Password", "Email", "Phone"):
+            return ty == "String"
+        if kind in ("Check", "Radio", "Switch", "Toggle"):
+            return ty == "Boolean"
+        if kind in ("Seek", "Rating", "Picker"):
+            return ty == "Integer"
+        return False
+    return ty == "View"
+
+
+def _change_hint(kind, handler):
+    if kind in ("Edit", "Memo", "Number", "Password", "Email", "Phone"):
+        return f"{handler} takes no parameters, or the new text as a String"
+    if kind in ("Check", "Radio", "Switch", "Toggle"):
+        return f"{handler} takes no parameters, or a Boolean"
+    if kind in ("Seek", "Rating", "Picker"):
+        return f"{handler} takes no parameters, or an Integer"
+    return f"{handler} takes no parameters"
 
 
 def _low(name):
@@ -440,6 +477,59 @@ class Checker:
         elif isinstance(expr, ast.NUnary):
             self._scan_native_expr(expr.expr, eid, file)
 
+    def _check_direction(self, name, comp, file):
+        props = comp.get("props") or {}
+        if "Direction" not in props:
+            return
+        text = props.get("Direction")
+        if isinstance(text, str):
+            word = text.strip().lower()
+            if word in ("", "vertical", "horizontal"):
+                return
+        self.error(f"{name} Direction must be Vertical or Horizontal", file=file)
+
+    def _check_parents(self, comps, file):
+        for comp in comps:
+            name = comp.get("name") or ""
+            if not name:
+                continue
+            if "parent" not in comp or comp.get("parent") is None:
+                continue
+            raw = comp.get("parent")
+            if not isinstance(raw, str):
+                self.error(f"{name} parent is not a name", file=file)
+                continue
+            parent = raw.strip()
+            if not parent:
+                continue
+            if parent.lower() == name.lower():
+                self.error(f"{name} parents itself", file=file)
+                continue
+            seen = {name.lower()}
+            current = parent
+            direct = True
+            while True:
+                key = current.lower()
+                if key in seen:
+                    self.error(f"{name} parent cycle", file=file)
+                    break
+                seen.add(key)
+                other = next(
+                    (item for item in comps if (item.get("name") or "").lower() == key),
+                    None,
+                )
+                if other is None:
+                    self.error(f"{name} parent {current} is unknown", file=file)
+                    break
+                if direct and other.get("type") != "Panel":
+                    self.error(f"{name} parent {current} is not a Panel", file=file)
+                    break
+                nxt = other.get("parent") or ""
+                if not isinstance(nxt, str) or not nxt.strip():
+                    break
+                current = nxt.strip()
+                direct = False
+
     def _collect_signatures(self):
         for name, info in self.model["forms"].items():
             program = info["program"]
@@ -453,9 +543,12 @@ class Checker:
                 if comp["type"] not in WIDGETS:
                     self.error(f"unknown component type {comp['type']}", file=info["file"])
                     continue
+                if comp["type"] == "Panel":
+                    self._check_direction(cname, comp, info["file"])
                 qn = name + "." + cname
                 cid = self.db.add("widget", cname, qn, info["file"], 1, 1, fid, comp["type"])
                 widgets[_low(cname)] = {"comp": comp, "id": cid, "name": cname}
+            self._check_parents(form.get("components", []), info["file"])
             routines = {}
             for routine in program.routines:
                 key = _low(routine.name)
@@ -605,10 +698,22 @@ class Checker:
                     self.error(f"{event} handler {handler} is not declared", file=file)
                 elif rec["ret"] is not None:
                     self.error(f"{handler} must be a procedure", rec["routine"], file)
-                elif len(rec["params"]) > 1:
-                    self.error(f"{handler} takes no parameters, or one View", rec["routine"], file)
-                elif len(rec["params"]) == 1 and rec["params"][0] != "View":
-                    self.error(f"{handler} parameter must be a View", rec["routine"], file)
+                elif len(rec["params"]) > 1 or (
+                    len(rec["params"]) == 1
+                    and not _event_param_ok(event, comp["type"], rec["params"][0])
+                ):
+                    if event in ("OnItemClick", "OnItemLongClick", "OnItemSelected"):
+                        self.error(
+                            f"{handler} takes no parameters, a String, an Integer, or the row View",
+                            rec["routine"],
+                            file,
+                        )
+                    elif event == "OnChange":
+                        self.error(_change_hint(comp["type"], handler), rec["routine"], file)
+                    elif len(rec["params"]) > 1:
+                        self.error(f"{handler} takes no parameters, or one View", rec["routine"], file)
+                    else:
+                        self.error(f"{handler} parameter must be a View", rec["routine"], file)
 
     def _builtin(self, name):
         if name not in self.builtin_ids:
@@ -862,6 +967,22 @@ class Checker:
                         self.error(f"unknown form {args[0].value}", args[0], file)
                     else:
                         node.form_name = match
+            # Question stores the declared procedure name in form_name.
+            # OpenForm stores a form name there. One call is never both.
+            if target[1] == "Question" and form is not None and len(args) == len(spec["args"]):
+                second = args[1]
+                if not isinstance(second, ast.Literal) or not isinstance(second.value, str):
+                    self.error("Question needs a string literal procedure name", node, file)
+                else:
+                    named = form["routines"].get(second.value.lower())
+                    if named is None:
+                        self.error(f"unknown procedure {second.value}", second, file)
+                    elif named["ret"]:
+                        self.error(f"{named['routine'].name} must be a procedure", second, file)
+                    elif named["params"]:
+                        self.error(f"{named['routine'].name} takes no parameters", second, file)
+                    else:
+                        node.form_name = named["routine"].name
             node.resolved = ("builtin", target[1])
             self.db.ref(rec["id"], self._builtin(target[1]), "call", file, node.line, getattr(node, "col", 1))
             if not as_stmt:

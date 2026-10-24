@@ -28,11 +28,15 @@ procedure FibClick(Sender: View);
 var
   N, F: Integer;
 begin
-  N := StrToInt(NameEdit.Text);
-  N := Clamp(N, 0, 20);
-  F := fib(N);
-  ResultLabel.Text := IntToStr(F);
-  Log(IntToStr(N) + ' -> ' + IntToStr(F))
+  if not IsInt(NameEdit.Text) then
+    Toast('Type a number')
+  else begin
+    N := StrToInt(NameEdit.Text);
+    N := Clamp(N, 0, 20);
+    F := fib(N);
+    ResultLabel.Text := IntToStr(F);
+    Log(IntToStr(N) + ' -> ' + IntToStr(F))
+  end
 end;
 
 procedure NameEditClick(Sender: View);
@@ -40,5 +44,9 @@ begin
 end;
 
 procedure OkButtonClick(Sender: View);
+begin
+end;
+
+procedure AboutButtonClick(Sender: View);
 begin
 end;

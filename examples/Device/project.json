@@ -1,0 +1,15 @@
+{
+  "name": "Device",
+  "package": "com.droide.device",
+  "title": "Device",
+  "versionCode": 1,
+  "versionName": "1.0",
+  "mainForm": "Main",
+  "minSdk": 24,
+  "targetSdk": 28,
+  "permissions": [
+    "android.permission.INTERNET",
+    "android.permission.ACCESS_FINE_LOCATION",
+    "android.permission.ACCESS_COARSE_LOCATION"
+  ]
+}

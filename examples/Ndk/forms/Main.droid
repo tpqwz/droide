@@ -1,0 +1,4 @@
+procedure MixClick(Sender: View);
+begin
+  ResultLabel.Text := IntToStr(mix(echo(20)) + span(1))
+end;

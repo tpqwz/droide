@@ -386,13 +386,85 @@ function paintForm() {
   });
 }
 
+function placed(comp) {
+  return originOf((S.form && S.form.components) || [], comp, []);
+}
+
+function originOf(comps, comp, stack) {
+  if (!comp) return { x: 0, y: 0 };
+  if (stack.includes(comp)) return { x: Number(comp.left) || 0, y: Number(comp.top) || 0 };
+  const parentName = String(comp.parent || "").trim();
+  if (!parentName) return { x: Number(comp.left) || 0, y: Number(comp.top) || 0 };
+  const parent = comps.find((item) => String(item.name).toLowerCase() === parentName.toLowerCase());
+  if (!parent) return { x: Number(comp.left) || 0, y: Number(comp.top) || 0 };
+  const base = originOf(comps, parent, stack.concat(comp));
+  const horizontal = String((parent.props || {}).Direction || "").trim().toLowerCase() === "horizontal";
+  let x = base.x;
+  let y = base.y;
+  for (const sib of comps) {
+    if (sib === comp) break;
+    if (String(sib.parent || "").trim().toLowerCase() !== String(parent.name).toLowerCase()) continue;
+    if (horizontal) x += (Number(sib.left) || 0) + (Number(sib.width) || 0);
+    else y += (Number(sib.top) || 0) + (Number(sib.height) || 0);
+  }
+  if (horizontal) return { x: x + (Number(comp.left) || 0), y: base.y + (Number(comp.top) || 0) };
+  return { x: base.x + (Number(comp.left) || 0), y: y + (Number(comp.top) || 0) };
+}
+
+function panelAt(x, y, ignore) {
+  const comps = (S.form && S.form.components) || [];
+  for (let i = comps.length - 1; i >= 0; i--) {
+    const comp = comps[i];
+    if (comp === ignore || comp.type !== "Panel") continue;
+    const at = placed(comp);
+    const w = Number(comp.width) || 0;
+    const h = Number(comp.height) || 0;
+    if (x >= at.x && y >= at.y && x < at.x + w && y < at.y + h) return comp;
+  }
+  return null;
+}
+
+function assignParent(comp, name) {
+  const at = placed(comp);
+  comp.parent = name || "";
+  comp.left = 0;
+  comp.top = 0;
+  const cursor = placed(comp);
+  comp.left = Math.max(0, snap(at.x - cursor.x));
+  comp.top = Math.max(0, snap(at.y - cursor.y));
+}
+
+function parentSelect(comp) {
+  const comps = (S.form && S.form.components) || [];
+  const options = [`<option value=""${comp.parent ? "" : " selected"}>(form)</option>`];
+  comps.forEach((item) => {
+    if (item.type !== "Panel" || item.name === comp.name) return;
+    let cur = item.name;
+    let inside = false;
+    for (let n = 0; n <= comps.length; n++) {
+      const host = comps.find((other) => String(other.name).toLowerCase() === String(cur).toLowerCase());
+      if (!host || !host.parent) break;
+      if (String(host.parent).toLowerCase() === comp.name.toLowerCase()) {
+        inside = true;
+        break;
+      }
+      cur = host.parent;
+    }
+    if (inside) return;
+    const on = String(comp.parent || "").toLowerCase() === item.name.toLowerCase();
+    options.push(`<option value="${esc(item.name)}"${on ? " selected" : ""}>${esc(item.name)}</option>`);
+  });
+  return `<label>Parent<select data-parent="1">${options.join("")}</select></label>`;
+}
+
 function widgetNode(comp) {
   const spec = widgetSpec(comp.type) || { props: [] };
   const el = document.createElement("div");
   el.className = "widget" + (S.selected === comp.name ? " selected" : "");
   el.dataset.name = comp.name;
-  el.style.left = comp.left + "px";
-  el.style.top = comp.top + "px";
+  const at = placed(comp);
+  el.style.left = at.x + "px";
+  el.style.top = at.y + "px";
   el.style.width = comp.width + "px";
   el.style.height = comp.height + "px";
   el.innerHTML = widgetFace(comp, spec);
@@ -515,6 +587,17 @@ function placeWidget(x, y) {
     events: {},
   };
   S.form.components.push(comp);
+  const host = panelAt(x, y, comp);
+  if (host) {
+    comp.parent = host.name;
+    comp.left = 0;
+    comp.top = 0;
+    const cursor = placed(comp);
+    comp.left = Math.max(0, snap(x - cursor.x));
+    comp.top = Math.max(0, snap(y - cursor.y));
+  } else {
+    comp.parent = "";
+  }
   S.selected = comp.name;
   S.tool = null;
   S.formDirty = true;
@@ -530,8 +613,6 @@ function beginDrag(ev, comp, mode) {
   S.drag = {
     name: comp.name,
     mode,
-    dx: point.x - comp.left,
-    dy: point.y - comp.top,
     sx: point.x,
     sy: point.y,
     w: comp.width,
@@ -569,19 +650,21 @@ function onPointerMove(ev) {
   if (!comp) return;
   const point = localPoint(ev);
   if (S.drag.mode === "move") {
-    comp.left = snap(point.x - S.drag.dx);
-    comp.top = snap(point.y - S.drag.dy);
+    comp.left = snap(S.drag.left + (point.x - S.drag.sx));
+    comp.top = snap(S.drag.top + (point.y - S.drag.sy));
   } else {
     comp.width = Math.max(16, snap(S.drag.w + (point.x - S.drag.sx)));
     comp.height = Math.max(16, snap(S.drag.h + (point.y - S.drag.sy)));
   }
-  const el = stage.querySelector(`[data-name="${CSS.escape(comp.name)}"]`);
-  if (el) {
-    el.style.left = comp.left + "px";
-    el.style.top = comp.top + "px";
-    el.style.width = comp.width + "px";
-    el.style.height = comp.height + "px";
-  }
+  (S.form.components || []).forEach((item) => {
+    const el = stage.querySelector(`[data-name="${CSS.escape(item.name)}"]`);
+    if (!el) return;
+    const at = placed(item);
+    el.style.left = at.x + "px";
+    el.style.top = at.y + "px";
+    el.style.width = item.width + "px";
+    el.style.height = item.height + "px";
+  });
   const left = inspector.querySelector("[data-field='left']");
   const top = inspector.querySelector("[data-field='top']");
   const width = inspector.querySelector("[data-field='width']");
@@ -691,6 +774,7 @@ function paintCompFields(comp) {
   const events = (spec.events || []).map((event) =>
     `<label>${esc(event)}<input data-event="${esc(event)}" type="text" value="${esc((comp.events || {})[event] || "")}"></label>`).join("");
   inspector.innerHTML = field("name", comp.name, "text") +
+    parentSelect(comp) +
     field("left", comp.left, "number") +
     field("top", comp.top, "number") +
     field("width", comp.width, "number") +
@@ -703,6 +787,16 @@ function paintCompFields(comp) {
     S.formDirty = true;
     if (S.mode === "design") { paintForm(); fit(); }
   });
+  const parent = inspector.querySelector("[data-parent]");
+  if (parent) {
+    parent.addEventListener("change", () => {
+      assignParent(comp, parent.value);
+      S.formDirty = true;
+      paintForm();
+      fit();
+      paintInspector();
+    });
+  }
   inspector.querySelector("[data-field='name']").addEventListener("change", (ev) => {
     const next = ev.target.value.trim();
     if (!next || next === comp.name) return;

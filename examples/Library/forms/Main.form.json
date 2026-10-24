@@ -1,0 +1,109 @@
+{
+  "name": "Main",
+  "title": "Library",
+  "background": "#EFEAE2",
+  "width": 360,
+  "height": 640,
+  "events": {},
+  "components": [
+    {
+      "type": "Label",
+      "name": "TitleLabel",
+      "left": 16,
+      "top": 12,
+      "width": 180,
+      "height": 34,
+      "props": {
+        "Text": "Library",
+        "TextColor": "#1C2430",
+        "TextSize": 26
+      },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "HintLabel",
+      "left": 200,
+      "top": 22,
+      "width": 144,
+      "height": 22,
+      "props": {
+        "Text": "txt md html csv json",
+        "TextColor": "#7A736A",
+        "TextSize": 13
+      },
+      "events": {}
+    },
+    {
+      "type": "Edit",
+      "name": "QueryEdit",
+      "left": 16,
+      "top": 56,
+      "width": 200,
+      "height": 44,
+      "props": {
+        "Hint": "a word",
+        "Text": "",
+        "TextSize": 16
+      },
+      "events": {}
+    },
+    {
+      "type": "Button",
+      "name": "FindButton",
+      "left": 228,
+      "top": 56,
+      "width": 116,
+      "height": 44,
+      "props": {
+        "Text": "Find",
+        "TextSize": 15
+      },
+      "events": {
+        "OnClick": "FindClick"
+      }
+    },
+    {
+      "type": "Label",
+      "name": "StatusLabel",
+      "left": 16,
+      "top": 112,
+      "width": 328,
+      "height": 28,
+      "props": {
+        "Text": "Find a document",
+        "TextColor": "#1C2430",
+        "TextSize": 16
+      },
+      "events": {}
+    },
+    {
+      "type": "List",
+      "name": "Hits",
+      "left": 16,
+      "top": 148,
+      "width": 328,
+      "height": 280,
+      "props": {
+        "Items": "",
+        "Color": "#FBF9F4"
+      },
+      "events": {}
+    },
+    {
+      "type": "Button",
+      "name": "AddButton",
+      "left": 16,
+      "top": 444,
+      "width": 160,
+      "height": 44,
+      "props": {
+        "Text": "Add",
+        "TextSize": 15
+      },
+      "events": {
+        "OnClick": "AddClick"
+      }
+    }
+  ]
+}

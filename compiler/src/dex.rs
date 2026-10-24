@@ -256,6 +256,33 @@ impl Asm {
         }
     }
 
+    /// `const-wide/16`. The value occupies `reg` and `reg + 1`, so `reg` is even.
+    pub fn const_wide(&mut self, reg: u16, value: i64) {
+        if reg % 2 != 0 {
+            self.fail(format!("const-wide v{reg} is odd"));
+            return;
+        }
+        if !(-32768..=32767).contains(&value) {
+            self.fail("const-wide is too wide");
+            return;
+        }
+        let word0 = 0x16u16 | ((reg & 0xFF) << 8);
+        self.op(
+            vec![Part::Word(word0), Part::Word(value as u16)],
+            format!("const-wide/16 v{reg}, #{value}"),
+        );
+    }
+
+    /// `sget`. The field index is 16 bits and the destination register is 8 bits.
+    pub fn sget(&mut self, dest: u16, key: FieldRef) {
+        let name = key.name.clone();
+        let word = 0x60u16 | ((dest & 0xFF) << 8);
+        self.op(
+            vec![Part::Word(word), Part::Field(key)],
+            format!("sget v{dest}, {name}"),
+        );
+    }
+
     pub fn const_string(&mut self, reg: u16, text: &str) {
         let mut shown = String::new();
         for c in text.chars() {
@@ -299,6 +326,39 @@ impl Asm {
             "move-result"
         };
         self.op(vec![Part::Word(word)], format!("{name} v{reg}"));
+    }
+
+    /// Wide results occupy `reg` and `reg + 1`. The register must be even.
+    pub fn move_result_wide(&mut self, reg: u16) {
+        let word = 0x0Bu16 | ((reg & 0xFF) << 8);
+        self.op(vec![Part::Word(word)], format!("move-result-wide v{reg}"));
+    }
+
+    pub fn check_cast(&mut self, reg: u16, desc: &str) {
+        let word = 0x1Fu16 | ((reg & 0xFF) << 8);
+        self.op(
+            vec![Part::Word(word), Part::Type(desc.to_string())],
+            format!("check-cast v{reg}, {desc}"),
+        );
+    }
+
+    /// `new-array` is format 22c: destination and size are both 4-bit registers.
+    pub fn new_array(&mut self, dest: u16, size: u16, desc: &str) {
+        let word = 0x23u16 | ((dest & 0xF) << 8) | ((size & 0xF) << 12);
+        self.op(
+            vec![Part::Word(word), Part::Type(desc.to_string())],
+            format!("new-array v{dest}, v{size}, {desc}"),
+        );
+    }
+
+    /// `aput-object vAA, vBB, vCC`: value, array, index.
+    pub fn aput_object(&mut self, value: u16, array: u16, index: u16) {
+        let word0 = 0x4Du16 | ((value & 0xFF) << 8);
+        let word1 = (array & 0xFF) | ((index & 0xFF) << 8);
+        self.op(
+            vec![Part::Word(word0), Part::Word(word1)],
+            format!("aput-object v{value}, v{array}, v{index}"),
+        );
     }
 
     pub fn ret(&mut self, reg: u16, kind: &str) {

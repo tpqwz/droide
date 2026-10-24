@@ -66,15 +66,18 @@ fn len_at(words: &[u16], pc: usize) -> Result<usize, CompileError> {
     let op = words[pc] & 0xFF;
     if matches!(
         op,
-        0x00 | 0x0E | 0x0F | 0x11 | 0x12 | 0x01 | 0x07 | 0x0A | 0x0C | 0x7B | 0x82 | 0x87
+        0x00 | 0x0E | 0x0F | 0x11 | 0x12 | 0x01 | 0x07 | 0x0A | 0x0B | 0x0C | 0x7B | 0x82 | 0x87
     ) {
         return Ok(1);
     }
     if matches!(
         op,
-        0x13 | 0x1A
+        0x13 | 0x16
+            | 0x1A
             | 0x1C
+            | 0x1F
             | 0x22
+            | 0x23
             | 0x29
             | 0x32
             | 0x33
@@ -88,11 +91,13 @@ fn len_at(words: &[u16], pc: usize) -> Result<usize, CompileError> {
             | 0x54
             | 0x59
             | 0x5B
+            | 0x60
             | 0x90
             | 0x91
             | 0x92
             | 0x93
             | 0x94
+            | 0x4D
             | 0xA6
             | 0xA7
             | 0xA8
@@ -341,6 +346,26 @@ fn verify_method(
                         pc,
                     )?;
                 }
+                0x16 => {
+                    // A long is two register words. Search's latch timeout is the only user.
+                    let reg = ((words[pc] >> 8) & 0xFF) as usize;
+                    if reg % 2 != 0 {
+                        return Err(CompileError::bare(format!(
+                            "const-wide v{reg} is odd"
+                        )));
+                    }
+                    put(&mut regs, reg, Ty::Int, pc)?;
+                    put(&mut regs, reg + 1, Ty::Int, pc)?;
+                }
+                0x60 => {
+                    let reg = ((words[pc] >> 8) & 0xFF) as usize;
+                    put(
+                        &mut regs,
+                        reg,
+                        field_type(image, words[pc + 1] as usize)?,
+                        pc,
+                    )?;
+                }
                 0x1A | 0x1C | 0x22 => {
                     let reg = ((words[pc] >> 8) & 0xFF) as usize;
                     put(&mut regs, reg, Ty::Ref, pc)?;
@@ -367,20 +392,34 @@ fn verify_method(
                         }
                     }
                 }
-                0x0A | 0x0C => {
+                0x0A | 0x0B | 0x0C => {
                     let reg = ((words[pc] >> 8) & 0xFF) as usize;
                     let Some(value) = pending else {
                         return Err(CompileError::bare(format!(
                             "move-result without invoke at {pc:#x}"
                         )));
                     };
-                    if op == 0x0C && value != Ty::Ref {
-                        return Err(CompileError::bare("move-result-object of a non-reference"));
+                    if op == 0x0B {
+                        // A double is two register words. The dialect never sees the wide value.
+                        if value == Ty::Ref {
+                            return Err(CompileError::bare("move-result-wide of a reference"));
+                        }
+                        if reg % 2 != 0 {
+                            return Err(CompileError::bare(format!(
+                                "move-result-wide v{reg} is odd"
+                            )));
+                        }
+                        put(&mut regs, reg, Ty::Int, pc)?;
+                        put(&mut regs, reg + 1, Ty::Int, pc)?;
+                    } else {
+                        if op == 0x0C && value != Ty::Ref {
+                            return Err(CompileError::bare("move-result-object of a non-reference"));
+                        }
+                        if op == 0x0A && value == Ty::Ref {
+                            return Err(CompileError::bare("move-result of a reference"));
+                        }
+                        put(&mut regs, reg, value, pc)?;
                     }
-                    if op == 0x0A && value == Ty::Ref {
-                        return Err(CompileError::bare("move-result of a reference"));
-                    }
-                    put(&mut regs, reg, value, pc)?;
                     pending = None;
                 }
                 0x7B => {
@@ -474,8 +513,37 @@ fn verify_method(
                     end = true;
                     nxt = Some(branch_target(pc, words[pc + 1])?);
                 }
+                0x1F => {
+                    let reg = ((words[pc] >> 8) & 0xFF) as usize;
+                    need(&regs, reg, "ref", pc)?;
+                    put(&mut regs, reg, Ty::Ref, pc)?;
+                }
+                0x23 => {
+                    let dest = ((words[pc] >> 8) & 0xF) as usize;
+                    let size = ((words[pc] >> 12) & 0xF) as usize;
+                    need(&regs, size, "int", pc)?;
+                    put(&mut regs, dest, Ty::Ref, pc)?;
+                }
+                0x4D => {
+                    let value = ((words[pc] >> 8) & 0xFF) as usize;
+                    let array = (words[pc + 1] & 0xFF) as usize;
+                    let index = ((words[pc + 1] >> 8) & 0xFF) as usize;
+                    need(&regs, value, "ref", pc)?;
+                    need(&regs, array, "ref", pc)?;
+                    need(&regs, index, "int", pc)?;
+                }
                 0x38 | 0x39 => {
-                    need(&regs, ((words[pc] >> 8) & 0xFF) as usize, "int", pc)?;
+                    // ART allows if-eqz and if-nez on an int or a reference. A null location uses that.
+                    let reg = ((words[pc] >> 8) & 0xFF) as usize;
+                    let ty = *regs.get(reg).ok_or_else(|| {
+                        CompileError::bare(format!("v{reg} out of range at {pc:#x}"))
+                    })?;
+                    if !(ty.ok_int() || ty.ok_ref()) {
+                        return Err(CompileError::bare(format!(
+                            "v{reg} is {}, expected int or ref at {pc:#x}",
+                            ty.name()
+                        )));
+                    }
                     jump(
                         &mut state,
                         &mut work,

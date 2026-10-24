@@ -1,0 +1,265 @@
+{
+  "name": "Main",
+  "title": "Swatch",
+  "background": "#EFEAE2",
+  "width": 360,
+  "height": 640,
+  "events": {
+    "OnCreate": "FormCreate"
+  },
+  "components": [
+    {
+      "type": "Label",
+      "name": "TitleLabel",
+      "left": 16,
+      "top": 14,
+      "width": 180,
+      "height": 34,
+      "props": {
+        "Text": "Swatch",
+        "TextColor": "#1C2430",
+        "TextSize": 26
+      },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "NoteLabel",
+      "left": 200,
+      "top": 24,
+      "width": 144,
+      "height": 22,
+      "props": {
+        "Text": "packed in C",
+        "TextColor": "#7A736A",
+        "TextSize": 13
+      },
+      "events": {}
+    },
+    {
+      "type": "Panel",
+      "name": "SwatchPanel",
+      "left": 16,
+      "top": 60,
+      "width": 328,
+      "height": 240,
+      "props": {
+        "Color": "#1C2430"
+      },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "NameLabel",
+      "left": 32,
+      "top": 76,
+      "width": 280,
+      "height": 28,
+      "props": {
+        "Text": "Ink",
+        "TextColor": "#F4F0E8",
+        "TextSize": 15
+      },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "HexLabel",
+      "left": 32,
+      "top": 248,
+      "width": 296,
+      "height": 40,
+      "props": {
+        "Text": "#1C2430",
+        "TextColor": "#F4F0E8",
+        "TextSize": 26
+      },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "RedLabel",
+      "left": 16,
+      "top": 316,
+      "width": 48,
+      "height": 32,
+      "props": {
+        "Text": "Red",
+        "TextColor": "#3C342C",
+        "TextSize": 14
+      },
+      "events": {}
+    },
+    {
+      "type": "Seek",
+      "name": "RedSeek",
+      "left": 72,
+      "top": 312,
+      "width": 272,
+      "height": 40,
+      "props": {
+        "Max": 255,
+        "Progress": 28
+      },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "GreenLabel",
+      "left": 16,
+      "top": 360,
+      "width": 52,
+      "height": 32,
+      "props": {
+        "Text": "Green",
+        "TextColor": "#3C342C",
+        "TextSize": 14
+      },
+      "events": {}
+    },
+    {
+      "type": "Seek",
+      "name": "GreenSeek",
+      "left": 72,
+      "top": 356,
+      "width": 272,
+      "height": 40,
+      "props": {
+        "Max": 255,
+        "Progress": 36
+      },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "BlueLabel",
+      "left": 16,
+      "top": 404,
+      "width": 48,
+      "height": 32,
+      "props": {
+        "Text": "Blue",
+        "TextColor": "#3C342C",
+        "TextSize": 14
+      },
+      "events": {}
+    },
+    {
+      "type": "Seek",
+      "name": "BlueSeek",
+      "left": 72,
+      "top": 400,
+      "width": 272,
+      "height": 40,
+      "props": {
+        "Max": 255,
+        "Progress": 48
+      },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "LightLabel",
+      "left": 16,
+      "top": 448,
+      "width": 48,
+      "height": 32,
+      "props": {
+        "Text": "Light",
+        "TextColor": "#3C342C",
+        "TextSize": 14
+      },
+      "events": {}
+    },
+    {
+      "type": "Seek",
+      "name": "LightSeek",
+      "left": 72,
+      "top": 444,
+      "width": 272,
+      "height": 40,
+      "props": {
+        "Max": 100,
+        "Progress": 100
+      },
+      "events": {}
+    },
+    {
+      "type": "Button",
+      "name": "PaintButton",
+      "left": 16,
+      "top": 496,
+      "width": 328,
+      "height": 48,
+      "props": {
+        "Text": "Paint",
+        "TextColor": "#F4F0E8",
+        "Color": "#1C2430",
+        "TextSize": 16
+      },
+      "events": {
+        "OnClick": "PaintClick"
+      }
+    },
+    {
+      "type": "Button",
+      "name": "InkButton",
+      "left": 16,
+      "top": 556,
+      "width": 76,
+      "height": 44,
+      "props": {
+        "Text": "Ink",
+        "TextSize": 14
+      },
+      "events": {
+        "OnClick": "InkClick"
+      }
+    },
+    {
+      "type": "Button",
+      "name": "ClayButton",
+      "left": 100,
+      "top": 556,
+      "width": 76,
+      "height": 44,
+      "props": {
+        "Text": "Clay",
+        "TextSize": 14
+      },
+      "events": {
+        "OnClick": "ClayClick"
+      }
+    },
+    {
+      "type": "Button",
+      "name": "LeafButton",
+      "left": 184,
+      "top": 556,
+      "width": 76,
+      "height": 44,
+      "props": {
+        "Text": "Leaf",
+        "TextSize": 14
+      },
+      "events": {
+        "OnClick": "LeafClick"
+      }
+    },
+    {
+      "type": "Button",
+      "name": "SandButton",
+      "left": 268,
+      "top": 556,
+      "width": 76,
+      "height": 44,
+      "props": {
+        "Text": "Sand",
+        "TextSize": 14
+      },
+      "events": {
+        "OnClick": "SandClick"
+      }
+    }
+  ]
+}

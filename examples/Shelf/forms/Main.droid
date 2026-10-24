@@ -1,0 +1,12 @@
+procedure Pick(Name: String);
+begin
+  PickLabel.Text := Name;
+  Log(Name)
+end;
+
+procedure ReplaceClick();
+begin
+  Names.Items := LineMemo.Text;
+  PickLabel.Text := 'Replaced';
+  Log('replaced')
+end;

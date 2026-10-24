@@ -1,0 +1,11 @@
+{
+  "name": "Shelf",
+  "package": "com.droide.shelf",
+  "title": "Shelf",
+  "versionCode": 1,
+  "versionName": "1.0",
+  "mainForm": "Main",
+  "minSdk": 24,
+  "targetSdk": 28,
+  "permissions": []
+}

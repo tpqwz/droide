@@ -8,7 +8,15 @@ use serde_json::{json, Value};
 
 use crate::check::{FormSource, NativeSource, SourceModel, UnitSource};
 use crate::error::CompileError;
+use crate::ndk::{scan_exports, NdkFile};
 use crate::parse::{parse_droid, parse_native};
+
+fn ndk_extension(name: &str) -> bool {
+    matches!(
+        Path::new(name).extension().and_then(|ext| ext.to_str()),
+        Some("c" | "cc" | "cpp")
+    )
+}
 
 fn write_pretty(path: &Path, value: &Value) -> Result<(), CompileError> {
     let text = serde_json::to_string_pretty(value).map_err(|e| CompileError::bare(e.to_string()))?;
@@ -45,7 +53,11 @@ pub fn valid_package(package: &str) -> bool {
 }
 
 pub fn class_ok(name: &str) -> bool {
-    valid_ident(name) && !matches!(name.to_ascii_lowercase().as_str(), "droidert" | "native")
+    valid_ident(name)
+        && !matches!(
+            name.to_ascii_lowercase().as_str(),
+            "droidert" | "droidesearch" | "droideindex" | "native"
+        )
 }
 
 #[derive(Clone, Debug)]
@@ -229,10 +241,39 @@ impl Project {
                 add(FileInfo { kind: "native".into(), name, source: rel.clone(), form: None });
             }
         }
+        if native.is_dir() {
+            if let Ok(rd) = fs::read_dir(&native) {
+                let mut names: Vec<String> = rd
+                    .filter_map(|e| e.ok())
+                    .map(|e| e.file_name().to_string_lossy().into_owned())
+                    .filter(|n| ndk_extension(n))
+                    .collect();
+                names.sort();
+                for file_name in names {
+                    let name = Path::new(&file_name)
+                        .file_stem()
+                        .and_then(|s| s.to_str())
+                        .unwrap_or("")
+                        .to_string();
+                    add(FileInfo {
+                        kind: "ndk".into(),
+                        name,
+                        source: format!("native/{file_name}"),
+                        form: None,
+                    });
+                }
+            }
+        }
+        for rel in buffers.keys() {
+            if rel.starts_with("native/") && ndk_extension(rel) {
+                let name = Path::new(rel).file_stem().and_then(|s| s.to_str()).unwrap_or("").to_string();
+                add(FileInfo { kind: "ndk".into(), name, source: rel.clone(), form: None });
+            }
+        }
         let mut files: Vec<FileInfo> = found.into_values().collect();
         files.sort_by(|a, b| {
-            let rank = |k: &str| match k { "form" => 0, "unit" => 1, "native" => 2, _ => 9 };
-            rank(&a.kind).cmp(&rank(&b.kind)).then(a.name.to_ascii_lowercase().cmp(&b.name.to_ascii_lowercase()))
+            let rank = |k: &str| match k { "form" => 0, "unit" => 1, "native" | "ndk" => 2, _ => 9 };
+            rank(&a.kind).cmp(&rank(&b.kind)).then(a.source.to_ascii_lowercase().cmp(&b.source.to_ascii_lowercase()))
         });
         files.push(FileInfo { kind: "project".into(), name: "project.json".into(), source: "project.json".into(), form: None });
         files
@@ -251,6 +292,7 @@ impl Project {
         let mut forms = BTreeMap::new();
         let mut units = BTreeMap::new();
         let mut natives = BTreeMap::new();
+        let mut ndk = Vec::new();
         for info in self.list_files(buffers) {
             match info.kind.as_str() {
                 "form" => {
@@ -299,9 +341,21 @@ impl Project {
                         Err(exc) => errors.push(exc.to_value()),
                     }
                 }
+                "ndk" => {
+                    let src = self.text(&info.source, buffers);
+                    let scan = scan_exports(&src, &info.source);
+                    if let Some(err) = &scan.error {
+                        errors.push(err.to_value());
+                    }
+                    ndk.push(NdkFile {
+                        path: info.source,
+                        exports: scan.exports,
+                        failed: scan.error.is_some(),
+                    });
+                }
                 _ => {}
             }
         }
-        (meta, SourceModel { forms, units, natives }, errors)
+        (meta, SourceModel { forms, units, natives, ndk }, errors)
     }
 }

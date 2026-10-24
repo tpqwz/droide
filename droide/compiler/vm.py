@@ -24,10 +24,11 @@ def _s16(value):
 
 def _len_at(words, pc):
     op = words[pc] & 0xFF
-    if op in (0x00, 0x0E, 0x0F, 0x11, 0x12, 0x01, 0x07, 0x0A, 0x0C, 0x7B, 0x82, 0x87):
+    if op in (0x00, 0x0E, 0x0F, 0x11, 0x12, 0x01, 0x07, 0x0A, 0x0B, 0x0C, 0x7B, 0x82, 0x87):
         return 1
-    if op in (0x13, 0x1A, 0x1C, 0x22, 0x29, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39,
-              0x52, 0x54, 0x59, 0x5B, 0x90, 0x91, 0x92, 0x93, 0x94, 0xA6, 0xA7, 0xA8, 0xA9):
+    if op in (0x13, 0x16, 0x1A, 0x1C, 0x1F, 0x22, 0x23, 0x29, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37,
+              0x38, 0x39, 0x4D, 0x52, 0x54, 0x59, 0x5B, 0x60, 0x90, 0x91, 0x92, 0x93, 0x94, 0xA6,
+              0xA7, 0xA8, 0xA9):
         return 2
     if op in (0x14, 0x6E, 0x6F, 0x70, 0x71, 0x72):
         return 3
@@ -165,6 +166,16 @@ def _verify_method(image, desc, key, method):
                 reg = (words[pc] >> 8) & 0xFF
                 raw = words[pc + 1] | (words[pc + 2] << 16)
                 put(reg, "zero" if raw == 0 else "int")
+            elif op == 0x16:
+                # A long is two register words. Search's latch timeout is the only user.
+                reg = (words[pc] >> 8) & 0xFF
+                if reg % 2:
+                    raise CompileError(f"const-wide v{reg} is odd")
+                put(reg, "int")
+                put(reg + 1, "int")
+            elif op == 0x60:
+                reg = (words[pc] >> 8) & 0xFF
+                put(reg, _field_type(image, words[pc + 1]))
             elif op in (0x1A, 0x1C, 0x22):
                 reg = (words[pc] >> 8) & 0xFF
                 put(reg, "ref")
@@ -178,15 +189,23 @@ def _verify_method(image, desc, key, method):
                     put(dest, regs[src] if regs[src] != "bottom" else "bottom")
                     if regs[dest] == "bottom":
                         raise CompileError(f"move of undefined v{src}")
-            elif op in (0x0A, 0x0C):
+            elif op in (0x0A, 0x0B, 0x0C):
                 reg = (words[pc] >> 8) & 0xFF
                 if pending is None:
                     raise CompileError(f"move-result without invoke at {pc:#x}")
-                if op == 0x0C and pending != "ref":
-                    raise CompileError("move-result-object of a non-reference")
-                if op == 0x0A and pending == "ref":
-                    raise CompileError("move-result of a reference")
-                put(reg, pending)
+                if op == 0x0B:
+                    if pending == "ref":
+                        raise CompileError("move-result-wide of a reference")
+                    if reg % 2:
+                        raise CompileError(f"move-result-wide v{reg} is odd")
+                    put(reg, "int")
+                    put(reg + 1, "int")
+                else:
+                    if op == 0x0C and pending != "ref":
+                        raise CompileError("move-result-object of a non-reference")
+                    if op == 0x0A and pending == "ref":
+                        raise CompileError("move-result of a reference")
+                    put(reg, pending)
                 pending = None
             elif op == 0x7B:
                 dest = (words[pc] >> 8) & 0xF
@@ -249,8 +268,27 @@ def _verify_method(image, desc, key, method):
             elif op == 0x29:
                 end = True
                 nxt = pc + _s16(words[pc + 1])
+            elif op == 0x1F:
+                reg = (words[pc] >> 8) & 0xFF
+                need(reg, "ref")
+                put(reg, "ref")
+            elif op == 0x23:
+                dest = (words[pc] >> 8) & 0xF
+                size = (words[pc] >> 12) & 0xF
+                need(size, "int")
+                put(dest, "ref")
+            elif op == 0x4D:
+                value = (words[pc] >> 8) & 0xFF
+                array = words[pc + 1] & 0xFF
+                index = (words[pc + 1] >> 8) & 0xFF
+                need(value, "ref")
+                need(array, "ref")
+                need(index, "int")
             elif op in (0x38, 0x39):
-                need((words[pc] >> 8) & 0xFF, "int")
+                reg = (words[pc] >> 8) & 0xFF
+                ty = regs[reg]
+                if not (_ok_int(ty) or _ok_ref(ty)):
+                    raise CompileError(f"v{reg} is {ty}, expected int or ref at {pc:#x}")
                 _jump(state, work, pc + _s16(words[pc + 1]), regs)
                 end = True
                 nxt = pc + 2

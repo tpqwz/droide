@@ -1,0 +1,3 @@
+fun echo(n: i32): i32 {
+  return n;
+}

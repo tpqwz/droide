@@ -25,7 +25,7 @@ JAVA_WORDS = {
     "strictfp", "super", "switch", "synchronized", "this", "throw", "throws",
     "transient", "try", "void", "volatile", "while", "true", "false", "null",
 }
-RESERVED_CLASSES = {"droidert", "native"}
+RESERVED_CLASSES = {"droidert", "droidesearch", "droideindex", "native"}
 
 
 def valid_ident(name):

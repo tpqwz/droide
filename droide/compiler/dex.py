@@ -88,6 +88,18 @@ class Asm:
                 f"const v{reg}, #{value}",
             )
 
+    def const_wide(self, reg, value):
+        """const-wide/16. The value occupies reg and reg + 1, so reg is even."""
+        if reg % 2:
+            raise CompileError(f"const-wide v{reg} is odd")
+        if not -32768 <= value <= 32767:
+            raise CompileError("const-wide is too wide")
+        self.op([0x16 | ((reg & 0xFF) << 8), value & 0xFFFF], f"const-wide/16 v{reg}, #{value}")
+
+    def sget(self, dest, key):
+        """sget. The field index is 16 bits and the destination register is 8 bits."""
+        self.op([0x60 | ((dest & 0xFF) << 8), ("f", key)], f"sget v{dest}, {key[1]}")
+
     def const_string(self, reg, text):
         shown = text.replace("\\", "\\\\").replace('"', '\\"')
         self.op([0x1A | ((reg & 0xFF) << 8), ("s", text)], f'const-string v{reg}, "{shown}"')
@@ -104,6 +116,21 @@ class Asm:
     def move_result(self, reg, obj):
         op = 0x0C if obj else 0x0A
         self.op([op | ((reg & 0xFF) << 8)], f"{'move-result-object' if obj else 'move-result'} v{reg}")
+
+    def move_result_wide(self, reg):
+        self.op([0x0B | ((reg & 0xFF) << 8)], f"move-result-wide v{reg}")
+
+    def check_cast(self, reg, desc):
+        self.op([0x1F | ((reg & 0xFF) << 8), ("t", desc)], f"check-cast v{reg}, {desc}")
+
+    def new_array(self, dest, size, desc):
+        word = 0x23 | ((dest & 0xF) << 8) | ((size & 0xF) << 12)
+        self.op([word, ("t", desc)], f"new-array v{dest}, v{size}, {desc}")
+
+    def aput_object(self, value, array, index):
+        word0 = 0x4D | ((value & 0xFF) << 8)
+        word1 = (array & 0xFF) | ((index & 0xFF) << 8)
+        self.op([word0, word1], f"aput-object v{value}, v{array}, v{index}")
 
     def ret(self, reg, kind):
         if kind == "void":

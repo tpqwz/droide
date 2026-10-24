@@ -8,12 +8,14 @@ use serde_json::{json, Value};
 
 use crate::ast::*;
 use crate::error::CompileError;
+use crate::ndk::NdkFile;
 use crate::widgets::{getter, prop_type, WidgetSpec, WIDGETS};
 
 pub struct SourceModel {
     pub forms: BTreeMap<String, FormSource>,
     pub units: BTreeMap<String, UnitSource>,
     pub natives: BTreeMap<String, NativeSource>,
+    pub ndk: Vec<NdkFile>,
 }
 
 pub struct FormSource {
@@ -71,6 +73,7 @@ pub struct NativeChecked {
     pub file: String,
     pub path: String,
     pub fun: NFun,
+    pub ndk: bool,
 }
 
 pub struct Checked {
@@ -78,12 +81,14 @@ pub struct Checked {
     pub forms: BTreeMap<String, FormChecked>,
     pub units: BTreeMap<String, UnitChecked>,
     pub natives: BTreeMap<String, NativeChecked>,
+    pub ndk: Vec<NdkFile>,
     pub db: Value,
 }
 
 pub fn check_model(model: &mut SourceModel) -> Checked {
     let mut checker = Checker::new();
     checker.parse_natives(model);
+    checker.parse_ndk(model);
     checker.collect_signatures(model);
     checker.check_bodies(model);
     checker.into_checked(model)
@@ -120,6 +125,16 @@ fn builtin_spec(name: &str) -> Option<Builtin> {
             ret: None,
             form_only: true,
         },
+        "Message" => Builtin {
+            args: &["String"],
+            ret: None,
+            form_only: true,
+        },
+        "Question" => Builtin {
+            args: &["String", "String"],
+            ret: None,
+            form_only: true,
+        },
         "Log" => Builtin {
             args: &["String"],
             ret: None,
@@ -145,10 +160,65 @@ fn builtin_spec(name: &str) -> Option<Builtin> {
             ret: Some("Integer"),
             form_only: false,
         },
+        "IsInt" => Builtin {
+            args: &["String"],
+            ret: Some("Boolean"),
+            form_only: false,
+        },
         "Length" => Builtin {
             args: &["String"],
             ret: Some("Integer"),
             form_only: false,
+        },
+        "WriteText" => Builtin {
+            args: &["String", "String"],
+            ret: None,
+            form_only: true,
+        },
+        "ReadText" => Builtin {
+            args: &["String"],
+            ret: Some("String"),
+            form_only: true,
+        },
+        "Where" => Builtin {
+            args: &[],
+            ret: Some("String"),
+            form_only: true,
+        },
+        "OpenCamera" => Builtin {
+            args: &[],
+            ret: None,
+            form_only: true,
+        },
+        "Share" => Builtin {
+            args: &["String"],
+            ret: None,
+            form_only: true,
+        },
+        "CopyText" => Builtin {
+            args: &["String"],
+            ret: None,
+            form_only: true,
+        },
+        "PasteText" => Builtin {
+            args: &[],
+            ret: Some("String"),
+            form_only: true,
+        },
+        "Search" => Builtin {
+            args: &["String"],
+            ret: Some("String"),
+            form_only: true,
+        },
+        "Lookup" => Builtin {
+            args: &["String"],
+            ret: Some("String"),
+            form_only: true,
+        },
+        "Ingest" => Builtin {
+            args: &["String", "String", "String"],
+            ret: Some("String"),
+            form_only: true,
         },
         _ => return None,
     };
@@ -158,12 +228,25 @@ fn builtin_spec(name: &str) -> Option<Builtin> {
 fn builtin_canon(lower: &str) -> Option<&'static str> {
     match lower {
         "toast" => Some("Toast"),
+        "message" => Some("Message"),
+        "question" => Some("Question"),
         "log" => Some("Log"),
         "openform" => Some("OpenForm"),
         "finish" => Some("Finish"),
         "inttostr" => Some("IntToStr"),
         "strtoint" => Some("StrToInt"),
+        "isint" => Some("IsInt"),
         "length" => Some("Length"),
+        "writetext" => Some("WriteText"),
+        "readtext" => Some("ReadText"),
+        "where" => Some("Where"),
+        "opencamera" => Some("OpenCamera"),
+        "share" => Some("Share"),
+        "copytext" => Some("CopyText"),
+        "pastetext" => Some("PasteText"),
+        "search" => Some("Search"),
+        "lookup" => Some("Lookup"),
+        "ingest" => Some("Ingest"),
         _ => None,
     }
 }
@@ -525,9 +608,111 @@ impl Checker {
                         file: info.file.clone(),
                         path: path.clone(),
                         fun: fun.clone(),
+                        ndk: false,
                     },
                 );
                 self.scan_native_stmts(&fun.body, eid, &info.file);
+            }
+        }
+    }
+
+    fn parse_ndk(&mut self, model: &SourceModel) {
+        if !model.ndk.is_empty()
+            && model.ndk.iter().all(|file| file.exports.is_empty())
+            && model.ndk.iter().all(|file| !file.failed)
+        {
+            self.error(
+                "native C files have no DROIDE_EXPORT function",
+                1,
+                1,
+                &model.ndk[0].path,
+            );
+        }
+        for file in &model.ndk {
+            let fid = self.db.add(
+                "native-file",
+                &file.path,
+                &format!("native:{}", file.path),
+                &file.path,
+                1,
+                None,
+                None,
+                "",
+                Over::none(),
+            );
+            for exp in &file.exports {
+                let key = low(&exp.name);
+                if let Some(prev) = self.natives.get(&key) {
+                    let same = prev.ndk
+                        && prev.file == file.path
+                        && prev.name == exp.name
+                        && prev.params.len() == exp.params.len();
+                    if same {
+                        continue;
+                    }
+                    self.error(
+                        format!("duplicate native function {}", exp.name),
+                        exp.line,
+                        exp.col,
+                        &file.path,
+                    );
+                    continue;
+                }
+                if exp.params.len() > 4 {
+                    self.error(
+                        "native functions support at most 4 parameters",
+                        exp.line,
+                        exp.col,
+                        &file.path,
+                    );
+                }
+                let qn = format!("native.{}", exp.name);
+                let fun = NFun {
+                    line: exp.line,
+                    col: exp.col,
+                    end_line: exp.end_line,
+                    name: exp.name.clone(),
+                    params: exp.params.clone(),
+                    ret: "i32".into(),
+                    body: Vec::new(),
+                };
+                let eid = self.db.add(
+                    "native",
+                    &exp.name,
+                    &qn,
+                    &file.path,
+                    exp.line,
+                    Some(exp.end_line),
+                    Some(fid),
+                    "i32",
+                    Over::metrics(exp.params.len() as i32, 1, 1, exp.end_line - exp.line + 1),
+                );
+                self.db.cfgs.insert(eid.to_string(), build_native_cfg(&fun));
+                for pname in &exp.params {
+                    self.db.add(
+                        "param",
+                        pname,
+                        &format!("{qn}.{pname}"),
+                        &file.path,
+                        exp.line,
+                        Some(exp.line),
+                        Some(eid),
+                        "i32",
+                        Over::none(),
+                    );
+                }
+                self.natives.insert(
+                    key,
+                    NativeChecked {
+                        name: exp.name.clone(),
+                        params: exp.params.clone(),
+                        id: eid,
+                        file: file.path.clone(),
+                        path: file.path.clone(),
+                        fun,
+                        ndk: true,
+                    },
+                );
             }
         }
     }
@@ -613,6 +798,9 @@ impl Checker {
                     self.error(format!("unknown component type {ctype}"), 1, 1, &file);
                     continue;
                 }
+                if ctype == "Panel" {
+                    self.check_direction(cname, comp, &file);
+                }
                 let qn = format!("{name}.{cname}");
                 let cid = self.db.add(
                     "widget",
@@ -634,6 +822,7 @@ impl Checker {
                     },
                 );
             }
+            self.check_parents(comps, &file);
         }
         let mut routines = BTreeMap::new();
         for (index, routine) in info.program.routines.iter().enumerate() {
@@ -672,6 +861,93 @@ impl Checker {
                 uses: info.program.uses.clone(),
             },
         );
+    }
+
+    fn check_direction(&mut self, name: &str, comp: &Value, file: &str) {
+        let Some(value) = comp.get("props").and_then(|props| props.get("Direction")) else {
+            return;
+        };
+        let ok = value.as_str().is_some_and(|text| {
+            let text = text.trim();
+            text.is_empty()
+                || text.eq_ignore_ascii_case("Vertical")
+                || text.eq_ignore_ascii_case("Horizontal")
+        });
+        if !ok {
+            self.error(
+                format!("{name} Direction must be Vertical or Horizontal"),
+                1,
+                1,
+                file,
+            );
+        }
+    }
+
+    fn check_parents(&mut self, comps: &[Value], file: &str) {
+        for comp in comps {
+            let name = comp.get("name").and_then(|v| v.as_str()).unwrap_or("");
+            if name.is_empty() {
+                continue;
+            }
+            let Some(raw) = comp.get("parent") else {
+                continue;
+            };
+            if raw.is_null() {
+                continue;
+            }
+            let Some(text) = raw.as_str() else {
+                self.error(format!("{name} parent is not a name"), 1, 1, file);
+                continue;
+            };
+            let parent = text.trim();
+            if parent.is_empty() {
+                continue;
+            }
+            if parent.eq_ignore_ascii_case(name) {
+                self.error(format!("{name} parents itself"), 1, 1, file);
+                continue;
+            }
+            let mut seen = BTreeSet::new();
+            seen.insert(low(name));
+            let mut current = parent.to_string();
+            let mut direct = true;
+            loop {
+                if !seen.insert(low(&current)) {
+                    self.error(format!("{name} parent cycle"), 1, 1, file);
+                    break;
+                }
+                let Some(other) = comps.iter().find(|item| {
+                    item.get("name")
+                        .and_then(|v| v.as_str())
+                        .is_some_and(|item_name| item_name.eq_ignore_ascii_case(&current))
+                }) else {
+                    self.error(format!("{name} parent {current} is unknown"), 1, 1, file);
+                    break;
+                };
+                if direct {
+                    let kind = other.get("type").and_then(|v| v.as_str()).unwrap_or("");
+                    if kind != "Panel" {
+                        self.error(
+                            format!("{name} parent {current} is not a Panel"),
+                            1,
+                            1,
+                            file,
+                        );
+                        break;
+                    }
+                }
+                current = other
+                    .get("parent")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .trim()
+                    .to_string();
+                if current.is_empty() {
+                    break;
+                }
+                direct = false;
+            }
+        }
     }
 
     fn collect_unit(&mut self, name: &str, info: &UnitSource) {
@@ -889,7 +1165,9 @@ impl Checker {
         }
         let natives: Vec<NativeChecked> = self.natives.values().cloned().collect();
         for native in natives {
-            self.check_native(&native);
+            if !native.ndk {
+                self.check_native(&native);
+            }
         }
     }
 
@@ -897,7 +1175,7 @@ impl Checker {
         let file = self.forms[form_name].file.clone();
         let form_json = self.forms[form_name].form.clone();
         if let Some(handler) = event_name(form_json.get("events"), "OnCreate") {
-            self.check_handler(form_name, &handler, "OnCreate", true, &file);
+            self.check_handler(form_name, &handler, "OnCreate", true, &file, "");
         }
         let comps = form_json
             .get("components")
@@ -928,7 +1206,7 @@ impl Checker {
                 if !spec_events.iter().any(|name| *name == event) {
                     self.error(format!("{ctype} has no {event} event"), 1, 1, &file);
                 }
-                self.check_handler(form_name, handler, &event, false, &file);
+                self.check_handler(form_name, handler, &event, false, &file, &ctype);
             }
         }
     }
@@ -940,6 +1218,7 @@ impl Checker {
         event: &str,
         on_create: bool,
         file: &str,
+        kind: &str,
     ) {
         let sig = self
             .forms
@@ -980,38 +1259,23 @@ impl Checker {
                     file,
                 );
             }
-        } else if sig.params.len() > 1 {
-            if on_create {
-                self.error(
-                    "OnCreate handler takes no parameters, or one View",
-                    sig.line,
-                    sig.col,
-                    file,
-                );
+        } else if sig.params.len() > 1
+            || (sig.params.len() == 1 && !handler_param_ok(event, kind, &sig.params[0]))
+        {
+            let msg = if on_create && sig.params.len() > 1 {
+                "OnCreate handler takes no parameters, or one View".to_string()
+            } else if on_create {
+                "OnCreate handler parameter must be a View".to_string()
+            } else if event == "OnItemClick" || event == "OnItemLongClick" || event == "OnItemSelected" {
+                format!("{handler} takes no parameters, a String, an Integer, or the row View")
+            } else if event == "OnChange" {
+                change_hint(kind, handler)
+            } else if sig.params.len() > 1 {
+                format!("{handler} takes no parameters, or one View")
             } else {
-                self.error(
-                    format!("{handler} takes no parameters, or one View"),
-                    sig.line,
-                    sig.col,
-                    file,
-                );
-            }
-        } else if sig.params.len() == 1 && sig.params[0] != "View" {
-            if on_create {
-                self.error(
-                    "OnCreate handler parameter must be a View",
-                    sig.line,
-                    sig.col,
-                    file,
-                );
-            } else {
-                self.error(
-                    format!("{handler} parameter must be a View"),
-                    sig.line,
-                    sig.col,
-                    file,
-                );
-            }
+                format!("{handler} parameter must be a View")
+            };
+            self.error(msg, sig.line, sig.col, file);
         }
     }
 
@@ -1687,6 +1951,54 @@ impl Checker {
                         self.error("OpenForm needs a string literal form name", line, col, file);
                     }
                 }
+                // Question stores the declared procedure name in form_name.
+                // OpenForm stores a form name there. One call is never both.
+                if canon == "Question" && args.len() == spec.args.len() {
+                    if let Some(ctx) = form {
+                        let literal = args.get(1).and_then(|arg| match arg {
+                            Expr::Literal(lit) => match &lit.value {
+                                Lit::Str(text) => Some((text.clone(), lit.line, lit.col)),
+                                _ => None,
+                            },
+                            _ => None,
+                        });
+                        if let Some((text, lit_line, lit_col)) = literal {
+                            if let Some(sig) = ctx.routines.get(&low(&text)) {
+                                if sig.ret.is_some() {
+                                    self.error(
+                                        format!("{} must be a procedure", sig.name),
+                                        lit_line,
+                                        lit_col,
+                                        file,
+                                    );
+                                } else if !sig.params.is_empty() {
+                                    self.error(
+                                        format!("{} takes no parameters", sig.name),
+                                        lit_line,
+                                        lit_col,
+                                        file,
+                                    );
+                                } else {
+                                    *form_name = Some(sig.name.clone());
+                                }
+                            } else {
+                                self.error(
+                                    format!("unknown procedure {text}"),
+                                    lit_line,
+                                    lit_col,
+                                    file,
+                                );
+                            }
+                        } else {
+                            self.error(
+                                "Question needs a string literal procedure name",
+                                line,
+                                col,
+                                file,
+                            );
+                        }
+                    }
+                }
                 *resolved = Some(Resolved::Builtin(canon.to_string()));
                 let dst = self.builtin_id(canon, spec.args.len() as i32, spec.ret.unwrap_or(""));
                 self.db.add_ref(sig.id, dst, "call", file, line, col);
@@ -1977,8 +2289,37 @@ impl Checker {
             forms,
             units,
             natives: self.natives,
+            ndk: model.ndk.clone(),
             db: self.db.to_value(),
         }
+    }
+}
+
+fn handler_param_ok(event: &str, kind: &str, ty: &str) -> bool {
+    match event {
+        "OnItemClick" | "OnItemLongClick" | "OnItemSelected" => {
+            matches!(ty, "View" | "String" | "Integer")
+        }
+        "OnChange" => match kind {
+            "Edit" | "Memo" | "Number" | "Password" | "Email" | "Phone" => ty == "String",
+            "Check" | "Radio" | "Switch" | "Toggle" => ty == "Boolean",
+            "Seek" | "Rating" | "Picker" => ty == "Integer",
+            _ => false,
+        },
+        _ => ty == "View",
+    }
+}
+
+fn change_hint(kind: &str, handler: &str) -> String {
+    match kind {
+        "Edit" | "Memo" | "Number" | "Password" | "Email" | "Phone" => {
+            format!("{handler} takes no parameters, or the new text as a String")
+        }
+        "Check" | "Radio" | "Switch" | "Toggle" => {
+            format!("{handler} takes no parameters, or a Boolean")
+        }
+        "Seek" | "Rating" | "Picker" => format!("{handler} takes no parameters, or an Integer"),
+        _ => format!("{handler} takes no parameters"),
     }
 }
 

@@ -7,7 +7,7 @@ WIDGETS = {
         "group": "Text",
         "defaults": {"width": 200, "height": 36, "props": {"Text": "Label", "TextSize": 18, "TextColor": "#1A1A1A"}},
         "props": ["Text", "TextSize", "TextColor", "Color", "Enabled", "Visible"],
-        "events": ["OnClick"],
+        "events": ["OnClick", "OnLongClick"],
     },
     "Clock": {
         "android": "android.widget.TextClock",
@@ -15,7 +15,7 @@ WIDGETS = {
         "group": "Text",
         "defaults": {"width": 200, "height": 36, "props": {"Format": "HH:mm", "TextSize": 18, "TextColor": "#1A1A1A"}},
         "props": ["Format", "TextSize", "TextColor", "Color", "Enabled", "Visible"],
-        "events": ["OnClick"],
+        "events": ["OnClick", "OnLongClick"],
     },
     "Button": {
         "android": "android.widget.Button",
@@ -23,7 +23,7 @@ WIDGETS = {
         "group": "Buttons",
         "defaults": {"width": 160, "height": 44, "props": {"Text": "Button", "TextSize": 15}},
         "props": ["Text", "TextSize", "TextColor", "Color", "Enabled", "Visible"],
-        "events": ["OnClick"],
+        "events": ["OnClick", "OnLongClick"],
     },
     "Toggle": {
         "android": "android.widget.ToggleButton",
@@ -35,7 +35,7 @@ WIDGETS = {
             "props": {"TextOn": "On", "TextOff": "Off", "Checked": False, "TextSize": 15},
         },
         "props": ["TextOn", "TextOff", "Checked", "TextSize", "TextColor", "Enabled", "Visible"],
-        "events": ["OnClick"],
+        "events": ["OnClick", "OnLongClick", "OnChange"],
     },
     "Edit": {
         "android": "android.widget.EditText",
@@ -43,7 +43,7 @@ WIDGETS = {
         "group": "Input",
         "defaults": {"width": 240, "height": 44, "props": {"Hint": "Type here", "Text": "", "TextSize": 16}},
         "props": ["Text", "Hint", "TextSize", "TextColor", "Color", "Enabled", "Visible"],
-        "events": ["OnClick"],
+        "events": ["OnClick", "OnLongClick", "OnChange"],
     },
     "Memo": {
         "android": "android.widget.EditText",
@@ -51,7 +51,7 @@ WIDGETS = {
         "group": "Input",
         "defaults": {"width": 240, "height": 96, "props": {"Hint": "Notes", "Text": "", "TextSize": 16}},
         "props": ["Text", "Hint", "TextSize", "TextColor", "Color", "Enabled", "Visible"],
-        "events": ["OnClick"],
+        "events": ["OnClick", "OnLongClick", "OnChange"],
     },
     "Number": {
         "android": "android.widget.EditText",
@@ -59,7 +59,7 @@ WIDGETS = {
         "group": "Input",
         "defaults": {"width": 160, "height": 44, "props": {"Hint": "0", "Text": "", "TextSize": 16}},
         "props": ["Text", "Hint", "TextSize", "TextColor", "Color", "Enabled", "Visible"],
-        "events": ["OnClick"],
+        "events": ["OnClick", "OnLongClick", "OnChange"],
     },
     "Password": {
         "android": "android.widget.EditText",
@@ -67,7 +67,7 @@ WIDGETS = {
         "group": "Input",
         "defaults": {"width": 240, "height": 44, "props": {"Hint": "Password", "Text": "", "TextSize": 16}},
         "props": ["Text", "Hint", "TextSize", "TextColor", "Color", "Enabled", "Visible"],
-        "events": ["OnClick"],
+        "events": ["OnClick", "OnLongClick", "OnChange"],
     },
     "Email": {
         "android": "android.widget.EditText",
@@ -75,7 +75,7 @@ WIDGETS = {
         "group": "Input",
         "defaults": {"width": 240, "height": 44, "props": {"Hint": "name@example.com", "Text": "", "TextSize": 16}},
         "props": ["Text", "Hint", "TextSize", "TextColor", "Color", "Enabled", "Visible"],
-        "events": ["OnClick"],
+        "events": ["OnClick", "OnLongClick", "OnChange"],
     },
     "Phone": {
         "android": "android.widget.EditText",
@@ -83,7 +83,7 @@ WIDGETS = {
         "group": "Input",
         "defaults": {"width": 200, "height": 44, "props": {"Hint": "Phone", "Text": "", "TextSize": 16}},
         "props": ["Text", "Hint", "TextSize", "TextColor", "Color", "Enabled", "Visible"],
-        "events": ["OnClick"],
+        "events": ["OnClick", "OnLongClick", "OnChange"],
     },
     "Check": {
         "android": "android.widget.CheckBox",
@@ -91,7 +91,7 @@ WIDGETS = {
         "group": "Input",
         "defaults": {"width": 180, "height": 36, "props": {"Text": "Check", "Checked": False, "TextSize": 15}},
         "props": ["Text", "Checked", "TextSize", "TextColor", "Enabled", "Visible"],
-        "events": ["OnClick"],
+        "events": ["OnClick", "OnLongClick", "OnChange"],
     },
     "Radio": {
         "android": "android.widget.RadioButton",
@@ -99,7 +99,7 @@ WIDGETS = {
         "group": "Input",
         "defaults": {"width": 180, "height": 36, "props": {"Text": "Radio", "Checked": False, "TextSize": 15}},
         "props": ["Text", "Checked", "TextSize", "TextColor", "Enabled", "Visible"],
-        "events": ["OnClick"],
+        "events": ["OnClick", "OnLongClick", "OnChange"],
     },
     "Switch": {
         "android": "android.widget.Switch",
@@ -107,7 +107,7 @@ WIDGETS = {
         "group": "Input",
         "defaults": {"width": 180, "height": 36, "props": {"Text": "Switch", "Checked": False, "TextSize": 15}},
         "props": ["Text", "Checked", "TextSize", "TextColor", "Enabled", "Visible"],
-        "events": ["OnClick"],
+        "events": ["OnClick", "OnLongClick", "OnChange"],
     },
     "Seek": {
         "android": "android.widget.SeekBar",
@@ -115,7 +115,7 @@ WIDGETS = {
         "group": "Range",
         "defaults": {"width": 240, "height": 36, "props": {"Max": 100, "Progress": 40}},
         "props": ["Max", "Progress", "Enabled", "Visible"],
-        "events": ["OnClick"],
+        "events": ["OnClick", "OnLongClick", "OnChange"],
     },
     "Progress": {
         "android": "android.widget.ProgressBar",
@@ -123,7 +123,7 @@ WIDGETS = {
         "group": "Range",
         "defaults": {"width": 240, "height": 24, "props": {"Max": 100, "Progress": 40}},
         "props": ["Max", "Progress", "Enabled", "Visible"],
-        "events": ["OnClick"],
+        "events": ["OnClick", "OnLongClick"],
     },
     "Busy": {
         "android": "android.widget.ProgressBar",
@@ -131,7 +131,7 @@ WIDGETS = {
         "group": "Range",
         "defaults": {"width": 48, "height": 48, "props": {}},
         "props": ["Enabled", "Visible"],
-        "events": ["OnClick"],
+        "events": ["OnClick", "OnLongClick"],
     },
     "Rating": {
         "android": "android.widget.RatingBar",
@@ -139,7 +139,7 @@ WIDGETS = {
         "group": "Range",
         "defaults": {"width": 200, "height": 40, "props": {"Stars": 5, "Rating": 3}},
         "props": ["Stars", "Rating", "Enabled", "Visible"],
-        "events": ["OnClick"],
+        "events": ["OnClick", "OnLongClick", "OnChange"],
     },
     "Picker": {
         "android": "android.widget.NumberPicker",
@@ -151,7 +151,7 @@ WIDGETS = {
             "props": {"MinValue": 0, "MaxValue": 10, "Value": 3, "Wrap": True},
         },
         "props": ["MinValue", "MaxValue", "Value", "Wrap", "Enabled", "Visible"],
-        "events": ["OnClick"],
+        "events": ["OnClick", "OnLongClick", "OnChange"],
     },
     "Time": {
         "android": "android.widget.TimePicker",
@@ -163,7 +163,7 @@ WIDGETS = {
             "props": {"Is24Hour": True, "Hour": 12, "Minute": 0},
         },
         "props": ["Is24Hour", "Hour", "Minute", "Enabled", "Visible"],
-        "events": ["OnClick"],
+        "events": ["OnClick", "OnLongClick", "OnChange"],
     },
     "Date": {
         "android": "android.widget.DatePicker",
@@ -175,15 +175,47 @@ WIDGETS = {
             "props": {"Year": 2026, "Month": 10, "Day": 24},
         },
         "props": ["Year", "Month", "Day", "Enabled", "Visible"],
-        "events": ["OnClick"],
+        "events": ["OnClick", "OnLongClick", "OnChange"],
     },
     "Panel": {
-        "android": "android.view.View",
-        "desc": "Landroid/view/View;",
+        "android": "android.widget.LinearLayout",
+        "desc": "Landroid/widget/LinearLayout;",
         "group": "Layout",
-        "defaults": {"width": 200, "height": 80, "props": {"Color": "#E4E8EE"}},
-        "props": ["Color", "Enabled", "Visible"],
-        "events": ["OnClick"],
+        "defaults": {
+            "width": 200,
+            "height": 80,
+            "props": {"Direction": "Vertical", "Color": "#E4E8EE"},
+        },
+        "props": ["Direction", "Color", "Enabled", "Visible"],
+        "events": ["OnClick", "OnLongClick"],
+    },
+    "List": {
+        "android": "android.widget.ListView",
+        "desc": "Landroid/widget/ListView;",
+        "group": "Lists",
+        "defaults": {"width": 328, "height": 200, "props": {"Items": "One\nTwo\nThree", "Color": "#FBF9F4"}},
+        "props": ["Items", "Color", "Enabled", "Visible"],
+        "events": ["OnItemClick", "OnItemLongClick"],
+    },
+    "Spinner": {
+        "android": "android.widget.Spinner",
+        "desc": "Landroid/widget/Spinner;",
+        "group": "Lists",
+        "defaults": {
+            "width": 240,
+            "height": 48,
+            "props": {"Items": "One\nTwo\nThree", "Selection": 0, "Color": "#FBF9F4"},
+        },
+        "props": ["Items", "Selection", "Color", "Enabled", "Visible"],
+        "events": ["OnItemSelected"],
+    },
+    "Web": {
+        "android": "android.webkit.WebView",
+        "desc": "Landroid/webkit/WebView;",
+        "group": "Web",
+        "defaults": {"width": 328, "height": 200, "props": {"Html": "", "Url": ""}},
+        "props": ["Html", "Url", "Enabled", "Visible"],
+        "events": ["OnClick", "OnLongClick"],
     },
 }
 
@@ -213,6 +245,11 @@ PROP_TYPES = {
     "Year": "Integer",
     "Month": "Integer",
     "Day": "Integer",
+    "Html": "String",
+    "Url": "String",
+    "Items": "String",
+    "Selection": "Integer",
+    "Direction": "String",
 }
 
 # (owner class descriptor, method, return, parameter descriptors, mode)
@@ -245,6 +282,15 @@ SETTERS = {
     "Year": ("Landroid/widget/DatePicker;", "updateDate", "V", ("I", "I", "I"), "date-year"),
     "Month": ("Landroid/widget/DatePicker;", "updateDate", "V", ("I", "I", "I"), "date-month"),
     "Day": ("Landroid/widget/DatePicker;", "updateDate", "V", ("I", "I", "I"), "date-day"),
+    # loadData is four words. loadDataWithBaseURL is six, past the invoke limit.
+    "Html": ("Landroid/webkit/WebView;", "loadData", "V", ("Ljava/lang/String;", "Ljava/lang/String;", "Ljava/lang/String;"), "web-html"),
+    "Url": ("Landroid/webkit/WebView;", "loadUrl", "V", ("Ljava/lang/String;",), "web-url"),
+    # Newline-separated text. List calls DroideRt.setLines. Spinner calls DroideRt.setSpinner.
+    "Items": ("Landroid/widget/AbsListView;", "setAdapter", "V", ("Landroid/widget/ListAdapter;",), "lines"),
+    # Applied after the adapter. The listener is attached later, so the first index does not fire.
+    "Selection": ("Landroid/widget/AdapterView;", "setSelection", "V", ("I",), "int"),
+    # Vertical is 1 and Horizontal is 0. place_widget writes the design-time value.
+    "Direction": ("Landroid/widget/LinearLayout;", "setOrientation", "V", ("I",), "orient"),
 }
 
 GETTERS = {
@@ -271,6 +317,7 @@ GETTERS = {
     # getMonth is 0–11. Mode "month" adds 1 so Droide sees calendar months.
     "Month": ("Landroid/widget/DatePicker;", "getMonth", "I", (), "month"),
     "Day": ("Landroid/widget/DatePicker;", "getDayOfMonth", "I", (), "int"),
+    "Selection": ("Landroid/widget/AdapterView;", "getSelectedItemPosition", "I", (), "int"),
 }
 
 FORM_EVENTS = ["OnCreate"]

@@ -22,7 +22,7 @@ pub static WIDGETS: &[WidgetSpec] = &[
         width: 200,
         height: 36,
         props: &["Text", "TextSize", "TextColor", "Color", "Enabled", "Visible"],
-        events: &["OnClick"],
+        events: &["OnClick", "OnLongClick"],
     },
     WidgetSpec {
         name: "Clock",
@@ -32,7 +32,7 @@ pub static WIDGETS: &[WidgetSpec] = &[
         width: 200,
         height: 36,
         props: &["Format", "TextSize", "TextColor", "Color", "Enabled", "Visible"],
-        events: &["OnClick"],
+        events: &["OnClick", "OnLongClick"],
     },
     WidgetSpec {
         name: "Button",
@@ -42,7 +42,7 @@ pub static WIDGETS: &[WidgetSpec] = &[
         width: 160,
         height: 44,
         props: &["Text", "TextSize", "TextColor", "Color", "Enabled", "Visible"],
-        events: &["OnClick"],
+        events: &["OnClick", "OnLongClick"],
     },
     WidgetSpec {
         name: "Toggle",
@@ -52,7 +52,7 @@ pub static WIDGETS: &[WidgetSpec] = &[
         width: 120,
         height: 44,
         props: &["TextOn", "TextOff", "Checked", "TextSize", "TextColor", "Enabled", "Visible"],
-        events: &["OnClick"],
+        events: &["OnClick", "OnLongClick", "OnChange"],
     },
     WidgetSpec {
         name: "Edit",
@@ -62,7 +62,7 @@ pub static WIDGETS: &[WidgetSpec] = &[
         width: 240,
         height: 44,
         props: &["Text", "Hint", "TextSize", "TextColor", "Color", "Enabled", "Visible"],
-        events: &["OnClick"],
+        events: &["OnClick", "OnLongClick", "OnChange"],
     },
     WidgetSpec {
         name: "Memo",
@@ -72,7 +72,7 @@ pub static WIDGETS: &[WidgetSpec] = &[
         width: 240,
         height: 96,
         props: &["Text", "Hint", "TextSize", "TextColor", "Color", "Enabled", "Visible"],
-        events: &["OnClick"],
+        events: &["OnClick", "OnLongClick", "OnChange"],
     },
     WidgetSpec {
         name: "Number",
@@ -82,7 +82,7 @@ pub static WIDGETS: &[WidgetSpec] = &[
         width: 160,
         height: 44,
         props: &["Text", "Hint", "TextSize", "TextColor", "Color", "Enabled", "Visible"],
-        events: &["OnClick"],
+        events: &["OnClick", "OnLongClick", "OnChange"],
     },
     WidgetSpec {
         name: "Password",
@@ -92,7 +92,7 @@ pub static WIDGETS: &[WidgetSpec] = &[
         width: 240,
         height: 44,
         props: &["Text", "Hint", "TextSize", "TextColor", "Color", "Enabled", "Visible"],
-        events: &["OnClick"],
+        events: &["OnClick", "OnLongClick", "OnChange"],
     },
     WidgetSpec {
         name: "Email",
@@ -102,7 +102,7 @@ pub static WIDGETS: &[WidgetSpec] = &[
         width: 240,
         height: 44,
         props: &["Text", "Hint", "TextSize", "TextColor", "Color", "Enabled", "Visible"],
-        events: &["OnClick"],
+        events: &["OnClick", "OnLongClick", "OnChange"],
     },
     WidgetSpec {
         name: "Phone",
@@ -112,7 +112,7 @@ pub static WIDGETS: &[WidgetSpec] = &[
         width: 200,
         height: 44,
         props: &["Text", "Hint", "TextSize", "TextColor", "Color", "Enabled", "Visible"],
-        events: &["OnClick"],
+        events: &["OnClick", "OnLongClick", "OnChange"],
     },
     WidgetSpec {
         name: "Check",
@@ -122,7 +122,7 @@ pub static WIDGETS: &[WidgetSpec] = &[
         width: 180,
         height: 36,
         props: &["Text", "Checked", "TextSize", "TextColor", "Enabled", "Visible"],
-        events: &["OnClick"],
+        events: &["OnClick", "OnLongClick", "OnChange"],
     },
     WidgetSpec {
         name: "Radio",
@@ -132,7 +132,7 @@ pub static WIDGETS: &[WidgetSpec] = &[
         width: 180,
         height: 36,
         props: &["Text", "Checked", "TextSize", "TextColor", "Enabled", "Visible"],
-        events: &["OnClick"],
+        events: &["OnClick", "OnLongClick", "OnChange"],
     },
     WidgetSpec {
         name: "Switch",
@@ -142,7 +142,7 @@ pub static WIDGETS: &[WidgetSpec] = &[
         width: 180,
         height: 36,
         props: &["Text", "Checked", "TextSize", "TextColor", "Enabled", "Visible"],
-        events: &["OnClick"],
+        events: &["OnClick", "OnLongClick", "OnChange"],
     },
     WidgetSpec {
         name: "Seek",
@@ -152,7 +152,7 @@ pub static WIDGETS: &[WidgetSpec] = &[
         width: 240,
         height: 36,
         props: &["Max", "Progress", "Enabled", "Visible"],
-        events: &["OnClick"],
+        events: &["OnClick", "OnLongClick", "OnChange"],
     },
     WidgetSpec {
         name: "Progress",
@@ -162,7 +162,7 @@ pub static WIDGETS: &[WidgetSpec] = &[
         width: 240,
         height: 24,
         props: &["Max", "Progress", "Enabled", "Visible"],
-        events: &["OnClick"],
+        events: &["OnClick", "OnLongClick"],
     },
     WidgetSpec {
         name: "Busy",
@@ -172,7 +172,7 @@ pub static WIDGETS: &[WidgetSpec] = &[
         width: 48,
         height: 48,
         props: &["Enabled", "Visible"],
-        events: &["OnClick"],
+        events: &["OnClick", "OnLongClick"],
     },
     WidgetSpec {
         name: "Rating",
@@ -182,7 +182,7 @@ pub static WIDGETS: &[WidgetSpec] = &[
         width: 200,
         height: 40,
         props: &["Stars", "Rating", "Enabled", "Visible"],
-        events: &["OnClick"],
+        events: &["OnClick", "OnLongClick", "OnChange"],
     },
     WidgetSpec {
         name: "Picker",
@@ -192,7 +192,7 @@ pub static WIDGETS: &[WidgetSpec] = &[
         width: 120,
         height: 160,
         props: &["MinValue", "MaxValue", "Value", "Wrap", "Enabled", "Visible"],
-        events: &["OnClick"],
+        events: &["OnClick", "OnLongClick", "OnChange"],
     },
     WidgetSpec {
         name: "Time",
@@ -202,7 +202,7 @@ pub static WIDGETS: &[WidgetSpec] = &[
         width: 240,
         height: 180,
         props: &["Is24Hour", "Hour", "Minute", "Enabled", "Visible"],
-        events: &["OnClick"],
+        events: &["OnClick", "OnLongClick", "OnChange"],
     },
     WidgetSpec {
         name: "Date",
@@ -212,17 +212,47 @@ pub static WIDGETS: &[WidgetSpec] = &[
         width: 320,
         height: 280,
         props: &["Year", "Month", "Day", "Enabled", "Visible"],
-        events: &["OnClick"],
+        events: &["OnClick", "OnLongClick", "OnChange"],
     },
     WidgetSpec {
         name: "Panel",
-        android: "android.view.View",
-        desc: "Landroid/view/View;",
+        android: "android.widget.LinearLayout",
+        desc: "Landroid/widget/LinearLayout;",
         group: "Layout",
         width: 200,
         height: 80,
-        props: &["Color", "Enabled", "Visible"],
-        events: &["OnClick"],
+        props: &["Direction", "Color", "Enabled", "Visible"],
+        events: &["OnClick", "OnLongClick"],
+    },
+    WidgetSpec {
+        name: "List",
+        android: "android.widget.ListView",
+        desc: "Landroid/widget/ListView;",
+        group: "Lists",
+        width: 328,
+        height: 200,
+        props: &["Items", "Color", "Enabled", "Visible"],
+        events: &["OnItemClick", "OnItemLongClick"],
+    },
+    WidgetSpec {
+        name: "Spinner",
+        android: "android.widget.Spinner",
+        desc: "Landroid/widget/Spinner;",
+        group: "Lists",
+        width: 240,
+        height: 48,
+        props: &["Items", "Selection", "Color", "Enabled", "Visible"],
+        events: &["OnItemSelected"],
+    },
+    WidgetSpec {
+        name: "Web",
+        android: "android.webkit.WebView",
+        desc: "Landroid/webkit/WebView;",
+        group: "Web",
+        width: 328,
+        height: 200,
+        props: &["Html", "Url", "Enabled", "Visible"],
+        events: &["OnClick", "OnLongClick"],
     },
 ];
 
@@ -252,7 +282,10 @@ pub fn default_props(kind: &str) -> Value {
         "Picker" => json!({"MinValue": 0, "MaxValue": 10, "Value": 3, "Wrap": true}),
         "Time" => json!({"Is24Hour": true, "Hour": 12, "Minute": 0}),
         "Date" => json!({"Year": 2026, "Month": 10, "Day": 24}),
-        "Panel" => json!({"Color": "#E4E8EE"}),
+        "Panel" => json!({"Direction": "Vertical", "Color": "#E4E8EE"}),
+        "List" => json!({"Items": "One\nTwo\nThree", "Color": "#FBF9F4"}),
+        "Spinner" => json!({"Items": "One\nTwo\nThree", "Selection": 0, "Color": "#FBF9F4"}),
+        "Web" => json!({"Html": "", "Url": ""}),
         _ => json!({}),
     }
 }
@@ -287,6 +320,11 @@ pub static PROP_TYPES: &[(&str, &str)] = &[
     ("Year", "Integer"),
     ("Month", "Integer"),
     ("Day", "Integer"),
+    ("Html", "String"),
+    ("Url", "String"),
+    ("Items", "String"),
+    ("Selection", "Integer"),
+    ("Direction", "String"),
 ];
 
 #[derive(Clone, Copy)]
@@ -324,6 +362,15 @@ pub static SETTERS: &[(&str, MethodRef)] = &[
     ("Year", MethodRef { owner: "Landroid/widget/DatePicker;", name: "updateDate", ret: "V", params: &["I", "I", "I"], mode: "date-year" }),
     ("Month", MethodRef { owner: "Landroid/widget/DatePicker;", name: "updateDate", ret: "V", params: &["I", "I", "I"], mode: "date-month" }),
     ("Day", MethodRef { owner: "Landroid/widget/DatePicker;", name: "updateDate", ret: "V", params: &["I", "I", "I"], mode: "date-day" }),
+    // loadData is four words. loadDataWithBaseURL is six, past the invoke limit.
+    ("Html", MethodRef { owner: "Landroid/webkit/WebView;", name: "loadData", ret: "V", params: &["Ljava/lang/String;", "Ljava/lang/String;", "Ljava/lang/String;"], mode: "web-html" }),
+    ("Url", MethodRef { owner: "Landroid/webkit/WebView;", name: "loadUrl", ret: "V", params: &["Ljava/lang/String;"], mode: "web-url" }),
+    // Newline-separated text. List calls DroideRt.setLines. Spinner calls DroideRt.setSpinner.
+    ("Items", MethodRef { owner: "Landroid/widget/AbsListView;", name: "setAdapter", ret: "V", params: &["Landroid/widget/ListAdapter;"], mode: "lines" }),
+    // Applied after the adapter. The listener is attached later, so the first index does not fire.
+    ("Selection", MethodRef { owner: "Landroid/widget/AdapterView;", name: "setSelection", ret: "V", params: &["I"], mode: "int" }),
+    // Vertical is 1 and Horizontal is 0. place_widget writes the design-time value.
+    ("Direction", MethodRef { owner: "Landroid/widget/LinearLayout;", name: "setOrientation", ret: "V", params: &["I"], mode: "orient" }),
 ];
 
 pub fn setter(name: &str) -> Option<&'static MethodRef> {
@@ -353,6 +400,7 @@ pub static GETTERS: &[(&str, MethodRef)] = &[
     ("Year", MethodRef { owner: "Landroid/widget/DatePicker;", name: "getYear", ret: "I", params: &[], mode: "int" }),
     ("Month", MethodRef { owner: "Landroid/widget/DatePicker;", name: "getMonth", ret: "I", params: &[], mode: "month" }),
     ("Day", MethodRef { owner: "Landroid/widget/DatePicker;", name: "getDayOfMonth", ret: "I", params: &[], mode: "int" }),
+    ("Selection", MethodRef { owner: "Landroid/widget/AdapterView;", name: "getSelectedItemPosition", ret: "I", params: &[], mode: "int" }),
 ];
 
 pub fn getter(name: &str) -> Option<&'static MethodRef> {

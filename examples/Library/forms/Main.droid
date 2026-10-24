@@ -1,0 +1,13 @@
+procedure FindClick();
+begin
+  Hits.Items := Lookup(QueryEdit.Text);
+  if QueryEdit.Text = '' then
+    StatusLabel.Text := 'All documents'
+  else
+    StatusLabel.Text := QueryEdit.Text
+end;
+
+procedure AddClick();
+begin
+  OpenForm('Add')
+end;

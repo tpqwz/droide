@@ -1,0 +1,4 @@
+procedure SaveClick();
+begin
+  StatusLabel.Text := Ingest(TitleEdit.Text, BodyMemo.Text, KindEdit.Text)
+end;

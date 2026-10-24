@@ -20,11 +20,13 @@ from droide.compiler.parser import parse_droid, parse_native
 from droide.compiler.vm import _len_at, run_static, verify_image
 from droide.compiler.widgets import WIDGETS, new_component
 from droide.ide.server import serve
-from droide.project import Project
+from droide.project import Project, class_ok
 
 ROOT = Path(__file__).resolve().parents[1]
 HELLO = ROOT / "examples" / "Hello"
 CALC = ROOT / "examples" / "NativeCalc"
+SEARCH = ROOT / "examples" / "Search"
+LIBRARY = ROOT / "examples" / "Library"
 
 
 def _get(url):
@@ -160,6 +162,648 @@ class ProjectTests(unittest.TestCase):
             self.assertFalse(result["ok"])
             self.assertTrue(any("DroideRt" in err["message"] for err in result["errors"]))
 
+    def test_search_sample_gates_appsearch(self):
+        self.assertFalse(class_ok("DroideSearch"))
+        self.assertTrue(class_ok("Main"))
+        compiled = compile_project(SEARCH)
+        self.assertEqual(compiled["errors"], [], compiled["errors"])
+        dex = compiled["dex"]
+        verify_image(dex.image)
+        classes = dex.image["classes"]
+        self.assertIn("Lcom/droide/search/DroideSearch;", classes)
+        self.assertIn("Lcom/droide/search/DroideSearch$Cb;", classes)
+        self.assertIn("Landroid/app/appsearch/BatchResultCallback;", dex.image["types"])
+        self.assertIn("app_search", dex.image["strings"])
+        form = json.loads((SEARCH / "forms" / "Main.form.json").read_text(encoding="utf-8"))
+        hits = next(comp for comp in form["components"] if comp["name"] == "Hits")
+        lines = hits["props"]["Items"].split("\n")
+        self.assertEqual(len(lines), 5)
+        for line in lines:
+            self.assertIn(line, dex.image["strings"])
+        search = classes["Lcom/droide/search/DroideRt;"]["methods"][
+            ("search", "Ljava/lang/String;", ("Landroid/content/Context;", "Ljava/lang/String;"))
+        ]
+        body = "\n".join(search["listing"])
+        self.assertIn("SDK_INT", body)
+        self.assertIn('"app_search"', body)
+        self.assertIn("DroideSearch;->query", body)
+        self.assertNotIn("Landroid/app/appsearch", body)
+        entities = compiled["db"]["entities"]
+        click = next(ent for ent in entities if ent["qname"] == "Main.FindClick")
+        builtin = next(ent for ent in entities if ent["qname"] == "builtin.Search")
+        self.assertEqual(click["fanOut"], 1)
+        self.assertTrue(any(
+            ref["src"] == click["id"] and ref["dst"] == builtin["id"] and ref["kind"] == "call"
+            for ref in compiled["db"]["refs"]
+        ))
+        packed = build(SEARCH)
+        self.assertTrue(packed["ok"], packed["errors"])
+        self.assertIn("Verified using v2 scheme", packed["verify"])
+
+    def test_library_sample_uses_appsearch_or_fts4(self):
+        self.assertFalse(class_ok("DroideIndex"))
+        compiled = compile_project(LIBRARY)
+        self.assertEqual(compiled["errors"], [], compiled["errors"])
+        dex = compiled["dex"]
+        verify_image(dex.image)
+        classes = dex.image["classes"]
+        self.assertIn("Lcom/droide/library/DroideIndex;", classes)
+        self.assertIn("Lcom/droide/library/DroideIndex$Cb;", classes)
+        self.assertIn("Landroid/app/appsearch/BatchResultCallback;", dex.image["types"])
+        self.assertIn("app_search", dex.image["strings"])
+        self.assertTrue(any("fts4" in text for text in dex.image["strings"]))
+        self.assertIn(
+            "Ink is a deep blue mixed on the swatch and kept in a glass jar.",
+            dex.image["strings"],
+        )
+        lookup = classes["Lcom/droide/library/DroideRt;"]["methods"][
+            ("lookup", "Ljava/lang/String;", ("Landroid/content/Context;", "Ljava/lang/String;"))
+        ]
+        body = "\n".join(lookup["listing"])
+        self.assertIn("SDK_INT", body)
+        self.assertIn('"app_search"', body)
+        self.assertIn("DroideIndex;->query", body)
+        self.assertNotIn("Landroid/app/appsearch", body)
+        rows = classes["Lcom/droide/library/DroideRt;"]["methods"][
+            ("rows", "Ljava/lang/String;", ("Landroid/database/sqlite/SQLiteDatabase;", "Ljava/lang/String;"))
+        ]
+        listed = "\n".join(rows["listing"])
+        self.assertIn("offsets(docs)", listed)
+        self.assertIn("DroideRt;->snip", listed)
+        self.assertNotIn("substr(body", listed)
+        snip = classes["Lcom/droide/library/DroideRt;"]["methods"][
+            ("snip", "Ljava/lang/String;", ("Ljava/lang/String;", "Ljava/lang/String;", "I"))
+        ]
+        clip = "\n".join(snip["listing"])
+        self.assertIn("utfAt", clip)
+        self.assertIn("DroideRt;->span", clip)
+        self.assertIn("DroideRt;->pour", listed)
+        span = classes["Lcom/droide/library/DroideRt;"]["methods"][
+            ("span", "Ljava/lang/String;", ("Ljava/lang/String;", "I", "I"))
+        ]
+        window = "\n".join(span["listing"])
+        self.assertIn('"«"', window)
+        line = classes["Lcom/droide/library/DroideIndex;"]["methods"][
+            ("line", "Ljava/lang/String;", ("Landroid/app/appsearch/SearchResult;",))
+        ]
+        drawn = "\n".join(line["listing"])
+        self.assertIn("getMatchInfos", drawn)
+        self.assertIn("getExactMatchRange", drawn)
+        self.assertIn("DroideRt;->span", drawn)
+        spec = classes["Lcom/droide/library/DroideIndex;"]["methods"][
+            ("spec", "Landroid/app/appsearch/SearchSpec;", ())
+        ]
+        shaped = "\n".join(spec["listing"])
+        self.assertIn("setSnippetCount", shaped)
+        self.assertIn("setResultCountPerPage", shaped)
+        accept = classes["Lcom/droide/library/DroideIndex$Cb;"]["methods"][
+            ("accept", "V", ("Ljava/lang/Object;",))
+        ]
+        page = "\n".join(accept["listing"])
+        self.assertIn("getNextPage", page)
+        self.assertTrue(any("offsets(docs)" in text for text in dex.image["strings"]))
+        self.assertFalse(any("substr(body" in text for text in dex.image["strings"]))
+        entities = compiled["db"]["entities"]
+        click = next(ent for ent in entities if ent["qname"] == "Main.FindClick")
+        save = next(ent for ent in entities if ent["qname"] == "Add.SaveClick")
+        found = next(ent for ent in entities if ent["qname"] == "builtin.Lookup")
+        ingest = next(ent for ent in entities if ent["qname"] == "builtin.Ingest")
+        self.assertEqual(click["fanOut"], 1)
+        self.assertEqual(save["fanOut"], 1)
+        refs = compiled["db"]["refs"]
+        self.assertTrue(any(
+            ref["src"] == click["id"] and ref["dst"] == found["id"] and ref["kind"] == "call"
+            for ref in refs
+        ))
+        self.assertTrue(any(
+            ref["src"] == save["id"] and ref["dst"] == ingest["id"] and ref["kind"] == "call"
+            for ref in refs
+        ))
+        packed = build(LIBRARY)
+        self.assertTrue(packed["ok"], packed["errors"])
+        self.assertIn("Verified using v2 scheme", packed["verify"])
+
+    def test_change_and_long_press_compile(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "Events"
+            Project.create(root, "Events", "com.example.events")
+            form = json.loads((root / "forms" / "Main.form.json").read_text(encoding="utf-8"))
+            specs = (
+                ("Button", "Press", {"OnClick": "PressClick", "OnLongClick": "PressLong"}),
+                ("Edit", "Edit1", {"OnChange": "EditChange"}),
+                ("Check", "Check1", {"OnChange": "CheckChange"}),
+                ("Seek", "Seek1", {"OnChange": "SeekChange"}),
+                ("Rating", "Rating1", {"OnChange": "RatingChange"}),
+                ("Picker", "Picker1", {"OnChange": "PickerChange"}),
+                ("Time", "Time1", {"OnChange": "TimeChange"}),
+                ("Date", "Date1", {"OnChange": "DateChange"}),
+                ("List", "Rows", {"OnItemClick": "RowClick", "OnItemLongClick": "RowLong"}),
+            )
+            form["components"] = []
+            top = 16
+            for kind, name, events in specs:
+                comp = new_component(kind, name, 16, top)
+                comp["events"] = events
+                form["components"].append(comp)
+                top += 8
+            (root / "forms" / "Main.form.json").write_text(json.dumps(form), encoding="utf-8")
+            (root / "forms" / "Main.droid").write_text(
+                "procedure PressClick(Sender: View);\nbegin\nend;\n\n"
+                "procedure PressLong(Sender: View);\nbegin\nend;\n\n"
+                "procedure EditChange(Text: String);\nbegin\nend;\n\n"
+                "procedure CheckChange(On: Boolean);\nbegin\nend;\n\n"
+                "procedure SeekChange(Value: Integer);\nbegin\nend;\n\n"
+                "procedure RatingChange(Value: Integer);\nbegin\nend;\n\n"
+                "procedure PickerChange(Value: Integer);\nbegin\nend;\n\n"
+                "procedure TimeChange();\nbegin\nend;\n\n"
+                "procedure DateChange();\nbegin\nend;\n\n"
+                "procedure RowClick(Row: String);\nbegin\nend;\n\n"
+                "procedure RowLong(Row: String);\nbegin\nend;\n",
+                encoding="utf-8",
+            )
+            compiled = compile_project(root)
+            self.assertEqual(compiled["errors"], [], compiled["errors"])
+            verify_image(compiled["dex"].image)
+            listing = "\n".join(compiled["dex"].listing)
+            for needle in (
+                "class Lcom/example/events/Main$Long$Press;",
+                "class Lcom/example/events/Main$Change$Edit1;",
+                "class Lcom/example/events/Main$Change$Check1;",
+                "class Lcom/example/events/Main$Change$Seek1;",
+                "class Lcom/example/events/Main$Change$Rating1;",
+                "class Lcom/example/events/Main$Change$Picker1;",
+                "class Lcom/example/events/Main$Change$Time1;",
+                "class Lcom/example/events/Main$Change$Date1;",
+                "class Lcom/example/events/Main$ItemLong$Rows;",
+                "onLongClick",
+                "onItemLongClick",
+                "beforeTextChanged",
+                "onTextChanged",
+                "afterTextChanged",
+                "onCheckedChanged",
+                "onProgressChanged",
+                "onStartTrackingTouch",
+                "onStopTrackingTouch",
+                "onRatingChanged",
+                "float-to-int",
+                "onValueChange",
+                "setOnValueChangedListener",
+                "onTimeChanged",
+                "onDateChanged",
+                "addTextChangedListener",
+                "setOnLongClickListener",
+                "setOnItemLongClickListener",
+                "DatePicker;->init",
+            ):
+                self.assertIn(needle, listing, needle)
+            self.assertNotIn("updateDate", listing)
+            method = compiled["dex"].image["classes"]["Lcom/example/events/Main;"]["methods"][
+                ("onCreate", "V", ("Landroid/os/Bundle;",))
+            ]
+            self.assertGreaterEqual(method["outs"], 5)
+
+    def test_change_handler_rejects_a_bad_parameter(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "Bad"
+            Project.create(root, "Bad", "com.example.bad")
+            form = json.loads((root / "forms" / "Main.form.json").read_text(encoding="utf-8"))
+            edit = new_component("Edit", "Edit1", 16, 16)
+            edit["events"] = {"OnChange": "EditChange"}
+            time = new_component("Time", "Time1", 16, 80)
+            time["events"] = {"OnChange": "TimeChange"}
+            form["components"] = [edit, time]
+            (root / "forms" / "Main.form.json").write_text(json.dumps(form), encoding="utf-8")
+            (root / "forms" / "Main.droid").write_text(
+                "procedure EditChange(Value: Integer);\nbegin\nend;\n\n"
+                "procedure TimeChange(Value: Integer);\nbegin\nend;\n",
+                encoding="utf-8",
+            )
+            compiled = compile_project(root, codegen=False)
+            messages = [err["message"] for err in compiled["errors"]]
+            self.assertTrue(any("EditChange" in msg and "String" in msg for msg in messages), messages)
+            self.assertTrue(
+                any("TimeChange" in msg and "takes no parameters" in msg for msg in messages),
+                messages,
+            )
+
+    def test_spinner_compiles(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "Spin"
+            Project.create(root, "Spin", "com.example.spin")
+            form = json.loads((root / "forms" / "Main.form.json").read_text(encoding="utf-8"))
+            rows = new_component("List", "Rows", 16, 16)
+            rows["props"]["Items"] = "One\nTwo"
+            kind = new_component("Spinner", "Kind1", 16, 80)
+            kind["props"]["Items"] = "Red\nGreen\nBlue"
+            kind["props"]["Selection"] = 2
+            kind["events"] = {"OnItemSelected": "Pick"}
+            form["components"] = [rows, kind]
+            (root / "forms" / "Main.form.json").write_text(json.dumps(form), encoding="utf-8")
+            (root / "forms" / "Main.droid").write_text(
+                "procedure Pick(Row: String);\nvar\n  N: Integer;\nbegin\n"
+                "  N := Kind1.Selection;\n  Kind1.Items := Row;\n  Log(IntToStr(N))\nend;\n",
+                encoding="utf-8",
+            )
+            compiled = compile_project(root)
+            self.assertEqual(compiled["errors"], [], compiled["errors"])
+            verify_image(compiled["dex"].image)
+            listing = "\n".join(compiled["dex"].listing)
+            for needle in (
+                "class Lcom/example/spin/Main$Select$Kind1;",
+                "onItemSelected",
+                "onNothingSelected",
+                "getItemAtPosition",
+                "getSelectedItemPosition",
+                "Landroid/widget/AbsSpinner;->setAdapter",
+                "Landroid/widget/AbsListView;->setAdapter",
+                "Landroid/widget/ArrayAdapter;",
+                "const v2, #17367043",
+                "Landroid/widget/Spinner;",
+            ):
+                self.assertIn(needle, listing, needle)
+            main = _class_body(listing, "Lcom/example/spin/Main;")
+            spin_at = main.index("->setSpinner")
+            lines_at = main.index("->setLines")
+            sel_at = main.index("AdapterView;->setSelection")
+            listen_at = main.index("setOnItemSelectedListener")
+            self.assertLess(spin_at, sel_at)
+            self.assertLess(sel_at, listen_at)
+            self.assertIn("const/4 v4, #2", main)
+            self.assertNotEqual(lines_at, spin_at)
+            methods = compiled["dex"].image["methods"]
+            self.assertIn(
+                ("Landroid/widget/AbsSpinner;", "setAdapter", "V", ("Landroid/widget/SpinnerAdapter;",)),
+                methods,
+            )
+            self.assertIn(
+                ("Landroid/widget/AbsListView;", "setAdapter", "V", ("Landroid/widget/ListAdapter;",)),
+                methods,
+            )
+
+    def test_spinner_handler_rejects_a_bad_parameter(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "BadSpin"
+            Project.create(root, "BadSpin", "com.example.badspin")
+            form = json.loads((root / "forms" / "Main.form.json").read_text(encoding="utf-8"))
+            kind = new_component("Spinner", "Kind1", 16, 16)
+            kind["events"] = {"OnItemSelected": "Pick"}
+            form["components"] = [kind]
+            (root / "forms" / "Main.form.json").write_text(json.dumps(form), encoding="utf-8")
+            (root / "forms" / "Main.droid").write_text(
+                "procedure Pick(On: Boolean);\nbegin\nend;\n",
+                encoding="utf-8",
+            )
+            compiled = compile_project(root, codegen=False)
+            messages = [err["message"] for err in compiled["errors"]]
+            self.assertTrue(
+                any(
+                    "Pick" in msg
+                    and "takes no parameters, a String, an Integer, or the row View" in msg
+                    for msg in messages
+                ),
+                messages,
+            )
+
+    def test_message_and_question_compile(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "Ask"
+            Project.create(root, "Ask", "com.example.ask")
+            form = json.loads((root / "forms" / "Main.form.json").read_text(encoding="utf-8"))
+            form["components"] = []
+            (root / "forms" / "Main.form.json").write_text(json.dumps(form), encoding="utf-8")
+            (root / "forms" / "Main.droid").write_text(
+                "procedure Show(Sender: View);\nbegin\n"
+                "  Message('Saved')\n"
+                "  if IsInt('1') then\n"
+                "    Question('Delete this?', 'yesclick')\n"
+                "  else begin\n"
+                "    Question('Keep it?', 'YesClick')\n"
+                "  end\n"
+                "end;\n\n"
+                "procedure YesClick();\nbegin\n  Log('yes')\nend;\n",
+                encoding="utf-8",
+            )
+            compiled = compile_project(root)
+            self.assertEqual(compiled["errors"], [], compiled["errors"])
+            verify_image(compiled["dex"].image)
+            listing = "\n".join(compiled["dex"].listing)
+            for needle in (
+                "Landroid/app/AlertDialog$Builder;",
+                "setMessage",
+                "setPositiveButton",
+                "setNegativeButton",
+                "AlertDialog$Builder;->show",
+                "\"OK\"",
+                "\"Yes\"",
+                "\"No\"",
+                "class Lcom/example/ask/Main$Ask$YesClick;",
+                "onClick",
+                "Main;->YesClick",
+            ):
+                self.assertIn(needle, listing, needle)
+            self.assertEqual(listing.count("class Lcom/example/ask/Main$Ask$YesClick;"), 1)
+            methods = compiled["dex"].image["methods"]
+            listener = (
+                "Ljava/lang/CharSequence;",
+                "Landroid/content/DialogInterface$OnClickListener;",
+            )
+            for name in ("setPositiveButton", "setNegativeButton"):
+                self.assertIn(
+                    ("Landroid/app/AlertDialog$Builder;", name, "Landroid/app/AlertDialog$Builder;", listener),
+                    methods,
+                )
+
+    def test_question_rejects_a_bad_procedure(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "BadAsk"
+            Project.create(root, "BadAsk", "com.example.badask")
+            form = json.loads((root / "forms" / "Main.form.json").read_text(encoding="utf-8"))
+            form["components"] = []
+            (root / "forms" / "Main.form.json").write_text(json.dumps(form), encoding="utf-8")
+            (root / "forms" / "Main.droid").write_text(
+                "procedure Show();\nvar\n  Name: String;\nbegin\n"
+                "  Question('Hi?', Name)\n"
+                "  Question('Hi?', 'Missing')\n"
+                "  Question('Hi?', 'YesClick')\n"
+                "  Message(1)\n"
+                "end;\n\n"
+                "procedure YesClick(Sender: View);\nbegin\nend;\n",
+                encoding="utf-8",
+            )
+            compiled = compile_project(root, codegen=False)
+            messages = [err["message"] for err in compiled["errors"]]
+            for needle in (
+                "needs a string literal procedure name",
+                "unknown procedure Missing",
+                "YesClick takes no parameters",
+                "Message expects String",
+            ):
+                self.assertTrue(any(needle in msg for msg in messages), (needle, messages))
+
+    def test_share_and_clipboard_compile(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "Clip"
+            Project.create(root, "Clip", "com.example.clip")
+            form = json.loads((root / "forms" / "Main.form.json").read_text(encoding="utf-8"))
+            form["components"] = []
+            (root / "forms" / "Main.form.json").write_text(json.dumps(form), encoding="utf-8")
+            (root / "forms" / "Main.droid").write_text(
+                "procedure Show(Sender: View);\nvar\n  Text: String;\nbegin\n"
+                "  CopyText('Hello')\n  Text := PasteText()\n  Share(Text)\nend;\n",
+                encoding="utf-8",
+            )
+            compiled = compile_project(root)
+            self.assertEqual(compiled["errors"], [], compiled["errors"])
+            verify_image(compiled["dex"].image)
+            listing = "\n".join(compiled["dex"].listing)
+            for needle in (
+                "android.intent.action.SEND",
+                "android.intent.extra.TEXT",
+                "text/plain",
+                "createChooser",
+                "queryIntentActivities",
+                '"clipboard"',
+                "Landroid/content/ClipboardManager;",
+                "newPlainText",
+                "setPrimaryClip",
+                "getPrimaryClip",
+                "hasPrimaryClip",
+                "getText",
+                "->share",
+                "->copyText",
+                "->pasteText",
+            ):
+                self.assertIn(needle, listing, needle)
+            after = listing[listing.index("android.intent.action.SEND"):]
+            query_at = after.index("queryIntentActivities")
+            chooser_at = after.index("createChooser")
+            start_at = after.index("startActivity")
+            self.assertLess(query_at, chooser_at)
+            self.assertLess(chooser_at, start_at)
+            plain_at = listing.index("newPlainText")
+            self.assertIn("setPrimaryClip", listing[plain_at:])
+            clip_at = listing.index("getPrimaryClip")
+            self.assertIn("getText", listing[clip_at:])
+            methods = compiled["dex"].image["methods"]
+            self.assertIn(
+                (
+                    "Landroid/content/Intent;",
+                    "createChooser",
+                    "Landroid/content/Intent;",
+                    ("Landroid/content/Intent;", "Ljava/lang/CharSequence;"),
+                ),
+                methods,
+            )
+            self.assertIn(
+                (
+                    "Landroid/content/Intent;",
+                    "putExtra",
+                    "Landroid/content/Intent;",
+                    ("Ljava/lang/String;", "Ljava/lang/String;"),
+                ),
+                methods,
+            )
+            self.assertIn(
+                (
+                    "Landroid/content/ClipboardManager;",
+                    "setPrimaryClip",
+                    "V",
+                    ("Landroid/content/ClipData;",),
+                ),
+                methods,
+            )
+            self.assertIn(
+                (
+                    "Landroid/content/ClipData$Item;",
+                    "getText",
+                    "Ljava/lang/CharSequence;",
+                    (),
+                ),
+                methods,
+            )
+
+    def test_share_rejects_a_bad_argument(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "BadClip"
+            Project.create(root, "BadClip", "com.example.badclip")
+            form = json.loads((root / "forms" / "Main.form.json").read_text(encoding="utf-8"))
+            form["components"] = []
+            (root / "forms" / "Main.form.json").write_text(json.dumps(form), encoding="utf-8")
+            (root / "forms" / "Main.droid").write_text(
+                "procedure Show();\nbegin\n  Share(1)\n  CopyText(1)\n  PasteText('x')\nend;\n",
+                encoding="utf-8",
+            )
+            compiled = compile_project(root, codegen=False)
+            messages = [err["message"] for err in compiled["errors"]]
+            for needle in (
+                "Share expects String",
+                "CopyText expects String",
+                "PasteText expects 0 arguments",
+            ):
+                self.assertTrue(any(needle in msg for msg in messages), (needle, messages))
+
+    def test_panel_holds_children(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "Panel"
+            Project.create(root, "Panel", "com.example.panel")
+            form = json.loads((root / "forms" / "Main.form.json").read_text(encoding="utf-8"))
+            form["components"] = [
+                {
+                    "type": "Button", "name": "Early", "parent": "Box",
+                    "left": 4, "top": 2, "width": 80, "height": 40,
+                    "props": {"Text": "Early"}, "events": {},
+                },
+                {
+                    "type": "Panel", "name": "Box",
+                    "left": 16, "top": 24, "width": 200, "height": 160,
+                    "props": {"Color": "#E4E8EE"}, "events": {},
+                },
+                {
+                    "type": "Panel", "name": "Pad",
+                    "left": 16, "top": 200, "width": 80, "height": 40,
+                    "props": {"Color": "#E4E8EE"}, "events": {},
+                },
+                {
+                    "type": "Panel", "name": "Row",
+                    "left": 16, "top": 260, "width": 240, "height": 64,
+                    "props": {"Direction": "Horizontal", "Color": "#E4E8EE"}, "events": {},
+                },
+                {
+                    "type": "Button", "name": "Side", "parent": "Row",
+                    "left": 900, "top": 0, "width": 40, "height": 36,
+                    "props": {"Text": "Side"}, "events": {},
+                },
+                {
+                    "type": "Panel", "name": "Inner", "parent": "Box",
+                    "left": 8, "top": 4, "width": 120, "height": 80,
+                    "props": {"Color": "#D8DEE8"}, "events": {},
+                },
+                {
+                    "type": "Button", "name": "Go", "parent": "Inner",
+                    "left": 2, "top": 2, "width": 72, "height": 36,
+                    "props": {"Text": "Go"}, "events": {},
+                },
+            ]
+            (root / "forms" / "Main.form.json").write_text(json.dumps(form), encoding="utf-8")
+            (root / "forms" / "Main.droid").write_text(
+                "procedure Turn();\nbegin\n  Box.Direction := 'Horizontal'\nend;\n",
+                encoding="utf-8",
+            )
+            compiled = compile_project(root)
+            self.assertEqual(compiled["errors"], [], compiled["errors"])
+            verify_image(compiled["dex"].image)
+            listing = "\n".join(compiled["dex"].listing)
+            create = _method_body(listing, "onCreate(")
+            frame = create.split("FrameLayout$LayoutParams", 1)[0]
+            self.assertIn("#360", frame)
+            self.assertIn("#640", frame)
+            self.assertNotIn("#900", frame)
+            self.assertIn("#900", create)
+            self.assertIn("Landroid/widget/LinearLayout;", create)
+            self.assertIn("Landroid/widget/LinearLayout$LayoutParams;", create)
+            self.assertEqual(create.count("setOrientation"), 4)
+            early_put = create.index("iput-object v2, v6, Early")
+            box_put = create.index("iput-object v2, v6, Box")
+            self.assertLess(early_put, box_put)
+            early_get = create.index("iget-object v2, v6, Early")
+            self.assertLess(box_put, early_get)
+            self.assertIn("iget-object v3, v6, Box", create[box_put:early_get])
+            lines = create.splitlines()
+            saw_vertical = saw_horizontal = False
+            for i, line in enumerate(lines):
+                if "setOrientation" not in line:
+                    continue
+                prev = next(item for item in reversed(lines[:i]) if "const/" in item)
+                saw_horizontal = saw_horizontal or "#0" in prev
+                saw_vertical = saw_vertical or "#1" in prev
+            self.assertTrue(saw_vertical and saw_horizontal, create)
+            turn = _method_body(listing, "Turn(")
+            self.assertIn("equalsIgnoreCase", turn)
+            self.assertIn("setOrientation", turn)
+            methods = compiled["dex"].image["methods"]
+            self.assertIn(
+                ("Landroid/widget/LinearLayout;", "setOrientation", "V", ("I",)),
+                methods,
+            )
+            self.assertIn(
+                ("Landroid/widget/LinearLayout$LayoutParams;", "<init>", "V", ("I", "I")),
+                methods,
+            )
+
+    def test_panel_rejects_a_bad_parent(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "BadPanel"
+            Project.create(root, "BadPanel", "com.example.badpanel")
+            form = json.loads((root / "forms" / "Main.form.json").read_text(encoding="utf-8"))
+            form["components"] = [
+                {
+                    "type": "Button", "name": "Early", "parent": "Missing",
+                    "left": 0, "top": 0, "width": 40, "height": 40, "props": {}, "events": {},
+                },
+                {
+                    "type": "Label", "name": "Title",
+                    "left": 0, "top": 0, "width": 40, "height": 40,
+                    "props": {"Text": "T"}, "events": {},
+                },
+                {
+                    "type": "Button", "name": "Late", "parent": "Title",
+                    "left": 0, "top": 0, "width": 40, "height": 40, "props": {}, "events": {},
+                },
+                {
+                    "type": "Panel", "name": "Box", "parent": "Box",
+                    "left": 0, "top": 0, "width": 40, "height": 40, "props": {}, "events": {},
+                },
+                {
+                    "type": "Panel", "name": "A", "parent": "B",
+                    "left": 0, "top": 0, "width": 40, "height": 40, "props": {}, "events": {},
+                },
+                {
+                    "type": "Panel", "name": "B", "parent": "A",
+                    "left": 0, "top": 0, "width": 40, "height": 40, "props": {}, "events": {},
+                },
+                {
+                    "type": "Panel", "name": "Wide",
+                    "left": 0, "top": 0, "width": 40, "height": 40,
+                    "props": {"Direction": "Sideways"}, "events": {},
+                },
+            ]
+            (root / "forms" / "Main.form.json").write_text(json.dumps(form), encoding="utf-8")
+            (root / "forms" / "Main.droid").write_text("procedure Show();\nbegin\nend;\n", encoding="utf-8")
+            compiled = compile_project(root, codegen=False)
+            messages = [err["message"] for err in compiled["errors"]]
+            for needle in (
+                "Early parent Missing is unknown",
+                "Late parent Title is not a Panel",
+                "Box parents itself",
+                "parent cycle",
+                "Wide Direction must be Vertical or Horizontal",
+            ):
+                self.assertTrue(any(needle in msg for msg in messages), (needle, messages))
+
+
+def _method_body(listing, name):
+    header = "\n  " + name
+    start = listing.find(header)
+    if start < 0:
+        raise AssertionError("missing " + name)
+    rest = listing[start + 1:]
+    out = []
+    for line in rest.splitlines()[1:]:
+        if line.startswith("class ") or (line.startswith("  ") and not line.startswith("   ")):
+            break
+        out.append(line)
+    return "\n".join(out)
+
+
+def _class_body(listing, desc):
+    header = "class " + desc
+    start = listing.find(header)
+    rest = listing[start + len(header):]
+    end = rest.find("\nclass ")
+    if end < 0:
+        end = len(rest)
+    return rest[:end]
+
 
 class IdeTests(unittest.TestCase):
     def test_api_roundtrip(self):
@@ -186,6 +830,13 @@ class IdeTests(unittest.TestCase):
             catalog = _json(base + "/api/catalog")
             self.assertIn("Button", catalog["widgets"])
             self.assertIn("OnClick", catalog["widgets"]["Button"]["events"])
+            self.assertEqual(catalog["widgets"]["Button"]["events"][0], "OnClick")
+            self.assertIn("OnLongClick", catalog["widgets"]["Button"]["events"])
+            self.assertIn("OnChange", catalog["widgets"]["Edit"]["events"])
+            self.assertEqual(catalog["widgets"]["List"]["events"][0], "OnItemClick")
+            self.assertIn("OnItemLongClick", catalog["widgets"]["List"]["events"])
+            self.assertEqual(catalog["widgets"]["Spinner"]["events"], ["OnItemSelected"])
+            self.assertEqual(catalog["widgets"]["Spinner"]["props"][:2], ["Items", "Selection"])
             self.assertIn("Seek", catalog["widgets"])
             self.assertIn("Clock", catalog["widgets"])
             self.assertEqual(catalog["widgets"]["Rating"]["props"][0], "Stars")

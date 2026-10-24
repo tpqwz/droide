@@ -63,6 +63,54 @@ def _int_prop(props, key, default):
         return default
 
 
+def _parent_name(comp):
+    parent = comp.get("parent") or ""
+    return parent.strip() if isinstance(parent, str) else ""
+
+
+def _horizontal(comp):
+    text = (comp.get("props") or {}).get("Direction") or ""
+    return isinstance(text, str) and text.strip().lower() == "horizontal"
+
+
+def placed_origin(comps, comp, stack=None):
+    """Form position. A child stacks inside its panel; left and top are margins."""
+    stack = stack or []
+    if comp in stack:
+        return int(comp.get("left") or 0), int(comp.get("top") or 0)
+    parent_name = _parent_name(comp)
+    if not parent_name:
+        return int(comp.get("left") or 0), int(comp.get("top") or 0)
+    parent = next((item for item in comps if (item.get("name") or "").lower() == parent_name.lower()), None)
+    if parent is None:
+        return int(comp.get("left") or 0), int(comp.get("top") or 0)
+    px, py = placed_origin(comps, parent, stack + [comp])
+    horizontal = _horizontal(parent)
+    x, y = px, py
+    for sib in comps:
+        if sib is comp:
+            break
+        if _parent_name(sib).lower() != (parent.get("name") or "").lower():
+            continue
+        if horizontal:
+            x += int(sib.get("left") or 0) + int(sib.get("width") or 0)
+        else:
+            y += int(sib.get("top") or 0) + int(sib.get("height") or 0)
+    if horizontal:
+        return x + int(comp.get("left") or 0), py + int(comp.get("top") or 0)
+    return px + int(comp.get("left") or 0), y + int(comp.get("top") or 0)
+
+
+def _panel_at(comps, x, y, ignore=None):
+    for comp in reversed(comps):
+        if comp is ignore or comp.get("type") != "Panel":
+            continue
+        px, py = placed_origin(comps, comp)
+        if px <= x < px + int(comp.get("width") or 0) and py <= y < py + int(comp.get("height") or 0):
+            return comp
+    return None
+
+
 def _qss():
     return f"""
     QMainWindow, QDialog, QWidget {{ background: {PAPER}; color: {INK}; }}
@@ -495,7 +543,18 @@ class Studio(QMainWindow):
         while f"{self.armed}{n}".lower() in used:
             n += 1
         comp = new_component(self.armed, self.armed + str(n), _snap(pos.x()), _snap(pos.y()))
-        self.form.setdefault("components", []).append(comp)
+        comps = self.form.setdefault("components", [])
+        comps.append(comp)
+        host = _panel_at(comps, pos.x(), pos.y(), ignore=comp)
+        if host is not None:
+            comp["parent"] = host["name"]
+            comp["left"] = 0
+            comp["top"] = 0
+            cx, cy = placed_origin(comps, comp)
+            comp["left"] = max(0, _snap(pos.x() - cx))
+            comp["top"] = max(0, _snap(pos.y() - cy))
+        else:
+            comp["parent"] = ""
         self.form_dirty = True
         self.armed = None
         self.caption.setText("360 × 640 dp")
@@ -512,10 +571,12 @@ class Studio(QMainWindow):
             return
         bg = self.form.get("background") or "#F7F8FA"
         self.phone.setStyleSheet(f"QFrame#phone {{ background: {bg}; border: 1px solid {LINE}; }}")
-        for comp in self.form.get("components") or []:
+        comps = self.form.get("components") or []
+        for comp in comps:
             widget = self._make_widget(comp, design=True)
             widget.setParent(self.phone)
-            widget.setGeometry(int(comp["left"]), int(comp["top"]), int(comp["width"]), int(comp["height"]))
+            x, y = placed_origin(comps, comp)
+            widget.setGeometry(int(x), int(y), int(comp["width"]), int(comp["height"]))
             widget.show()
             widget.installEventFilter(self)
             self.live[comp["name"]] = widget
@@ -647,12 +708,12 @@ class Studio(QMainWindow):
             delta = ev.position().toPoint() - self._drag["grab"]
             comp = self._comp(name)
             if self._drag["resize"]:
-                comp["width"] = max(24, _snap(obj.width() + delta.x()))
-                comp["height"] = max(16, _snap(obj.height() + delta.y()))
+                comp["width"] = max(24, _snap(comp["width"] + delta.x()))
+                comp["height"] = max(16, _snap(comp["height"] + delta.y()))
             else:
-                comp["left"] = max(0, _snap(obj.x() + delta.x()))
-                comp["top"] = max(0, _snap(obj.y() + delta.y()))
-            obj.setGeometry(int(comp["left"]), int(comp["top"]), int(comp["width"]), int(comp["height"]))
+                comp["left"] = max(0, _snap(comp["left"] + delta.x()))
+                comp["top"] = max(0, _snap(comp["top"] + delta.y()))
+            self._place_live()
             self._drag["grab"] = ev.position().toPoint()
             self._drag["moved"] = True
             self.form_dirty = True
@@ -707,6 +768,7 @@ class Studio(QMainWindow):
         self._field("Name", comp["name"], lambda text, comp=comp: self._rename(comp, text))
         for key in ("left", "top", "width", "height"):
             self._field(key, str(comp[key]), lambda text, comp=comp, key=key: self._geom(comp, key, text))
+        self._field("Parent", comp.get("parent") or "", lambda text, comp=comp: self._set_parent(comp, text))
         for prop in spec.get("props") or []:
             value = (comp.get("props") or {}).get(prop, "")
             self._field(prop, value, lambda text, comp=comp, prop=prop: self._prop(comp, prop, text))
@@ -738,9 +800,21 @@ class Studio(QMainWindow):
         except ValueError:
             return
         self.form_dirty = True
-        widget = self.live.get(comp["name"])
-        if widget:
-            widget.setGeometry(int(comp["left"]), int(comp["top"]), int(comp["width"]), int(comp["height"]))
+        self._place_live()
+
+    def _set_parent(self, comp, text):
+        comp["parent"] = text.strip()
+        self.form_dirty = True
+        self._paint_phone()
+
+    def _place_live(self):
+        comps = self.form.get("components") or []
+        for comp in comps:
+            widget = self.live.get(comp["name"])
+            if widget is None:
+                continue
+            x, y = placed_origin(comps, comp)
+            widget.setGeometry(int(x), int(y), int(comp["width"]), int(comp["height"]))
 
     def _prop(self, comp, prop, text):
         props = comp.setdefault("props", {})
@@ -796,10 +870,12 @@ class Studio(QMainWindow):
         phone.setFixedSize(int(self.form.get("width") or 360), int(self.form.get("height") or 640))
         bg = self.form.get("background") or "#F7F8FA"
         phone.setStyleSheet(f"QFrame#phone {{ background: {bg}; border: 1px solid {LINE}; }}")
-        for comp in self.form.get("components") or []:
+        comps = self.form.get("components") or []
+        for comp in comps:
             widget = self._make_widget(comp, design=False)
             widget.setParent(phone)
-            widget.setGeometry(int(comp["left"]), int(comp["top"]), int(comp["width"]), int(comp["height"]))
+            x, y = placed_origin(comps, comp)
+            widget.setGeometry(int(x), int(y), int(comp["width"]), int(comp["height"]))
             widget.show()
         holder = QHBoxLayout()
         holder.addStretch(1)

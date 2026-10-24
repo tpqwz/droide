@@ -1,0 +1,31 @@
+{
+  "name": "Main",
+  "title": "NDK",
+  "background": "#F7F8FA",
+  "width": 360,
+  "height": 640,
+  "events": {},
+  "components": [
+    {
+      "type": "Label",
+      "name": "TitleLabel",
+      "left": 16, "top": 24, "width": 328, "height": 36,
+      "props": {"Text": "NDK", "TextSize": 22, "TextColor": "#1A1A1A"},
+      "events": {}
+    },
+    {
+      "type": "Button",
+      "name": "MixButton",
+      "left": 16, "top": 80, "width": 160, "height": 44,
+      "props": {"Text": "Mix", "TextSize": 15},
+      "events": {"OnClick": "MixClick"}
+    },
+    {
+      "type": "Label",
+      "name": "ResultLabel",
+      "left": 16, "top": 140, "width": 328, "height": 32,
+      "props": {"Text": "Ready", "TextSize": 16},
+      "events": {}
+    }
+  ]
+}

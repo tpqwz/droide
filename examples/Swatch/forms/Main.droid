@@ -1,0 +1,73 @@
+uses Tint;
+
+procedure FormCreate(Sender: View);
+begin
+  InkClick(Sender)
+end;
+
+procedure ShowColor(Sender: View);
+var
+  R, G, B, L, C: Integer;
+begin
+  L := LightSeek.Progress;
+  R := scale(RedSeek.Progress, L);
+  G := scale(GreenSeek.Progress, L);
+  B := scale(BlueSeek.Progress, L);
+  C := pack(R, G, B);
+  SwatchPanel.Color := C;
+  HexLabel.Text := '#' + HexByte(R) + HexByte(G) + HexByte(B);
+  if R * 3 + G * 6 + B > 1400 then begin
+    HexLabel.TextColor := $FF1A1A1A;
+    NameLabel.TextColor := $FF1A1A1A
+  end else begin
+    HexLabel.TextColor := $FFF4F0E8;
+    NameLabel.TextColor := $FFF4F0E8
+  end;
+  Log(NameLabel.Text + ' ' + HexLabel.Text)
+end;
+
+procedure PaintClick(Sender: View);
+begin
+  NameLabel.Text := 'Mix';
+  ShowColor(Sender)
+end;
+
+procedure InkClick(Sender: View);
+begin
+  RedSeek.Progress := 28;
+  GreenSeek.Progress := 36;
+  BlueSeek.Progress := 48;
+  LightSeek.Progress := 100;
+  NameLabel.Text := 'Ink';
+  ShowColor(Sender)
+end;
+
+procedure ClayClick(Sender: View);
+begin
+  RedSeek.Progress := 176;
+  GreenSeek.Progress := 98;
+  BlueSeek.Progress := 62;
+  LightSeek.Progress := 100;
+  NameLabel.Text := 'Clay';
+  ShowColor(Sender)
+end;
+
+procedure LeafClick(Sender: View);
+begin
+  RedSeek.Progress := 46;
+  GreenSeek.Progress := 107;
+  BlueSeek.Progress := 78;
+  LightSeek.Progress := 100;
+  NameLabel.Text := 'Leaf';
+  ShowColor(Sender)
+end;
+
+procedure SandClick(Sender: View);
+begin
+  RedSeek.Progress := 232;
+  GreenSeek.Progress := 214;
+  BlueSeek.Progress := 176;
+  LightSeek.Progress := 100;
+  NameLabel.Text := 'Sand';
+  ShowColor(Sender)
+end;

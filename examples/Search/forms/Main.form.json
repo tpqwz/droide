@@ -1,0 +1,94 @@
+{
+  "name": "Main",
+  "title": "Search",
+  "background": "#EFEAE2",
+  "width": 360,
+  "height": 640,
+  "events": {},
+  "components": [
+    {
+      "type": "Label",
+      "name": "TitleLabel",
+      "left": 16,
+      "top": 12,
+      "width": 180,
+      "height": 34,
+      "props": {
+        "Text": "Search",
+        "TextColor": "#1C2430",
+        "TextSize": 26
+      },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "HintLabel",
+      "left": 200,
+      "top": 22,
+      "width": 144,
+      "height": 22,
+      "props": {
+        "Text": "tap Find",
+        "TextColor": "#7A736A",
+        "TextSize": 13
+      },
+      "events": {}
+    },
+    {
+      "type": "Edit",
+      "name": "QueryEdit",
+      "left": 16,
+      "top": 56,
+      "width": 200,
+      "height": 44,
+      "props": {
+        "Hint": "a word",
+        "Text": "ink",
+        "TextSize": 16
+      },
+      "events": {}
+    },
+    {
+      "type": "Button",
+      "name": "FindButton",
+      "left": 228,
+      "top": 56,
+      "width": 116,
+      "height": 44,
+      "props": {
+        "Text": "Find",
+        "TextSize": 15
+      },
+      "events": {
+        "OnClick": "FindClick"
+      }
+    },
+    {
+      "type": "Label",
+      "name": "StatusLabel",
+      "left": 16,
+      "top": 112,
+      "width": 328,
+      "height": 28,
+      "props": {
+        "Text": "Find a note",
+        "TextColor": "#1C2430",
+        "TextSize": 16
+      },
+      "events": {}
+    },
+    {
+      "type": "List",
+      "name": "Hits",
+      "left": 16,
+      "top": 148,
+      "width": 328,
+      "height": 360,
+      "props": {
+        "Items": "Ink is a deep blue mixed on the swatch\nClay is a warm red left on the shelf\nLeaf is the green of a fresh note\nSand is a pale gold hour\nPaper holds the private note from the device",
+        "Color": "#FBF9F4"
+      },
+      "events": {}
+    }
+  ]
+}

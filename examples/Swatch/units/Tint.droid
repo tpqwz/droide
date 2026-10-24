@@ -1,0 +1,24 @@
+unit Tint;
+
+function Digit(N: Integer): String;
+begin
+  if N = 10 then Result := 'A'
+  else if N = 11 then Result := 'B'
+  else if N = 12 then Result := 'C'
+  else if N = 13 then Result := 'D'
+  else if N = 14 then Result := 'E'
+  else if N = 15 then Result := 'F'
+  else Result := IntToStr(N)
+end;
+
+function HexByte(N: Integer): String;
+var
+  V, Hi, Lo: Integer;
+begin
+  V := N;
+  if V < 0 then V := 0;
+  if V > 255 then V := 255;
+  Hi := V div 16;
+  Lo := V mod 16;
+  Result := Digit(Hi) + Digit(Lo)
+end;

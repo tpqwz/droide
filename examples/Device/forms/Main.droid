@@ -1,0 +1,37 @@
+procedure SaveClick();
+begin
+  WriteText('note.txt', NoteEdit.Text);
+  ResultLabel.Text := 'Saved';
+  Log('Saved ' + NoteEdit.Text)
+end;
+
+procedure OpenClick();
+var
+  Note: String;
+begin
+  Note := ReadText('note.txt');
+  NoteEdit.Text := Note;
+  if Note = '' then
+    ResultLabel.Text := 'No note'
+  else
+    ResultLabel.Text := 'Opened';
+  Log(Note)
+end;
+
+procedure WhereClick();
+begin
+  ResultLabel.Text := Where();
+  Log(ResultLabel.Text)
+end;
+
+procedure CameraClick();
+begin
+  Log('camera');
+  OpenCamera()
+end;
+
+procedure ExampleClick();
+begin
+  Page.Url := 'https://example.com';
+  Log('example')
+end;

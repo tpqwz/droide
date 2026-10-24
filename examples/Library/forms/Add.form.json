@@ -1,0 +1,109 @@
+{
+  "name": "Add",
+  "title": "Add",
+  "background": "#EFEAE2",
+  "width": 360,
+  "height": 640,
+  "events": {},
+  "components": [
+    {
+      "type": "Label",
+      "name": "TitleLabel",
+      "left": 16,
+      "top": 12,
+      "width": 180,
+      "height": 34,
+      "props": {
+        "Text": "Add",
+        "TextColor": "#1C2430",
+        "TextSize": 26
+      },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "HintLabel",
+      "left": 160,
+      "top": 22,
+      "width": 184,
+      "height": 22,
+      "props": {
+        "Text": "paste the document",
+        "TextColor": "#7A736A",
+        "TextSize": 13
+      },
+      "events": {}
+    },
+    {
+      "type": "Edit",
+      "name": "TitleEdit",
+      "left": 16,
+      "top": 56,
+      "width": 328,
+      "height": 44,
+      "props": {
+        "Hint": "title",
+        "Text": "",
+        "TextSize": 16
+      },
+      "events": {}
+    },
+    {
+      "type": "Edit",
+      "name": "KindEdit",
+      "left": 16,
+      "top": 112,
+      "width": 328,
+      "height": 44,
+      "props": {
+        "Hint": "txt, md, html, csv, json",
+        "Text": "txt",
+        "TextSize": 16
+      },
+      "events": {}
+    },
+    {
+      "type": "Memo",
+      "name": "BodyMemo",
+      "left": 16,
+      "top": 168,
+      "width": 328,
+      "height": 220,
+      "props": {
+        "Hint": "document text",
+        "Text": "",
+        "TextSize": 16
+      },
+      "events": {}
+    },
+    {
+      "type": "Button",
+      "name": "SaveButton",
+      "left": 16,
+      "top": 404,
+      "width": 160,
+      "height": 44,
+      "props": {
+        "Text": "Save",
+        "TextSize": 15
+      },
+      "events": {
+        "OnClick": "SaveClick"
+      }
+    },
+    {
+      "type": "Label",
+      "name": "StatusLabel",
+      "left": 16,
+      "top": 460,
+      "width": 328,
+      "height": 28,
+      "props": {
+        "Text": "Saved documents stay on the device",
+        "TextColor": "#1C2430",
+        "TextSize": 16
+      },
+      "events": {}
+    }
+  ]
+}

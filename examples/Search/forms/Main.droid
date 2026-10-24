@@ -1,0 +1,5 @@
+procedure FindClick();
+begin
+  Hits.Items := Search(QueryEdit.Text);
+  StatusLabel.Text := QueryEdit.Text
+end;

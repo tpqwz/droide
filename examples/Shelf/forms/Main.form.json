@@ -1,0 +1,96 @@
+{
+  "name": "Main",
+  "title": "Shelf",
+  "background": "#EFEAE2",
+  "width": 360,
+  "height": 640,
+  "events": {},
+  "components": [
+    {
+      "type": "Label",
+      "name": "TitleLabel",
+      "left": 16,
+      "top": 12,
+      "width": 180,
+      "height": 34,
+      "props": {
+        "Text": "Shelf",
+        "TextColor": "#1C2430",
+        "TextSize": 26
+      },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "HintLabel",
+      "left": 200,
+      "top": 22,
+      "width": 144,
+      "height": 22,
+      "props": {
+        "Text": "tap a row",
+        "TextColor": "#7A736A",
+        "TextSize": 13
+      },
+      "events": {}
+    },
+    {
+      "type": "List",
+      "name": "Names",
+      "left": 16,
+      "top": 56,
+      "width": 328,
+      "height": 240,
+      "props": {
+        "Items": "Ink\nClay\nLeaf\nSand",
+        "Color": "#FBF9F4"
+      },
+      "events": {
+        "OnItemClick": "Pick"
+      }
+    },
+    {
+      "type": "Label",
+      "name": "PickLabel",
+      "left": 16,
+      "top": 308,
+      "width": 328,
+      "height": 28,
+      "props": {
+        "Text": "Pick a row",
+        "TextColor": "#1C2430",
+        "TextSize": 16
+      },
+      "events": {}
+    },
+    {
+      "type": "Memo",
+      "name": "LineMemo",
+      "left": 16,
+      "top": 348,
+      "width": 328,
+      "height": 88,
+      "props": {
+        "Hint": "one line each",
+        "Text": "Ada\nGrace",
+        "TextSize": 16
+      },
+      "events": {}
+    },
+    {
+      "type": "Button",
+      "name": "ReplaceButton",
+      "left": 16,
+      "top": 448,
+      "width": 160,
+      "height": 44,
+      "props": {
+        "Text": "Replace",
+        "TextSize": 15
+      },
+      "events": {
+        "OnClick": "ReplaceClick"
+      }
+    }
+  ]
+}
