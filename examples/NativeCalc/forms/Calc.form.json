@@ -1,0 +1,91 @@
+{
+  "name": "Calc",
+  "title": "NativeCalc",
+  "background": "#F7F8FA",
+  "width": 360,
+  "height": 640,
+  "events": {},
+  "components": [
+    {
+      "type": "Label",
+      "name": "TitleLabel",
+      "left": 16, "top": 16, "width": 328, "height": 32,
+      "props": {"Text": "NativeCalc", "TextSize": 22, "TextColor": "#1A1A1A"},
+      "events": {}
+    },
+    {
+      "type": "Edit",
+      "name": "AEdit",
+      "left": 16, "top": 60, "width": 160, "height": 44,
+      "props": {"Hint": "a", "Text": "20", "TextSize": 16},
+      "events": {}
+    },
+    {
+      "type": "Edit",
+      "name": "BEdit",
+      "left": 184, "top": 60, "width": 160, "height": 44,
+      "props": {"Hint": "b", "Text": "22", "TextSize": 16},
+      "events": {}
+    },
+    {
+      "type": "Button", "name": "AddButton",
+      "left": 16, "top": 120, "width": 100, "height": 44,
+      "props": {"Text": "Add", "TextSize": 15},
+      "events": {"OnClick": "AddClick"}
+    },
+    {
+      "type": "Button", "name": "SubButton",
+      "left": 124, "top": 120, "width": 100, "height": 44,
+      "props": {"Text": "Sub", "TextSize": 15},
+      "events": {"OnClick": "SubClick"}
+    },
+    {
+      "type": "Button", "name": "MulButton",
+      "left": 232, "top": 120, "width": 100, "height": 44,
+      "props": {"Text": "Mul", "TextSize": 15},
+      "events": {"OnClick": "MulClick"}
+    },
+    {
+      "type": "Button", "name": "QuoButton",
+      "left": 16, "top": 172, "width": 100, "height": 44,
+      "props": {"Text": "Div", "TextSize": 15},
+      "events": {"OnClick": "QuoClick"}
+    },
+    {
+      "type": "Button", "name": "RemButton",
+      "left": 124, "top": 172, "width": 100, "height": 44,
+      "props": {"Text": "Rem", "TextSize": 15},
+      "events": {"OnClick": "RemClick"}
+    },
+    {
+      "type": "Button", "name": "AbsButton",
+      "left": 16, "top": 228, "width": 100, "height": 44,
+      "props": {"Text": "Abs", "TextSize": 15},
+      "events": {"OnClick": "AbsClick"}
+    },
+    {
+      "type": "Button", "name": "FibButton",
+      "left": 124, "top": 228, "width": 100, "height": 44,
+      "props": {"Text": "Fib", "TextSize": 15},
+      "events": {"OnClick": "FibClick"}
+    },
+    {
+      "type": "Button", "name": "SumButton",
+      "left": 232, "top": 228, "width": 100, "height": 44,
+      "props": {"Text": "Sum", "TextSize": 15},
+      "events": {"OnClick": "SumClick"}
+    },
+    {
+      "type": "Button", "name": "DistButton",
+      "left": 16, "top": 280, "width": 100, "height": 44,
+      "props": {"Text": "Dist", "TextSize": 15},
+      "events": {"OnClick": "DistClick"}
+    },
+    {
+      "type": "Label", "name": "ResultLabel",
+      "left": 16, "top": 344, "width": 328, "height": 40,
+      "props": {"Text": "0", "TextSize": 22, "TextColor": "#1A1A1A"},
+      "events": {}
+    }
+  ]
+}

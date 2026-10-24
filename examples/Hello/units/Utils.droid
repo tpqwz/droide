@@ -1,0 +1,29 @@
+unit Utils;
+
+function Clamp(Value, Lo, Hi: Integer): Integer;
+begin
+  if Value < Lo then
+    Result := Lo
+  else if Value > Hi then
+    Result := Hi
+  else
+    Result := Value
+end;
+
+function SumTo(N: Integer): Integer;
+var
+  I, S: Integer;
+begin
+  I := 1;
+  S := 0;
+  while I <= N do begin
+    S := S + I;
+    I := I + 1
+  end;
+  Result := S
+end;
+
+function InRange(Value, Lo, Hi: Integer): Boolean;
+begin
+  Result := (Value >= Lo) and (Value <= Hi)
+end;

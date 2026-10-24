@@ -1,0 +1,4 @@
+procedure CloseClick(Sender: View);
+begin
+  Finish()
+end;

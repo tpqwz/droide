@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Droide</title>
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body data-mode="design">
+<header id="bar"></header>
+<div id="work">
+  <aside id="palette"></aside>
+  <main id="center">
+    <div id="stage-wrap"><div id="stage"></div><div id="stage-caption"></div></div>
+    <div id="editor" hidden>
+      <div id="editor-caption"></div>
+      <div id="findbar" hidden>
+        <input id="findq" placeholder="Find in this file" autocomplete="off" spellcheck="false">
+        <span id="findn"></span>
+        <button type="button" id="find-prev" title="Previous match">‹</button>
+        <button type="button" id="find-next" title="Next match">›</button>
+      </div>
+      <pre id="gutter" aria-hidden="true"></pre>
+      <pre id="hl"></pre>
+      <textarea id="code" spellcheck="false" autocomplete="off"></textarea>
+    </div>
+    <div id="explore" hidden></div>
+  </main>
+  <aside id="side" class="hidden">
+    <div id="side-head">Inspector</div>
+    <details id="outline"><summary>Outline</summary><div id="structure"></div></details>
+    <div id="inspector"></div>
+  </aside>
+</div>
+<footer id="status"></footer>
+<div id="drawer" hidden></div>
+<div id="sheet" hidden></div>
+<div id="modal" hidden></div>
+<script src="/static/app.js"></script>
+</body>
+</html>

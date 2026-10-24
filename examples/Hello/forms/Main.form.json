@@ -1,0 +1,153 @@
+{
+  "name": "Main",
+  "title": "Hello",
+  "background": "#F7F8FA",
+  "width": 360,
+  "height": 640,
+  "events": {
+    "OnCreate": "FormCreate"
+  },
+  "components": [
+    {
+      "type": "Label",
+      "name": "TitleLabel",
+      "left": 16,
+      "top": 24,
+      "width": 328,
+      "height": 40,
+      "props": {
+        "Text": "Hello",
+        "TextColor": "#1A1A1A",
+        "TextSize": 22
+      },
+      "events": {}
+    },
+    {
+      "type": "Edit",
+      "name": "NameEdit",
+      "left": 16,
+      "top": 80,
+      "width": 328,
+      "height": 44,
+      "props": {
+        "Hint": "name or number",
+        "Text": "",
+        "TextSize": 16
+      },
+      "events": {
+        "OnClick": "NameEditClick"
+      }
+    },
+    {
+      "type": "Button",
+      "name": "OkButton",
+      "left": 16,
+      "top": 140,
+      "width": 160,
+      "height": 44,
+      "props": {
+        "Text": "Greet",
+        "TextSize": 15
+      },
+      "events": {
+        "OnClick": "OkButtonClick"
+      }
+    },
+    {
+      "type": "Button",
+      "name": "AboutButton",
+      "left": 184,
+      "top": 140,
+      "width": 160,
+      "height": 44,
+      "props": {
+        "Text": "About",
+        "TextSize": 15
+      },
+      "events": {
+        "OnClick": "AboutClick"
+      }
+    },
+    {
+      "type": "Button",
+      "name": "FibButton",
+      "left": 16,
+      "top": 196,
+      "width": 160,
+      "height": 44,
+      "props": {
+        "Text": "Fib",
+        "TextSize": 15
+      },
+      "events": {
+        "OnClick": "FibClick"
+      }
+    },
+    {
+      "type": "Label",
+      "name": "ResultLabel",
+      "left": 16,
+      "top": 260,
+      "width": 328,
+      "height": 40,
+      "props": {
+        "Text": "Ready",
+        "TextColor": "#1A1A1A",
+        "TextSize": 18
+      },
+      "events": {}
+    },
+    {
+      "type": "Panel",
+      "name": "Panel1",
+      "left": 28,
+      "top": 300,
+      "width": 300,
+      "height": 192,
+      "props": {
+        "Color": "#E4E8EE"
+      },
+      "events": {}
+    },
+    {
+      "type": "Memo",
+      "name": "Memo1",
+      "left": 48,
+      "top": 328,
+      "width": 176,
+      "height": 76,
+      "props": {
+        "Hint": "Notes",
+        "Text": "",
+        "TextSize": 16
+      },
+      "events": {}
+    },
+    {
+      "type": "Radio",
+      "name": "Radio1",
+      "left": 44,
+      "top": 416,
+      "width": 76,
+      "height": 28,
+      "props": {
+        "Text": "Radio",
+        "TextSize": 15
+      },
+      "events": {}
+    },
+    {
+      "type": "Radio",
+      "name": "Radio2",
+      "left": 148,
+      "top": 412,
+      "width": 92,
+      "height": 36,
+      "props": {
+        "Text": "Radio",
+        "TextSize": 15
+      },
+      "events": {}
+    }
+  ]
+}

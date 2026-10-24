@@ -1,0 +1,49 @@
+procedure Show(N: Integer);
+begin
+  ResultLabel.Text := IntToStr(N)
+end;
+
+procedure AddClick(Sender: View);
+begin
+  Show(add(StrToInt(AEdit.Text), StrToInt(BEdit.Text)))
+end;
+
+procedure SubClick(Sender: View);
+begin
+  Show(sub(StrToInt(AEdit.Text), StrToInt(BEdit.Text)))
+end;
+
+procedure MulClick(Sender: View);
+begin
+  Show(mul(StrToInt(AEdit.Text), StrToInt(BEdit.Text)))
+end;
+
+procedure QuoClick(Sender: View);
+begin
+  Show(quo(StrToInt(AEdit.Text), StrToInt(BEdit.Text)))
+end;
+
+procedure RemClick(Sender: View);
+begin
+  Show(rem(StrToInt(AEdit.Text), StrToInt(BEdit.Text)))
+end;
+
+procedure AbsClick(Sender: View);
+begin
+  Show(abs(StrToInt(AEdit.Text)))
+end;
+
+procedure FibClick(Sender: View);
+begin
+  Show(fib(StrToInt(AEdit.Text)))
+end;
+
+procedure SumClick(Sender: View);
+begin
+  Show(sumto(StrToInt(AEdit.Text)))
+end;
+
+procedure DistClick(Sender: View);
+begin
+  Show(dist(StrToInt(AEdit.Text), StrToInt(BEdit.Text)))
+end;

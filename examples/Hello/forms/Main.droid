@@ -1,0 +1,44 @@
+uses Utils;
+
+procedure FormCreate(Sender: View);
+begin
+  TitleLabel.Text := 'Droide';
+  ResultLabel.Text := 'Ready'
+end;
+
+procedure OkClick(Sender: View);
+var
+  Name: String;
+begin
+  Name := NameEdit.Text;
+  if Name = '' then
+    Toast('Type a name')
+  else begin
+    Log('hi ' + Name);
+    TitleLabel.Text := 'Hi ' + Name
+  end
+end;
+
+procedure AboutClick(Sender: View);
+begin
+  OpenForm('About')
+end;
+
+procedure FibClick(Sender: View);
+var
+  N, F: Integer;
+begin
+  N := StrToInt(NameEdit.Text);
+  N := Clamp(N, 0, 20);
+  F := fib(N);
+  ResultLabel.Text := IntToStr(F);
+  Log(IntToStr(N) + ' -> ' + IntToStr(F))
+end;
+
+procedure NameEditClick(Sender: View);
+begin
+end;
+
+procedure OkButtonClick(Sender: View);
+begin
+end;

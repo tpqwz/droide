@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+build/
+*.apk
+studio/target/
+compiler/target/

@@ -1,0 +1,11 @@
+{
+  "name": "NativeCalc",
+  "package": "com.droide.nativecalc",
+  "title": "NativeCalc",
+  "versionCode": 1,
+  "versionName": "1.0",
+  "mainForm": "Calc",
+  "minSdk": 24,
+  "targetSdk": 28,
+  "permissions": []
+}

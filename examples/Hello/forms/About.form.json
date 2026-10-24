@@ -1,0 +1,39 @@
+{
+  "name": "About",
+  "title": "About",
+  "background": "#F7F8FA",
+  "width": 360,
+  "height": 640,
+  "events": {},
+  "components": [
+    {
+      "type": "Label",
+      "name": "InfoLabel",
+      "left": 16,
+      "top": 24,
+      "width": 328,
+      "height": 80,
+      "props": {
+        "Text": "Droide compiled this screen into a real Activity.",
+        "TextColor": "#1A1A1A",
+        "TextSize": 18
+      },
+      "events": {}
+    },
+    {
+      "type": "Button",
+      "name": "CloseButton",
+      "left": 16,
+      "top": 120,
+      "width": 160,
+      "height": 44,
+      "props": {
+        "Text": "Close",
+        "TextSize": 15
+      },
+      "events": {
+        "OnClick": "CloseClick"
+      }
+    }
+  ]
+}
