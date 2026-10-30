@@ -90,7 +90,17 @@ jobs:
             chmod +x pack/droide pack/droide-studio
           fi
           name="droide-${ver}-${os}-${arch}.zip"
-          (cd pack && zip -r "../$name" .)
+          # Git Bash on Windows has no zip. Python is on every runner.
+          py=$(command -v python3 || command -v python)
+          ARCHIVE="$name" "$py" -c 'import os, zipfile
+from pathlib import Path
+root = Path("pack")
+with zipfile.ZipFile(os.environ["ARCHIVE"], "w", compression=zipfile.ZIP_DEFLATED) as z:
+    for path in sorted(root.iterdir()):
+        info = zipfile.ZipInfo(path.name)
+        info.compress_type = zipfile.ZIP_DEFLATED
+        info.external_attr = (path.stat().st_mode & 0xFFFF) << 16
+        z.writestr(info, path.read_bytes())'
           echo "archive=$name" >> "$GITHUB_ENV"
 
       - uses: actions/upload-artifact@v4
