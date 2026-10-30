@@ -3551,6 +3551,10 @@ fn project_from_args() -> PathBuf {
 }
 
 fn main() -> eframe::Result {
+    if std::env::args().skip(1).any(|arg| arg == "--version") {
+        println!("droide-studio {}", env!("CARGO_PKG_VERSION"));
+        return Ok(());
+    }
     let project = project_from_args();
     let mut options = eframe::NativeOptions::default();
     options.renderer = eframe::Renderer::Glow;

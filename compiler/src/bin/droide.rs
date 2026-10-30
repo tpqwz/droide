@@ -7,8 +7,11 @@ use std::process::ExitCode;
 use droide_compiler::build::{analyze, build, print_metrics, print_result, run};
 use droide_compiler::project::Project;
 
-const USAGE: &str = "\
-droide 0.1.0
+const USAGE: &str = concat!(
+    "\
+droide ",
+    env!("CARGO_PKG_VERSION"),
+    "
 
   droide build PATH [-v]       write PATH/build/app.apk
   droide run PATH [-v]         build, install, and start on a device
@@ -16,7 +19,8 @@ droide 0.1.0
   droide new PATH --name NAME --package PKG [--title TITLE]
 
 The IDE is still `./droide.sh` (native window) or `./droide.sh ide --web`.
-";
+"
+);
 
 struct Args {
     cmd: String,
@@ -78,7 +82,7 @@ fn parse(argv: &[String]) -> Result<Args, String> {
 fn main() -> ExitCode {
     let argv: Vec<String> = std::env::args().skip(1).collect();
     if argv.iter().any(|arg| arg == "--version") {
-        println!("droide 0.1.0");
+        println!("droide {}", env!("CARGO_PKG_VERSION"));
         return ExitCode::SUCCESS;
     }
     let args = match parse(&argv) {

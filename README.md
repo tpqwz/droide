@@ -1,5 +1,11 @@
 # Droide
 
+Version 0.1.0-alpha.1. This is alpha software. The designer and the compiler run, and the language and the samples are still moving.
+
+[![Build executables](https://github.com/tpqwz/droide/actions/workflows/build.yml/badge.svg)](https://github.com/tpqwz/droide/actions/workflows/build.yml)
+
+Prebuilt executables are on the [v0.1.0-alpha.1 release](https://github.com/tpqwz/droide/releases/tag/v0.1.0-alpha.1). Each archive contains `droide`, which compiles a project to a signed APK, and `droide-studio`, the desktop IDE. GitHub builds both on every push to `main` and attaches them to a release when a `v*` tag is pushed. The license is [MIT](LICENSE).
+
 Droide is a self-contained RAD IDE for Android. The studio is a native binary, `studio/target/debug/droide-studio`, built with Rust and egui. The form on the canvas uses those same egui widgets, and Preview opens that form inside the IDE. Compile, Run, and Analyze call the Rust compiler, `compiler/target/debug/droide`, which writes a real DEX APK. Signing still calls `openssl`. The browser IDE and the Qt fallback stay on Python. It does not need the Android SDK, `android.jar`, or an interpreter. A device or the emulator is used only when you launch.
 
 ```sh
@@ -13,7 +19,7 @@ Droide is a self-contained RAD IDE for Android. The studio is a native binary, `
 ./droide.sh new apps/Demo --name Demo --package com.example.demo
 ```
 
-History is a Jujutsu repository. `RESTORE.md` describes the `restore-point` bookmark and the commands that put the tree back.
+History is a Jujutsu repository, published at <https://github.com/tpqwz/droide>. `RESTORE.md` describes the `restore-point` bookmark and the commands that put the tree back.
 
 The designer opens on the form. A short palette sits beside it. The inspector appears when a widget is selected, and `F11` pins it. Preview (`F8`) shows the form with the egui widgets the studio itself uses. Project files, compile, and shortcuts live under the project name.
 
@@ -79,3 +85,18 @@ Class names `DroideRt`, `DroideSearch`, `DroideIndex`, and `Native` are reserved
 ## Limits
 
 `.nc` code is `i32` arithmetic: no pointers, no libc, no heap. The register window is 16, so a Droide routine cannot grow past a handful of locals. There is no resource table, so images and custom row layouts stay out. A `List` uses the platform row. Document pickers and the camera's returned photo need an activity result, which is still ahead. `Search` uses AppSearch when `SDK_INT` is at least 31 and `getSystemService("app_search")` returns a service. Below that, it returns the built-in notes. `Lookup` uses the same gate and keeps every document in FTS4, which Android has had since well before API 24. FTS4 `offsets()` plus the runtime's own walk returns every match on its own row, with its snippet. AppSearch walks each match range the same way and reads every page. `snippet()` itself stops at 64 tokens and one window, on FTS4 and on FTS5. The target SDK stays 28. PDF and Word files need a parser this runtime does not include, and choosing a file still needs an activity result. Division by zero is undefined in `.nc` code (`idiv` faults on x86_64; ARM `sdiv` returns 0). A Droide call into NDK code is still an `int32_t` with at most four parameters. The C body may use pointers and libc. The export itself is written in the `.c` or `.cc` file, not only in a header.
+
+## Build
+
+The toolchain is Rust 1.99.1, recorded in `rust-toolchain.toml`. The compiler and the studio are separate crates.
+
+```sh
+cargo build --release --locked --manifest-path compiler/Cargo.toml
+cargo build --release --locked --manifest-path studio/Cargo.toml
+```
+
+`./droide.sh` uses those release binaries when they are present. On Linux the studio links X11 and OpenGL. The compiler calls `openssl` when it signs an APK. `droide --version` and `droide-studio --version` print the version in `VERSION`.
+
+## License
+
+Droide is [MIT](LICENSE) licensed. An application you build with it keeps its own license.

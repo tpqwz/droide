@@ -1,6 +1,6 @@
 [package]
 name = "droide-compiler"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 edition = "2021"
 description = "Droide compiler: forms to DEX, manifest, and a signed APK"
 
