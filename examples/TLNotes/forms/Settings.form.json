@@ -1,0 +1,1302 @@
+{
+  "name": "Settings",
+  "title": "Settings",
+  "background": "#F3EFE6",
+  "width": 360,
+  "height": 640,
+  "events": {
+    "OnCreate": "Open"
+  },
+  "components": [
+    {
+      "type": "Label",
+      "name": "TitleLabel",
+      "left": 16,
+      "top": 12,
+      "width": 200,
+      "height": 36,
+      "props": {
+        "Text": "Settings",
+        "TextColor": "#1C1915",
+        "TextSize": 22
+      },
+      "events": {}
+    },
+    {
+      "type": "Button",
+      "name": "CloseButton",
+      "left": 236,
+      "top": 12,
+      "width": 108,
+      "height": 40,
+      "props": {
+        "Text": "Close",
+        "TextSize": 15,
+        "TextColor": "#1F6B4A",
+        "Color": "#F3EFE6"
+      },
+      "events": {
+        "OnClick": "CloseClick"
+      }
+    },
+    {
+      "type": "Label",
+      "name": "DataHead",
+      "left": 16,
+      "top": 64,
+      "width": 328,
+      "height": 26,
+      "props": {
+        "Text": "Data",
+        "TextColor": "#1C1915",
+        "TextSize": 18
+      },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "DataAbout",
+      "left": 16,
+      "top": 92,
+      "width": 328,
+      "height": 72,
+      "props": {
+        "Text": "JSON is a full backup, including the trash. A calendar file is the iCalendar standard. Export and import are not in this build. Clear removes the lists. The note files stay.",
+        "TextColor": "#6E665C",
+        "TextSize": 14
+      },
+      "events": {}
+    },
+    {
+      "type": "Button",
+      "name": "ExportJson",
+      "left": 16,
+      "top": 168,
+      "width": 160,
+      "height": 40,
+      "props": {
+        "Text": "Export JSON",
+        "TextSize": 14,
+        "TextColor": "#F3FAF6",
+        "Color": "#1F6B4A"
+      },
+      "events": {
+        "OnClick": "ExportJsonClick"
+      }
+    },
+    {
+      "type": "Button",
+      "name": "ExportCal",
+      "left": 184,
+      "top": 168,
+      "width": 160,
+      "height": 40,
+      "props": {
+        "Text": "Export calendar",
+        "TextSize": 13,
+        "TextColor": "#1C1915",
+        "Color": "#FBF8F2"
+      },
+      "events": {
+        "OnClick": "ExportCalClick"
+      }
+    },
+    {
+      "type": "Button",
+      "name": "ImportButton",
+      "left": 16,
+      "top": 216,
+      "width": 160,
+      "height": 40,
+      "props": {
+        "Text": "Import",
+        "TextSize": 14,
+        "TextColor": "#1C1915",
+        "Color": "#FBF8F2"
+      },
+      "events": {
+        "OnClick": "ImportClick"
+      }
+    },
+    {
+      "type": "Button",
+      "name": "ClearButton",
+      "left": 184,
+      "top": 216,
+      "width": 160,
+      "height": 40,
+      "props": {
+        "Text": "Clear all",
+        "TextSize": 14,
+        "TextColor": "#F3FAF6",
+        "Color": "#1C1915"
+      },
+      "events": {
+        "OnClick": "ClearAsk"
+      }
+    },
+    {
+      "type": "Label",
+      "name": "SyncHead",
+      "left": 16,
+      "top": 272,
+      "width": 328,
+      "height": 26,
+      "props": {
+        "Text": "Sync",
+        "TextColor": "#1C1915",
+        "TextSize": 18
+      },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "SyncAbout",
+      "left": 16,
+      "top": 300,
+      "width": 328,
+      "height": 72,
+      "props": {
+        "Text": "A sync file stays open, including one in a folder that already syncs. The newer note is kept. Sync is not in this build.",
+        "TextColor": "#6E665C",
+        "TextSize": 14
+      },
+      "events": {}
+    },
+    {
+      "type": "Button",
+      "name": "SyncUse",
+      "left": 16,
+      "top": 376,
+      "width": 160,
+      "height": 40,
+      "props": {
+        "Text": "Use a sync file",
+        "TextSize": 13,
+        "TextColor": "#F3FAF6",
+        "Color": "#1F6B4A"
+      },
+      "events": {
+        "OnClick": "SyncUseClick"
+      }
+    },
+    {
+      "type": "Button",
+      "name": "SyncNew",
+      "left": 184,
+      "top": 376,
+      "width": 160,
+      "height": 40,
+      "props": {
+        "Text": "New sync file",
+        "TextSize": 13,
+        "TextColor": "#1C1915",
+        "Color": "#FBF8F2"
+      },
+      "events": {
+        "OnClick": "SyncNewClick"
+      }
+    },
+    {
+      "type": "Button",
+      "name": "SyncStop",
+      "left": 16,
+      "top": 424,
+      "width": 160,
+      "height": 40,
+      "props": {
+        "Text": "Stop syncing",
+        "TextSize": 14,
+        "TextColor": "#1C1915",
+        "Color": "#FBF8F2"
+      },
+      "events": {
+        "OnClick": "SyncStopClick"
+      }
+    },
+    {
+      "type": "Label",
+      "name": "AppHead",
+      "left": 16,
+      "top": 480,
+      "width": 328,
+      "height": 26,
+      "props": {
+        "Text": "App",
+        "TextColor": "#1C1915",
+        "TextSize": 18
+      },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "AppAbout",
+      "left": 16,
+      "top": 508,
+      "width": 328,
+      "height": 72,
+      "props": {
+        "Text": "This is the Android app. It does not install a site, and it does not check the website. Pictures stay with the note on this device.",
+        "TextColor": "#6E665C",
+        "TextSize": 14
+      },
+      "events": {}
+    },
+    {
+      "type": "Button",
+      "name": "PackSite",
+      "left": 16,
+      "top": 584,
+      "width": 160,
+      "height": 40,
+      "props": {
+        "Text": "Website package",
+        "TextSize": 13,
+        "TextColor": "#1C1915",
+        "Color": "#FBF8F2"
+      },
+      "events": {
+        "OnClick": "PackSiteClick"
+      }
+    },
+    {
+      "type": "Button",
+      "name": "PackThis",
+      "left": 184,
+      "top": 584,
+      "width": 160,
+      "height": 40,
+      "props": {
+        "Text": "This package",
+        "TextSize": 13,
+        "TextColor": "#F3FAF6",
+        "Color": "#1F6B4A"
+      },
+      "events": {
+        "OnClick": "PackThisClick"
+      }
+    },
+    {
+      "type": "Button",
+      "name": "CheckSite",
+      "left": 16,
+      "top": 632,
+      "width": 160,
+      "height": 40,
+      "props": {
+        "Text": "Check the site",
+        "TextSize": 13,
+        "TextColor": "#1C1915",
+        "Color": "#FBF8F2"
+      },
+      "events": {
+        "OnClick": "CheckSiteClick"
+      }
+    },
+    {
+      "type": "Button",
+      "name": "CalImport",
+      "left": 184,
+      "top": 632,
+      "width": 160,
+      "height": 40,
+      "props": {
+        "Text": "Phone calendar",
+        "TextSize": 13,
+        "TextColor": "#1C1915",
+        "Color": "#FBF8F2"
+      },
+      "events": {
+        "OnClick": "CalImportClick"
+      }
+    },
+    {
+      "type": "Label",
+      "name": "ShareHead",
+      "left": 16,
+      "top": 688,
+      "width": 328,
+      "height": 26,
+      "props": {
+        "Text": "Sharing",
+        "TextColor": "#1C1915",
+        "TextSize": 18
+      },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "ShareAbout",
+      "left": 16,
+      "top": 716,
+      "width": 328,
+      "height": 64,
+      "props": {
+        "Text": "A share can open in the editor, or be added like a typed line. The choice is kept. Sharing into the app is not wired yet.",
+        "TextColor": "#6E665C",
+        "TextSize": 14
+      },
+      "events": {}
+    },
+    {
+      "type": "Button",
+      "name": "ShareEdit",
+      "left": 16,
+      "top": 784,
+      "width": 160,
+      "height": 40,
+      "props": {
+        "Text": "Open editor",
+        "TextSize": 14,
+        "TextColor": "#F3FAF6",
+        "Color": "#1F6B4A"
+      },
+      "events": {
+        "OnClick": "ShareEditClick"
+      }
+    },
+    {
+      "type": "Button",
+      "name": "ShareAdd",
+      "left": 184,
+      "top": 784,
+      "width": 160,
+      "height": 40,
+      "props": {
+        "Text": "Add it",
+        "TextSize": 14,
+        "TextColor": "#1C1915",
+        "Color": "#FBF8F2"
+      },
+      "events": {
+        "OnClick": "ShareAddClick"
+      }
+    },
+    {
+      "type": "Label",
+      "name": "TrashHead",
+      "left": 16,
+      "top": 840,
+      "width": 328,
+      "height": 26,
+      "props": {
+        "Text": "Trash",
+        "TextColor": "#1C1915",
+        "TextSize": 18
+      },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "TrashAbout",
+      "left": 16,
+      "top": 868,
+      "width": 328,
+      "height": 48,
+      "props": {
+        "Text": "Removed notes stay here until you restore them or empty the trash.",
+        "TextColor": "#6E665C",
+        "TextSize": 14
+      },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "TrashCount",
+      "left": 16,
+      "top": 918,
+      "width": 328,
+      "height": 24,
+      "props": {
+        "Text": "0 in the trash",
+        "TextColor": "#1C1915",
+        "TextSize": 15
+      },
+      "events": {}
+    },
+    {
+      "type": "Button",
+      "name": "TrashView",
+      "left": 16,
+      "top": 948,
+      "width": 104,
+      "height": 40,
+      "props": {
+        "Text": "View",
+        "TextSize": 14,
+        "TextColor": "#1C1915",
+        "Color": "#FBF8F2"
+      },
+      "events": {
+        "OnClick": "TrashViewClick"
+      }
+    },
+    {
+      "type": "Button",
+      "name": "TrashRestore",
+      "left": 128,
+      "top": 948,
+      "width": 112,
+      "height": 40,
+      "props": {
+        "Text": "Restore all",
+        "TextSize": 13,
+        "TextColor": "#1C1915",
+        "Color": "#FBF8F2"
+      },
+      "events": {
+        "OnClick": "RestoreAll"
+      }
+    },
+    {
+      "type": "Button",
+      "name": "TrashEmpty",
+      "left": 248,
+      "top": 948,
+      "width": 96,
+      "height": 40,
+      "props": {
+        "Text": "Empty",
+        "TextSize": 14,
+        "TextColor": "#F3FAF6",
+        "Color": "#1C1915"
+      },
+      "events": {
+        "OnClick": "EmptyAsk"
+      }
+    },
+    {
+      "type": "Label",
+      "name": "SealHead",
+      "left": 16,
+      "top": 1004,
+      "width": 328,
+      "height": 26,
+      "props": {
+        "Text": "Seal",
+        "TextColor": "#1C1915",
+        "TextSize": 18
+      },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "SealAbout",
+      "left": 16,
+      "top": 1032,
+      "width": 328,
+      "height": 56,
+      "props": {
+        "Text": "A sealed journal locks the notes behind a passphrase. Seal is not in this build.",
+        "TextColor": "#6E665C",
+        "TextSize": 14
+      },
+      "events": {}
+    },
+    {
+      "type": "Button",
+      "name": "SealButton",
+      "left": 16,
+      "top": 1092,
+      "width": 120,
+      "height": 40,
+      "props": {
+        "Text": "Seal",
+        "TextSize": 14,
+        "TextColor": "#1C1915",
+        "Color": "#FBF8F2"
+      },
+      "events": {
+        "OnClick": "SealClick"
+      }
+    },
+    {
+      "type": "Label",
+      "name": "LangHead",
+      "left": 16,
+      "top": 1148,
+      "width": 328,
+      "height": 26,
+      "props": {
+        "Text": "Language",
+        "TextColor": "#1C1915",
+        "TextSize": 18
+      },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "LangAbout",
+      "left": 16,
+      "top": 1176,
+      "width": 328,
+      "height": 56,
+      "props": {
+        "Text": "The app would use this language. The screens stay in English in this build. The choice is kept.",
+        "TextColor": "#6E665C",
+        "TextSize": 14
+      },
+      "events": {}
+    },
+    {
+      "type": "Spinner",
+      "name": "LangSpin",
+      "left": 16,
+      "top": 1236,
+      "width": 328,
+      "height": 40,
+      "props": {
+        "Items": "This device\nEnglish\nLingua Latina",
+        "Selection": 0,
+        "Color": "#FBF8F2"
+      },
+      "events": {
+        "OnItemSelected": "LangPick"
+      }
+    },
+    {
+      "type": "Label",
+      "name": "ThemeHead",
+      "left": 16,
+      "top": 1292,
+      "width": 328,
+      "height": 26,
+      "props": {
+        "Text": "Theme",
+        "TextColor": "#1C1915",
+        "TextSize": 18
+      },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "ThemeAbout",
+      "left": 16,
+      "top": 1320,
+      "width": 328,
+      "height": 56,
+      "props": {
+        "Text": "The theme is the frame: windows, bars, and corners. This build keeps the journal paper. The choice is kept.",
+        "TextColor": "#6E665C",
+        "TextSize": 14
+      },
+      "events": {}
+    },
+    {
+      "type": "Spinner",
+      "name": "ThemeSpin",
+      "left": 16,
+      "top": 1380,
+      "width": 328,
+      "height": 40,
+      "props": {
+        "Items": "Journal\nPlaque\nOriginal\nBrutal\nArt Deco\nAdmiralty\nChapel\nCatalog\nBlueprint\nTerminal\nBroadsheet\nMotif\nCDE\nIRIX\nPocket\nDungeon\nTavern\nTurbo\nMac\nOffside",
+        "Selection": 1,
+        "Color": "#FBF8F2"
+      },
+      "events": {
+        "OnItemSelected": "ThemePick"
+      }
+    },
+    {
+      "type": "Label",
+      "name": "SchemeHead",
+      "left": 16,
+      "top": 1436,
+      "width": 328,
+      "height": 26,
+      "props": {
+        "Text": "Colour scheme",
+        "TextColor": "#1C1915",
+        "TextSize": 18
+      },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "SchemeAbout",
+      "left": 16,
+      "top": 1464,
+      "width": 328,
+      "height": 56,
+      "props": {
+        "Text": "The colour scheme is the ink and the paper. This build keeps the journal colours. The choice is kept.",
+        "TextColor": "#6E665C",
+        "TextSize": 14
+      },
+      "events": {}
+    },
+    {
+      "type": "Spinner",
+      "name": "SchemeSpin",
+      "left": 16,
+      "top": 1524,
+      "width": 328,
+      "height": 40,
+      "props": {
+        "Items": "Parchment\nOriginal\nNight\nPress\nArt Deco\nBrutal\nGlass\nClassical\nTea\nLedger\nAdmiralty\nChapel\nFresco\nPocket\nDungeon\nTavern\nCatalog\nBlueprint\nTerminal\nBroadsheet\nCDE\nIRIX\nTurbo\nTVision\nSCP\nSCP Orange\nSCP Black\nSCP White\nSCP Red\nSCP Grey\nSCP Yellow\nMac\nOffside",
+        "Selection": 0,
+        "Color": "#FBF8F2"
+      },
+      "events": {
+        "OnItemSelected": "SchemePick"
+      }
+    },
+    {
+      "type": "Label",
+      "name": "TypeHead",
+      "left": 16,
+      "top": 1580,
+      "width": 328,
+      "height": 26,
+      "props": {
+        "Text": "Type",
+        "TextColor": "#1C1915",
+        "TextSize": 18
+      },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "TypeAbout",
+      "left": 16,
+      "top": 1608,
+      "width": 328,
+      "height": 56,
+      "props": {
+        "Text": "The faces are kept in the original app. This build cannot switch them. Size is kept and not applied.",
+        "TextColor": "#6E665C",
+        "TextSize": 14
+      },
+      "events": {}
+    },
+    {
+      "type": "Spinner",
+      "name": "FaceSpin",
+      "left": 16,
+      "top": 1668,
+      "width": 328,
+      "height": 40,
+      "props": {
+        "Items": "Argon\nNeon\nXenon\nRadon\nKrypton\nLedger\nSans\nPlex\nAtkinson\nJosefin",
+        "Selection": 0,
+        "Color": "#FBF8F2"
+      },
+      "events": {
+        "OnItemSelected": "FacePick"
+      }
+    },
+    {
+      "type": "Button",
+      "name": "SizeSmaller",
+      "left": 16,
+      "top": 1716,
+      "width": 104,
+      "height": 36,
+      "props": {
+        "Text": "Smaller",
+        "TextSize": 13,
+        "TextColor": "#1C1915",
+        "Color": "#FBF8F2"
+      },
+      "events": {
+        "OnClick": "SizeSmallerClick"
+      }
+    },
+    {
+      "type": "Button",
+      "name": "SizeSmall",
+      "left": 128,
+      "top": 1716,
+      "width": 80,
+      "height": 36,
+      "props": {
+        "Text": "Small",
+        "TextSize": 13,
+        "TextColor": "#F3FAF6",
+        "Color": "#1F6B4A"
+      },
+      "events": {
+        "OnClick": "SizeSmallClick"
+      }
+    },
+    {
+      "type": "Button",
+      "name": "SizeRegular",
+      "left": 216,
+      "top": 1716,
+      "width": 100,
+      "height": 36,
+      "props": {
+        "Text": "Regular",
+        "TextSize": 13,
+        "TextColor": "#1C1915",
+        "Color": "#FBF8F2"
+      },
+      "events": {
+        "OnClick": "SizeRegularClick"
+      }
+    },
+    {
+      "type": "Button",
+      "name": "SizeLarge",
+      "left": 16,
+      "top": 1760,
+      "width": 80,
+      "height": 36,
+      "props": {
+        "Text": "Large",
+        "TextSize": 13,
+        "TextColor": "#1C1915",
+        "Color": "#FBF8F2"
+      },
+      "events": {
+        "OnClick": "SizeLargeClick"
+      }
+    },
+    {
+      "type": "Button",
+      "name": "SizeLarger",
+      "left": 104,
+      "top": 1760,
+      "width": 96,
+      "height": 36,
+      "props": {
+        "Text": "Larger",
+        "TextSize": 13,
+        "TextColor": "#1C1915",
+        "Color": "#FBF8F2"
+      },
+      "events": {
+        "OnClick": "SizeLargerClick"
+      }
+    },
+    {
+      "type": "Label",
+      "name": "SearchHead",
+      "left": 16,
+      "top": 1816,
+      "width": 328,
+      "height": 26,
+      "props": {
+        "Text": "Search",
+        "TextColor": "#1C1915",
+        "TextSize": 18
+      },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "SearchAbout",
+      "left": 16,
+      "top": 1844,
+      "width": 328,
+      "height": 64,
+      "props": {
+        "Text": "A search is the text index. Stem, fuzzy, and a meaning model are not in this build. The choice is kept.",
+        "TextColor": "#6E665C",
+        "TextSize": 14
+      },
+      "events": {}
+    },
+    {
+      "type": "Button",
+      "name": "SearchOff",
+      "left": 16,
+      "top": 1912,
+      "width": 88,
+      "height": 40,
+      "props": {
+        "Text": "Off",
+        "TextSize": 14,
+        "TextColor": "#F3FAF6",
+        "Color": "#1F6B4A"
+      },
+      "events": {
+        "OnClick": "SearchOffClick"
+      }
+    },
+    {
+      "type": "Button",
+      "name": "SearchE5",
+      "left": 112,
+      "top": 1912,
+      "width": 88,
+      "height": 40,
+      "props": {
+        "Text": "E5",
+        "TextSize": 14,
+        "TextColor": "#1C1915",
+        "Color": "#FBF8F2"
+      },
+      "events": {
+        "OnClick": "SearchE5Click"
+      }
+    },
+    {
+      "type": "Button",
+      "name": "SearchGemma",
+      "left": 208,
+      "top": 1912,
+      "width": 100,
+      "height": 40,
+      "props": {
+        "Text": "Gemma",
+        "TextSize": 14,
+        "TextColor": "#1C1915",
+        "Color": "#FBF8F2"
+      },
+      "events": {
+        "OnClick": "SearchGemmaClick"
+      }
+    },
+    {
+      "type": "Label",
+      "name": "LinkHead",
+      "left": 16,
+      "top": 1968,
+      "width": 328,
+      "height": 26,
+      "props": {
+        "Text": "Link previews",
+        "TextColor": "#1C1915",
+        "TextSize": 18
+      },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "LinkAbout",
+      "left": 16,
+      "top": 1996,
+      "width": 328,
+      "height": 56,
+      "props": {
+        "Text": "On would keep a small picture and the page title with an address. Previews are not drawn in this build.",
+        "TextColor": "#6E665C",
+        "TextSize": 14
+      },
+      "events": {}
+    },
+    {
+      "type": "Button",
+      "name": "PreviewOn",
+      "left": 16,
+      "top": 2056,
+      "width": 88,
+      "height": 40,
+      "props": {
+        "Text": "On",
+        "TextSize": 14,
+        "TextColor": "#F3FAF6",
+        "Color": "#1F6B4A"
+      },
+      "events": {
+        "OnClick": "PreviewOnClick"
+      }
+    },
+    {
+      "type": "Button",
+      "name": "PreviewOff",
+      "left": 112,
+      "top": 2056,
+      "width": 88,
+      "height": 40,
+      "props": {
+        "Text": "Off",
+        "TextSize": 14,
+        "TextColor": "#1C1915",
+        "Color": "#FBF8F2"
+      },
+      "events": {
+        "OnClick": "PreviewOffClick"
+      }
+    },
+    {
+      "type": "Label",
+      "name": "LayoutHead",
+      "left": 16,
+      "top": 2112,
+      "width": 328,
+      "height": 26,
+      "props": {
+        "Text": "Layout",
+        "TextColor": "#1C1915",
+        "TextSize": 18
+      },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "LayoutAbout",
+      "left": 16,
+      "top": 2140,
+      "width": 328,
+      "height": 88,
+      "props": {
+        "Text": "Right puts the rail and the buttons on the right. Floating is the stack you have. Strip would be a clear row. Return adds is kept. The rail stays on the right in this build.",
+        "TextColor": "#6E665C",
+        "TextSize": 14
+      },
+      "events": {}
+    },
+    {
+      "type": "Button",
+      "name": "HandRight",
+      "left": 16,
+      "top": 2232,
+      "width": 100,
+      "height": 40,
+      "props": {
+        "Text": "Right",
+        "TextSize": 14,
+        "TextColor": "#F3FAF6",
+        "Color": "#1F6B4A"
+      },
+      "events": {
+        "OnClick": "HandRightClick"
+      }
+    },
+    {
+      "type": "Button",
+      "name": "HandLeft",
+      "left": 124,
+      "top": 2232,
+      "width": 100,
+      "height": 40,
+      "props": {
+        "Text": "Left",
+        "TextSize": 14,
+        "TextColor": "#1C1915",
+        "Color": "#FBF8F2"
+      },
+      "events": {
+        "OnClick": "HandLeftClick"
+      }
+    },
+    {
+      "type": "Button",
+      "name": "BarFloat",
+      "left": 16,
+      "top": 2280,
+      "width": 120,
+      "height": 40,
+      "props": {
+        "Text": "Floating",
+        "TextSize": 14,
+        "TextColor": "#F3FAF6",
+        "Color": "#1F6B4A"
+      },
+      "events": {
+        "OnClick": "BarFloatClick"
+      }
+    },
+    {
+      "type": "Button",
+      "name": "BarStrip",
+      "left": 144,
+      "top": 2280,
+      "width": 100,
+      "height": 40,
+      "props": {
+        "Text": "Strip",
+        "TextSize": 14,
+        "TextColor": "#1C1915",
+        "Color": "#FBF8F2"
+      },
+      "events": {
+        "OnClick": "BarStripClick"
+      }
+    },
+    {
+      "type": "Button",
+      "name": "EnterAdd",
+      "left": 16,
+      "top": 2328,
+      "width": 140,
+      "height": 40,
+      "props": {
+        "Text": "Return adds",
+        "TextSize": 13,
+        "TextColor": "#1C1915",
+        "Color": "#FBF8F2"
+      },
+      "events": {
+        "OnClick": "EnterAddClick"
+      }
+    },
+    {
+      "type": "Button",
+      "name": "EnterShift",
+      "left": 164,
+      "top": 2328,
+      "width": 176,
+      "height": 40,
+      "props": {
+        "Text": "Shift+Return",
+        "TextSize": 13,
+        "TextColor": "#F3FAF6",
+        "Color": "#1F6B4A"
+      },
+      "events": {
+        "OnClick": "EnterShiftClick"
+      }
+    },
+    {
+      "type": "Button",
+      "name": "RuleFine",
+      "left": 16,
+      "top": 2376,
+      "width": 88,
+      "height": 40,
+      "props": {
+        "Text": "Fine",
+        "TextSize": 14,
+        "TextColor": "#1C1915",
+        "Color": "#FBF8F2"
+      },
+      "events": {
+        "OnClick": "RuleFineClick"
+      }
+    },
+    {
+      "type": "Button",
+      "name": "RuleEven",
+      "left": 112,
+      "top": 2376,
+      "width": 88,
+      "height": 40,
+      "props": {
+        "Text": "Even",
+        "TextSize": 14,
+        "TextColor": "#F3FAF6",
+        "Color": "#1F6B4A"
+      },
+      "events": {
+        "OnClick": "RuleEvenClick"
+      }
+    },
+    {
+      "type": "Button",
+      "name": "RuleStrong",
+      "left": 208,
+      "top": 2376,
+      "width": 100,
+      "height": 40,
+      "props": {
+        "Text": "Strong",
+        "TextSize": 14,
+        "TextColor": "#1C1915",
+        "Color": "#FBF8F2"
+      },
+      "events": {
+        "OnClick": "RuleStrongClick"
+      }
+    },
+    {
+      "type": "Label",
+      "name": "OrderAbout",
+      "left": 16,
+      "top": 2424,
+      "width": 328,
+      "height": 40,
+      "props": {
+        "Text": "A new line sits just above the composer. Newest first puts it at the top.",
+        "TextColor": "#6E665C",
+        "TextSize": 14
+      },
+      "events": {}
+    },
+    {
+      "type": "Check",
+      "name": "NewestCheck",
+      "left": 16,
+      "top": 2468,
+      "width": 300,
+      "height": 36,
+      "props": {
+        "Text": "Newest first",
+        "Checked": false,
+        "TextSize": 16,
+        "TextColor": "#1C1915"
+      },
+      "events": {
+        "OnChange": "NewestClick"
+      }
+    },
+    {
+      "type": "Check",
+      "name": "ScopeCheck",
+      "left": 16,
+      "top": 2508,
+      "width": 320,
+      "height": 36,
+      "props": {
+        "Text": "Show the scope column",
+        "Checked": true,
+        "TextSize": 16,
+        "TextColor": "#1C1915"
+      },
+      "events": {
+        "OnChange": "ScopeClick"
+      }
+    },
+    {
+      "type": "Label",
+      "name": "StatHead",
+      "left": 16,
+      "top": 2560,
+      "width": 328,
+      "height": 26,
+      "props": {
+        "Text": "Statistics",
+        "TextColor": "#1C1915",
+        "TextSize": 18
+      },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "StatAbout",
+      "left": 16,
+      "top": 2588,
+      "width": 328,
+      "height": 48,
+      "props": {
+        "Text": "Notes is the timeline. Media counts pictures and clips. Size is not measured in this build.",
+        "TextColor": "#6E665C",
+        "TextSize": 14
+      },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "NotesCap",
+      "left": 16,
+      "top": 2640,
+      "width": 120,
+      "height": 20,
+      "props": {
+        "Text": "Notes",
+        "TextColor": "#6E665C",
+        "TextSize": 13
+      },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "NotesLabel",
+      "left": 16,
+      "top": 2660,
+      "width": 120,
+      "height": 32,
+      "props": {
+        "Text": "0",
+        "TextColor": "#1C1915",
+        "TextSize": 22
+      },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "MediaCap",
+      "left": 150,
+      "top": 2640,
+      "width": 120,
+      "height": 20,
+      "props": {
+        "Text": "Media",
+        "TextColor": "#6E665C",
+        "TextSize": 13
+      },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "MediaLabel",
+      "left": 150,
+      "top": 2660,
+      "width": 120,
+      "height": 32,
+      "props": {
+        "Text": "0",
+        "TextColor": "#1C1915",
+        "TextSize": 22
+      },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "ByType",
+      "left": 16,
+      "top": 2700,
+      "width": 328,
+      "height": 72,
+      "props": {
+        "Text": "",
+        "TextColor": "#6E665C",
+        "TextSize": 14
+      },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "SampleHead",
+      "left": 16,
+      "top": 2784,
+      "width": 328,
+      "height": 26,
+      "props": {
+        "Text": "Sample",
+        "TextColor": "#1C1915",
+        "TextSize": 18
+      },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "SampleAbout",
+      "left": 16,
+      "top": 2812,
+      "width": 328,
+      "height": 40,
+      "props": {
+        "Text": "A few ordinary notes. Ones you already have are left as they are.",
+        "TextColor": "#6E665C",
+        "TextSize": 14
+      },
+      "events": {}
+    },
+    {
+      "type": "Button",
+      "name": "SampleButton",
+      "left": 16,
+      "top": 2860,
+      "width": 220,
+      "height": 44,
+      "props": {
+        "Text": "Load a sample",
+        "TextSize": 15,
+        "TextColor": "#1C1915",
+        "Color": "#FBF8F2"
+      },
+      "events": {
+        "OnClick": "SampleClick"
+      }
+    },
+    {
+      "type": "Label",
+      "name": "GapLabel",
+      "left": 0,
+      "top": -20,
+      "width": 4,
+      "height": 4,
+      "props": {
+        "Text": "\n",
+        "TextSize": 1,
+        "TextColor": "#F3EFE6"
+      },
+      "events": {}
+    }
+  ]
+}

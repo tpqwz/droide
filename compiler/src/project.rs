@@ -56,7 +56,7 @@ pub fn class_ok(name: &str) -> bool {
     valid_ident(name)
         && !matches!(
             name.to_ascii_lowercase().as_str(),
-            "droidert" | "droidesearch" | "droideindex" | "native"
+            "droidert" | "droidesearch" | "droideindex" | "droiderows" | "droidetick" | "native"
         )
 }
 

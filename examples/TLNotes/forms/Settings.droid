@@ -1,0 +1,572 @@
+procedure Open();
+begin
+  if ReadText('newest') = '1' then
+    NewestCheck.Checked := true
+  else
+    NewestCheck.Checked := false
+  if ReadText('scope') = '0' then
+    ScopeCheck.Checked := false
+  else
+    ScopeCheck.Checked := true
+  if ReadText('theme') = '' then
+    ThemeSpin.Selection := 1
+  else
+    ThemeSpin.Selection := StrToInt(ReadText('theme'))
+  if ReadText('scheme') = '' then
+    SchemeSpin.Selection := 0
+  else
+    SchemeSpin.Selection := StrToInt(ReadText('scheme'))
+  if ReadText('face') = '' then
+    FaceSpin.Selection := 0
+  else
+    FaceSpin.Selection := StrToInt(ReadText('face'))
+  if ReadText('language') = '' then
+    LangSpin.Selection := 0
+  else
+    LangSpin.Selection := StrToInt(ReadText('language'))
+  Paint()
+  ShowCounts()
+end;
+
+procedure NewestClick();
+begin
+  if NewestCheck.Checked then
+    WriteText('newest', '1')
+  else
+    WriteText('newest', '0')
+end;
+
+procedure ScopeClick();
+begin
+  if ScopeCheck.Checked then
+    WriteText('scope', '1')
+  else
+    WriteText('scope', '0')
+end;
+
+procedure CloseClick();
+begin
+  Finish()
+end;
+
+procedure Paint();
+begin
+  if ReadText('share') = 'add' then begin
+    ShareAdd.Color := $FF1F6B4A
+    ShareAdd.TextColor := $FFF3FAF6
+    ShareEdit.Color := $FFFBF8F2
+    ShareEdit.TextColor := $FF1C1915
+  end else begin
+    ShareEdit.Color := $FF1F6B4A
+    ShareEdit.TextColor := $FFF3FAF6
+    ShareAdd.Color := $FFFBF8F2
+    ShareAdd.TextColor := $FF1C1915
+  end
+  if ReadText('search') = 'e5' then begin
+    SearchE5.Color := $FF1F6B4A
+    SearchE5.TextColor := $FFF3FAF6
+    SearchOff.Color := $FFFBF8F2
+    SearchOff.TextColor := $FF1C1915
+    SearchGemma.Color := $FFFBF8F2
+    SearchGemma.TextColor := $FF1C1915
+  end else if ReadText('search') = 'gemma' then begin
+    SearchGemma.Color := $FF1F6B4A
+    SearchGemma.TextColor := $FFF3FAF6
+    SearchOff.Color := $FFFBF8F2
+    SearchOff.TextColor := $FF1C1915
+    SearchE5.Color := $FFFBF8F2
+    SearchE5.TextColor := $FF1C1915
+  end else begin
+    SearchOff.Color := $FF1F6B4A
+    SearchOff.TextColor := $FFF3FAF6
+    SearchE5.Color := $FFFBF8F2
+    SearchE5.TextColor := $FF1C1915
+    SearchGemma.Color := $FFFBF8F2
+    SearchGemma.TextColor := $FF1C1915
+  end
+  if ReadText('hand') = 'left' then begin
+    HandLeft.Color := $FF1F6B4A
+    HandLeft.TextColor := $FFF3FAF6
+    HandRight.Color := $FFFBF8F2
+    HandRight.TextColor := $FF1C1915
+  end else begin
+    HandRight.Color := $FF1F6B4A
+    HandRight.TextColor := $FFF3FAF6
+    HandLeft.Color := $FFFBF8F2
+    HandLeft.TextColor := $FF1C1915
+  end
+  if ReadText('toolbar') = 'strip' then begin
+    BarStrip.Color := $FF1F6B4A
+    BarStrip.TextColor := $FFF3FAF6
+    BarFloat.Color := $FFFBF8F2
+    BarFloat.TextColor := $FF1C1915
+  end else begin
+    BarFloat.Color := $FF1F6B4A
+    BarFloat.TextColor := $FFF3FAF6
+    BarStrip.Color := $FFFBF8F2
+    BarStrip.TextColor := $FF1C1915
+  end
+  if ReadText('enter') = 'return' then begin
+    EnterAdd.Color := $FF1F6B4A
+    EnterAdd.TextColor := $FFF3FAF6
+    EnterShift.Color := $FFFBF8F2
+    EnterShift.TextColor := $FF1C1915
+  end else begin
+    EnterShift.Color := $FF1F6B4A
+    EnterShift.TextColor := $FFF3FAF6
+    EnterAdd.Color := $FFFBF8F2
+    EnterAdd.TextColor := $FF1C1915
+  end
+  if ReadText('rule') = '1' then begin
+    RuleFine.Color := $FF1F6B4A
+    RuleFine.TextColor := $FFF3FAF6
+    RuleEven.Color := $FFFBF8F2
+    RuleEven.TextColor := $FF1C1915
+    RuleStrong.Color := $FFFBF8F2
+    RuleStrong.TextColor := $FF1C1915
+  end else if ReadText('rule') = '3' then begin
+    RuleStrong.Color := $FF1F6B4A
+    RuleStrong.TextColor := $FFF3FAF6
+    RuleFine.Color := $FFFBF8F2
+    RuleFine.TextColor := $FF1C1915
+    RuleEven.Color := $FFFBF8F2
+    RuleEven.TextColor := $FF1C1915
+  end else begin
+    RuleEven.Color := $FF1F6B4A
+    RuleEven.TextColor := $FFF3FAF6
+    RuleFine.Color := $FFFBF8F2
+    RuleFine.TextColor := $FF1C1915
+    RuleStrong.Color := $FFFBF8F2
+    RuleStrong.TextColor := $FF1C1915
+  end
+  if ReadText('previews') = '0' then begin
+    PreviewOff.Color := $FF1F6B4A
+    PreviewOff.TextColor := $FFF3FAF6
+    PreviewOn.Color := $FFFBF8F2
+    PreviewOn.TextColor := $FF1C1915
+  end else begin
+    PreviewOn.Color := $FF1F6B4A
+    PreviewOn.TextColor := $FFF3FAF6
+    PreviewOff.Color := $FFFBF8F2
+    PreviewOff.TextColor := $FF1C1915
+  end
+  if ReadText('page') = 'site' then begin
+    PackSite.Color := $FF1F6B4A
+    PackSite.TextColor := $FFF3FAF6
+    PackThis.Color := $FFFBF8F2
+    PackThis.TextColor := $FF1C1915
+  end else begin
+    PackThis.Color := $FF1F6B4A
+    PackThis.TextColor := $FFF3FAF6
+    PackSite.Color := $FFFBF8F2
+    PackSite.TextColor := $FF1C1915
+  end
+  SizeSmaller.Color := $FFFBF8F2
+  SizeSmaller.TextColor := $FF1C1915
+  SizeSmall.Color := $FFFBF8F2
+  SizeSmall.TextColor := $FF1C1915
+  SizeRegular.Color := $FFFBF8F2
+  SizeRegular.TextColor := $FF1C1915
+  SizeLarge.Color := $FFFBF8F2
+  SizeLarge.TextColor := $FF1C1915
+  SizeLarger.Color := $FFFBF8F2
+  SizeLarger.TextColor := $FF1C1915
+  if ReadText('size') = 'smaller' then begin
+    SizeSmaller.Color := $FF1F6B4A
+    SizeSmaller.TextColor := $FFF3FAF6
+  end else if ReadText('size') = 'regular' then begin
+    SizeRegular.Color := $FF1F6B4A
+    SizeRegular.TextColor := $FFF3FAF6
+  end else if ReadText('size') = 'large' then begin
+    SizeLarge.Color := $FF1F6B4A
+    SizeLarge.TextColor := $FFF3FAF6
+  end else if ReadText('size') = 'larger' then begin
+    SizeLarger.Color := $FF1F6B4A
+    SizeLarger.TextColor := $FFF3FAF6
+  end else begin
+    SizeSmall.Color := $FF1F6B4A
+    SizeSmall.TextColor := $FFF3FAF6
+  end
+end;
+
+procedure ShowCounts();
+var
+  Line: String;
+begin
+  NotesLabel.Text := IntToStr(LineCount(ReadText('titles')))
+  MediaLabel.Text := IntToStr(LineCount(ReadText('lines-Image')) + LineCount(ReadText('lines-Video')))
+  TrashCount.Text := IntToStr(LineCount(ReadText('trash'))) + ' in the trash'
+  Line := 'Note ' + IntToStr(LineCount(ReadText('lines-Note')))
+  Line := Line + '  Draft ' + IntToStr(LineCount(ReadText('lines-Draft')))
+  Line := Line + '  Dream ' + IntToStr(LineCount(ReadText('lines-Dream')))
+  Line := Line + '  Event ' + IntToStr(LineCount(ReadText('lines-Event')))
+  Line := Line + '  Period ' + IntToStr(LineCount(ReadText('lines-Period')))
+  Line := Line + '  Task ' + IntToStr(LineCount(ReadText('lines-Task')))
+  Line := Line + '  Link ' + IntToStr(LineCount(ReadText('lines-Link')))
+  Line := Line + '  Quote ' + IntToStr(LineCount(ReadText('lines-Quote')))
+  Line := Line + '  Image ' + IntToStr(LineCount(ReadText('lines-Image')))
+  Line := Line + '  Video ' + IntToStr(LineCount(ReadText('lines-Video')))
+  ByType.Text := Line
+end;
+
+procedure ExportJsonClick();
+begin
+  Toast('Export is not in this build')
+end;
+
+procedure ExportCalClick();
+begin
+  Toast('A calendar export is not in this build')
+end;
+
+procedure ImportClick();
+begin
+  Toast('Import is not in this build')
+end;
+
+procedure ClearAsk();
+begin
+  Question('Clear the timeline and the trash list?', 'ClearAll')
+end;
+
+procedure ClearAll();
+begin
+  WriteText('titles', '')
+  WriteText('kinds', '')
+  WriteText('marks', '')
+  WriteText('days', '')
+  WriteText('trash', '')
+  WriteText('trash-kinds', '')
+  WriteText('filter', '')
+  Toast('Journal cleared')
+  ShowCounts()
+end;
+
+procedure SyncUseClick();
+begin
+  Toast('Sync is not in this build')
+end;
+
+procedure SyncNewClick();
+begin
+  Toast('Sync is not in this build')
+end;
+
+procedure SyncStopClick();
+begin
+  Toast('Sync is not in this build')
+end;
+
+procedure PackSiteClick();
+begin
+  WriteText('page', 'site')
+  Paint()
+  Toast('The website package is not checked in this build')
+end;
+
+procedure PackThisClick();
+begin
+  WriteText('page', 'this')
+  Paint()
+end;
+
+procedure CheckSiteClick();
+begin
+  Toast('This package does not check the website')
+end;
+
+procedure CalImportClick();
+begin
+  Toast('The phone calendar is not read in this build')
+end;
+
+procedure ShareEditClick();
+begin
+  WriteText('share', 'edit')
+  Paint()
+end;
+
+procedure ShareAddClick();
+begin
+  WriteText('share', 'add')
+  Paint()
+end;
+
+procedure TrashViewClick();
+begin
+  OpenForm('Trash')
+end;
+
+procedure EmptyAsk();
+begin
+  Question('Empty the trash list? The note files stay.', 'EmptyTrash')
+end;
+
+procedure EmptyTrash();
+begin
+  WriteText('trash', '')
+  WriteText('trash-kinds', '')
+  Toast('Trash emptied')
+  ShowCounts()
+end;
+
+procedure SealClick();
+begin
+  Toast('Seal is not in this build')
+end;
+
+procedure LangPick();
+begin
+  WriteText('language', IntToStr(LangSpin.Selection))
+end;
+
+procedure ThemePick();
+begin
+  WriteText('theme', IntToStr(ThemeSpin.Selection))
+end;
+
+procedure SchemePick();
+begin
+  WriteText('scheme', IntToStr(SchemeSpin.Selection))
+end;
+
+procedure FacePick();
+begin
+  WriteText('face', IntToStr(FaceSpin.Selection))
+end;
+
+procedure SearchOffClick();
+begin
+  WriteText('search', 'off')
+  Paint()
+end;
+
+procedure SearchE5Click();
+begin
+  WriteText('search', 'e5')
+  Paint()
+end;
+
+procedure SearchGemmaClick();
+begin
+  WriteText('search', 'gemma')
+  Paint()
+end;
+
+procedure PreviewOnClick();
+begin
+  WriteText('previews', '1')
+  Paint()
+end;
+
+procedure PreviewOffClick();
+begin
+  WriteText('previews', '0')
+  Paint()
+end;
+
+procedure HandRightClick();
+begin
+  WriteText('hand', 'right')
+  Paint()
+end;
+
+procedure HandLeftClick();
+begin
+  WriteText('hand', 'left')
+  Paint()
+end;
+
+procedure BarFloatClick();
+begin
+  WriteText('toolbar', 'float')
+  Paint()
+end;
+
+procedure BarStripClick();
+begin
+  WriteText('toolbar', 'strip')
+  Paint()
+end;
+
+procedure EnterAddClick();
+begin
+  WriteText('enter', 'return')
+  Paint()
+end;
+
+procedure EnterShiftClick();
+begin
+  WriteText('enter', 'shift')
+  Paint()
+end;
+
+procedure RuleFineClick();
+begin
+  WriteText('rule', '1')
+  Paint()
+end;
+
+procedure RuleEvenClick();
+begin
+  WriteText('rule', '2')
+  Paint()
+end;
+
+procedure RuleStrongClick();
+begin
+  WriteText('rule', '3')
+  Paint()
+end;
+
+procedure SizeSmallerClick();
+begin
+  WriteText('size', 'smaller')
+  Paint()
+end;
+
+procedure SizeSmallClick();
+begin
+  WriteText('size', 'small')
+  Paint()
+end;
+
+procedure SizeRegularClick();
+begin
+  WriteText('size', 'regular')
+  Paint()
+end;
+
+procedure SizeLargeClick();
+begin
+  WriteText('size', 'large')
+  Paint()
+end;
+
+procedure SizeLargerClick();
+begin
+  WriteText('size', 'larger')
+  Paint()
+end;
+
+procedure RestoreAll();
+var
+  Names, Kinds, Name, Kind, Titles, Line: String;
+  Index: Integer;
+begin
+  Names := ReadText('trash')
+  Kinds := ReadText('trash-kinds')
+  if Names = '' then
+    Toast('Trash is empty')
+  else begin
+    Index := 0
+    while LineAt(Names, Index) <> '' do begin
+      Name := LineAt(Names, Index)
+      Kind := LineAt(Kinds, Index)
+      if Kind = '' then
+        Kind := 'Note'
+      WriteText('has-' + Name, '1')
+      Titles := ReadText('titles')
+      if Titles = '' then
+        Titles := Name
+      else
+        Titles := Titles + GapLabel.Text + Name
+      WriteText('titles', Titles)
+      Titles := ReadText('kinds')
+      if Titles = '' then
+        Titles := Kind
+      else
+        Titles := Titles + GapLabel.Text + Kind
+      WriteText('kinds', Titles)
+      Line := Time()
+      Line := Line + '  ' + Kind
+      Titles := ReadText('marks')
+      if Titles = '' then
+        Titles := Line
+      else
+        Titles := Titles + GapLabel.Text + Line
+      WriteText('marks', Titles)
+      Line := Today()
+      Titles := ReadText('days')
+      if Titles = '' then
+        Titles := Line
+      else
+        Titles := Titles + GapLabel.Text + Line
+      WriteText('days', Titles)
+      Line := Today()
+      Line := Line + '  ' + Time()
+      WriteText('when-' + Name, Line)
+      Titles := ReadText('lines-' + Kind)
+      if Titles = '' then
+        Titles := Name
+      else
+        Titles := Titles + GapLabel.Text + Name
+      WriteText('lines-' + Kind, Titles)
+      Ingest(Name, ReadText('note-' + Name), 'txt')
+      Index := Index + 1
+    end
+    WriteText('trash', '')
+    WriteText('trash-kinds', '')
+    Toast('Restored')
+    ShowCounts()
+  end
+end;
+
+procedure Keep(Name: String; Kind: String; Body: String);
+var
+  Titles, Line: String;
+begin
+  if ReadText('has-' + Name) <> '1' then begin
+    WriteText('note-' + Name, Body)
+    WriteText('kind-' + Name, Kind)
+    WriteText('has-' + Name, '1')
+    Titles := ReadText('titles')
+    if Titles = '' then
+      Titles := Name
+    else
+      Titles := Titles + GapLabel.Text + Name
+    WriteText('titles', Titles)
+    Titles := ReadText('kinds')
+    if Titles = '' then
+      Titles := Kind
+    else
+      Titles := Titles + GapLabel.Text + Kind
+    WriteText('kinds', Titles)
+    Line := Time()
+    Line := Line + '  ' + Kind
+    Titles := ReadText('marks')
+    if Titles = '' then
+      Titles := Line
+    else
+      Titles := Titles + GapLabel.Text + Line
+    WriteText('marks', Titles)
+    Line := Today()
+    Titles := ReadText('days')
+    if Titles = '' then
+      Titles := Line
+    else
+      Titles := Titles + GapLabel.Text + Line
+    WriteText('days', Titles)
+    Line := Today()
+    Line := Line + '  ' + Time()
+    WriteText('when-' + Name, Line)
+    Titles := ReadText('lines-' + Kind)
+    if Titles = '' then
+      Titles := Name
+    else
+      Titles := Titles + GapLabel.Text + Name
+    WriteText('lines-' + Kind, Titles)
+    Ingest(Name, Body, 'txt')
+  end
+end;
+
+procedure SampleClick();
+begin
+  Keep('A quiet room and a long table.', 'Dream', 'A quiet room and a long table.')
+  Keep('Notes stay on the device.', 'Quote', 'Notes stay on the device.')
+  Keep('The timeline starts here.', 'Note', 'The timeline starts here. Write a line and Add keeps it.')
+  Keep('Keep the journal on this device.', 'Task', 'Keep the journal on this device.')
+  Keep('TLNotes opened in Droide.', 'Event', 'TLNotes opened in Droide.')
+  Toast('Sample loaded')
+  ShowCounts()
+end;

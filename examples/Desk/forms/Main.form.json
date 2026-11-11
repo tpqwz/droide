@@ -1,0 +1,233 @@
+{
+  "name": "Main",
+  "title": "Desk",
+  "background": "#EFEAE2",
+  "width": 360,
+  "height": 640,
+  "events": {
+    "OnCreate": "Open"
+  },
+  "components": [
+    {
+      "type": "Label",
+      "name": "TitleLabel",
+      "left": 16,
+      "top": 12,
+      "width": 180,
+      "height": 36,
+      "props": {
+        "Text": "Desk",
+        "TextColor": "#1C2430",
+        "TextSize": 26
+      },
+      "events": {}
+    },
+    {
+      "type": "Clock",
+      "name": "Wall",
+      "left": 200,
+      "top": 14,
+      "width": 144,
+      "height": 32,
+      "props": {
+        "Format": "HH:mm",
+        "TextSize": 18,
+        "TextColor": "#1C2430"
+      },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "BeatLabel",
+      "left": 200,
+      "top": 46,
+      "width": 144,
+      "height": 22,
+      "props": {
+        "Text": "0",
+        "TextColor": "#7A736A",
+        "TextSize": 13
+      },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "StatusLabel",
+      "left": 16,
+      "top": 48,
+      "width": 176,
+      "height": 22,
+      "props": {
+        "Text": "Ready",
+        "TextColor": "#7A736A",
+        "TextSize": 13
+      },
+      "events": {}
+    },
+    {
+      "type": "List",
+      "name": "Notes",
+      "left": 16,
+      "top": 78,
+      "width": 328,
+      "height": 210,
+      "props": {
+        "Items": "Welcome\nPhoto\nClip",
+        "Details": "Start here\nA picture\nText you keep",
+        "Color": "#FBF9F4"
+      },
+      "events": {
+        "OnItemClick": "OpenRow",
+        "OnItemLongClick": "CopyRow"
+      }
+    },
+    {
+      "type": "Label",
+      "name": "ChosenLabel",
+      "left": 16,
+      "top": 294,
+      "width": 328,
+      "height": 22,
+      "props": {
+        "Text": "Welcome",
+        "TextColor": "#1C2430",
+        "TextSize": 14
+      },
+      "events": {}
+    },
+    {
+      "type": "Panel",
+      "name": "Bar",
+      "left": 16,
+      "top": 324,
+      "width": 328,
+      "height": 52,
+      "props": {
+        "Direction": "Horizontal",
+        "Color": "#E4E8EE"
+      },
+      "events": {}
+    },
+    {
+      "type": "Button",
+      "name": "NewButton",
+      "parent": "Bar",
+      "left": 4,
+      "top": 6,
+      "width": 76,
+      "height": 40,
+      "props": { "Text": "New", "TextSize": 14 },
+      "events": { "OnClick": "NewClick" }
+    },
+    {
+      "type": "Button",
+      "name": "ShareButton",
+      "parent": "Bar",
+      "left": 4,
+      "top": 6,
+      "width": 76,
+      "height": 40,
+      "props": { "Text": "Share", "TextSize": 14 },
+      "events": { "OnClick": "ShareClick" }
+    },
+    {
+      "type": "Button",
+      "name": "PhotoButton",
+      "parent": "Bar",
+      "left": 4,
+      "top": 6,
+      "width": 76,
+      "height": 40,
+      "props": { "Text": "Photo", "TextSize": 14 },
+      "events": { "OnClick": "PhotoClick" }
+    },
+    {
+      "type": "Button",
+      "name": "FileButton",
+      "parent": "Bar",
+      "left": 4,
+      "top": 6,
+      "width": 76,
+      "height": 40,
+      "props": { "Text": "File", "TextSize": 14 },
+      "events": { "OnClick": "FileClick" }
+    },
+    {
+      "type": "Button",
+      "name": "ReloadButton",
+      "left": 16,
+      "top": 388,
+      "width": 160,
+      "height": 44,
+      "props": { "Text": "Reload", "TextSize": 15 },
+      "events": { "OnClick": "ReloadClick" }
+    },
+    {
+      "type": "Button",
+      "name": "PlaceButton",
+      "left": 184,
+      "top": 388,
+      "width": 160,
+      "height": 44,
+      "props": { "Text": "Place", "TextSize": 15 },
+      "events": { "OnClick": "PlaceClick" }
+    },
+    {
+      "type": "Button",
+      "name": "CopyButton",
+      "left": 16,
+      "top": 440,
+      "width": 160,
+      "height": 44,
+      "props": { "Text": "Copy", "TextSize": 15 },
+      "events": { "OnClick": "CopyClick" }
+    },
+    {
+      "type": "Button",
+      "name": "ClearButton",
+      "left": 184,
+      "top": 440,
+      "width": 160,
+      "height": 44,
+      "props": { "Text": "Clear", "TextSize": 15 },
+      "events": { "OnClick": "ClearClick" }
+    },
+    {
+      "type": "Button",
+      "name": "AboutButton",
+      "left": 16,
+      "top": 496,
+      "width": 160,
+      "height": 44,
+      "props": { "Text": "About", "TextSize": 15 },
+      "events": { "OnClick": "AboutClick" }
+    },
+    {
+      "type": "Timer",
+      "name": "Pulse",
+      "left": 184,
+      "top": 496,
+      "width": 160,
+      "height": 36,
+      "props": {
+        "Interval": 1000,
+        "Enabled": true
+      },
+      "events": { "OnTimer": "Tick" }
+    },
+    {
+      "type": "Label",
+      "name": "BreakLabel",
+      "left": 0,
+      "top": 0,
+      "width": 4,
+      "height": 4,
+      "props": {
+        "Text": "\n",
+        "TextSize": 1,
+        "TextColor": "#EFEAE2"
+      },
+      "events": {}
+    }
+  ]
+}

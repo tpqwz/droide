@@ -1,0 +1,59 @@
+{
+  "name": "Tasks",
+  "title": "Tasks",
+  "background": "#F3EFE6",
+  "width": 360,
+  "height": 640,
+  "events": { "OnCreate": "Open" },
+  "components": [
+    {
+      "type": "Label",
+      "name": "TitleLabel",
+      "left": 20, "top": 16, "width": 328, "height": 32,
+      "props": { "Text": "Tasks", "TextColor": "#1C1915", "TextSize": 22 },
+      "events": {}
+    },
+    {
+      "type": "List",
+      "name": "TaskList",
+      "left": 12, "top": 56, "width": 336, "height": 488,
+      "props": { "Items": "", "Details": "", "Color": "#FBF8F2", "Dock": "Fill" },
+      "events": { "OnItemClick": "OpenTask" }
+    },
+    {
+      "type": "Panel",
+      "name": "Bar",
+      "left": 0, "top": 556, "width": 360, "height": 84,
+      "props": { "Direction": "Vertical", "Color": "#FBF8F2", "Dock": "Bottom" },
+      "events": {}
+    },
+    {
+      "type": "Memo",
+      "name": "TaskDraft",
+      "left": 16, "top": 568, "width": 220, "height": 52,
+      "props": { "Hint": "Write a task…", "Text": "", "TextSize": 16, "Color": "#FBF8F2", "TextColor": "#1C1915", "Dock": "Bottom" },
+      "events": {}
+    },
+    {
+      "type": "Button",
+      "name": "AddButton",
+      "left": 248, "top": 572, "width": 96, "height": 44,
+      "props": { "Text": "Add", "TextSize": 15, "TextColor": "#F3FAF6", "Color": "#1F6B4A", "Dock": "Bottom" },
+      "events": { "OnClick": "AddClick" }
+    },
+    {
+      "type": "Label",
+      "name": "GapLabel",
+      "left": 0, "top": -20, "width": 4, "height": 4,
+      "props": { "Text": "\n", "TextSize": 1, "TextColor": "#FBF8F2" },
+      "events": {}
+    },
+    {
+      "type": "Button",
+      "name": "CloseButton",
+      "left": 240, "top": 16, "width": 100, "height": 36,
+      "props": { "Text": "Close", "TextSize": 15, "TextColor": "#1F6B4A", "Color": "#F3EFE6" },
+      "events": { "OnClick": "CloseClick" }
+    }
+  ]
+}

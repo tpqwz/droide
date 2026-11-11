@@ -1,0 +1,14 @@
+{
+  "name": "Desk",
+  "package": "com.droide.desk",
+  "title": "Desk",
+  "versionCode": 1,
+  "versionName": "1.0",
+  "mainForm": "Main",
+  "minSdk": 24,
+  "targetSdk": 28,
+  "permissions": [
+    "android.permission.ACCESS_FINE_LOCATION",
+    "android.permission.ACCESS_COARSE_LOCATION"
+  ]
+}

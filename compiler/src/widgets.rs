@@ -231,7 +231,7 @@ pub static WIDGETS: &[WidgetSpec] = &[
         group: "Lists",
         width: 328,
         height: 200,
-        props: &["Items", "Color", "Enabled", "Visible"],
+        props: &["Items", "Details", "Color", "Bottom", "Enabled", "Visible"],
         events: &["OnItemClick", "OnItemLongClick"],
     },
     WidgetSpec {
@@ -253,6 +253,16 @@ pub static WIDGETS: &[WidgetSpec] = &[
         height: 200,
         props: &["Html", "Url", "Enabled", "Visible"],
         events: &["OnClick", "OnLongClick"],
+    },
+    WidgetSpec {
+        name: "Timer",
+        android: "android.os.Handler",
+        desc: "Ljava/lang/Runnable;",
+        group: "Time",
+        width: 160,
+        height: 36,
+        props: &["Interval", "Enabled"],
+        events: &["OnTimer"],
     },
 ];
 
@@ -283,9 +293,10 @@ pub fn default_props(kind: &str) -> Value {
         "Time" => json!({"Is24Hour": true, "Hour": 12, "Minute": 0}),
         "Date" => json!({"Year": 2026, "Month": 10, "Day": 24}),
         "Panel" => json!({"Direction": "Vertical", "Color": "#E4E8EE"}),
-        "List" => json!({"Items": "One\nTwo\nThree", "Color": "#FBF9F4"}),
+        "List" => json!({"Items": "One\nTwo\nThree", "Details": "", "Color": "#FBF9F4"}),
         "Spinner" => json!({"Items": "One\nTwo\nThree", "Selection": 0, "Color": "#FBF9F4"}),
         "Web" => json!({"Html": "", "Url": ""}),
+        "Timer" => json!({"Interval": 1000, "Enabled": false}),
         _ => json!({}),
     }
 }
@@ -323,8 +334,11 @@ pub static PROP_TYPES: &[(&str, &str)] = &[
     ("Html", "String"),
     ("Url", "String"),
     ("Items", "String"),
+    ("Details", "String"),
     ("Selection", "Integer"),
     ("Direction", "String"),
+    ("Interval", "Integer"),
+    ("Bottom", "Boolean"),
 ];
 
 #[derive(Clone, Copy)]
@@ -342,6 +356,7 @@ pub static SETTERS: &[(&str, MethodRef)] = &[
     ("TextSize", MethodRef { owner: "Landroid/widget/TextView;", name: "setTextSize", ret: "V", params: &["F"], mode: "float" }),
     ("TextColor", MethodRef { owner: "Landroid/widget/TextView;", name: "setTextColor", ret: "V", params: &["I"], mode: "int" }),
     ("Color", MethodRef { owner: "Landroid/view/View;", name: "setBackgroundColor", ret: "V", params: &["I"], mode: "int" }),
+    ("Bottom", MethodRef { owner: "Landroid/widget/AbsListView;", name: "setStackFromBottom", ret: "V", params: &["Z"], mode: "stack" }),
     ("Enabled", MethodRef { owner: "Landroid/view/View;", name: "setEnabled", ret: "V", params: &["Z"], mode: "bool" }),
     ("Visible", MethodRef { owner: "Landroid/view/View;", name: "setVisibility", ret: "V", params: &["I"], mode: "vis" }),
     ("Checked", MethodRef { owner: "Landroid/widget/CompoundButton;", name: "setChecked", ret: "V", params: &["Z"], mode: "bool" }),
@@ -367,10 +382,14 @@ pub static SETTERS: &[(&str, MethodRef)] = &[
     ("Url", MethodRef { owner: "Landroid/webkit/WebView;", name: "loadUrl", ret: "V", params: &["Ljava/lang/String;"], mode: "web-url" }),
     // Newline-separated text. List calls DroideRt.setLines. Spinner calls DroideRt.setSpinner.
     ("Items", MethodRef { owner: "Landroid/widget/AbsListView;", name: "setAdapter", ret: "V", params: &["Landroid/widget/ListAdapter;"], mode: "lines" }),
+    // Second line of each List row, matched by index. Empty keeps the one-line row.
+    ("Details", MethodRef { owner: "Landroid/widget/ListView;", name: "setAdapter", ret: "V", params: &["Landroid/widget/ListAdapter;"], mode: "details" }),
     // Applied after the adapter. The listener is attached later, so the first index does not fire.
     ("Selection", MethodRef { owner: "Landroid/widget/AdapterView;", name: "setSelection", ret: "V", params: &["I"], mode: "int" }),
     // Vertical is 1 and Horizontal is 0. place_widget writes the design-time value.
     ("Direction", MethodRef { owner: "Landroid/widget/LinearLayout;", name: "setOrientation", ret: "V", params: &["I"], mode: "orient" }),
+    // Stored on the timer object. The call site is DroideTick.setInterval, not a view method.
+    ("Interval", MethodRef { owner: "Ljava/lang/Object;", name: "setInterval", ret: "V", params: &["I"], mode: "timer" }),
 ];
 
 pub fn setter(name: &str) -> Option<&'static MethodRef> {
@@ -401,6 +420,10 @@ pub static GETTERS: &[(&str, MethodRef)] = &[
     ("Month", MethodRef { owner: "Landroid/widget/DatePicker;", name: "getMonth", ret: "I", params: &[], mode: "month" }),
     ("Day", MethodRef { owner: "Landroid/widget/DatePicker;", name: "getDayOfMonth", ret: "I", params: &[], mode: "int" }),
     ("Selection", MethodRef { owner: "Landroid/widget/AdapterView;", name: "getSelectedItemPosition", ret: "I", params: &[], mode: "int" }),
+    // The strings last written into the list. A spinner has items and no details.
+    ("Items", MethodRef { owner: "Landroid/view/View;", name: "getTag", ret: "Ljava/lang/Object;", params: &["I"], mode: "items" }),
+    ("Details", MethodRef { owner: "Landroid/view/View;", name: "getTag", ret: "Ljava/lang/Object;", params: &["I"], mode: "details" }),
+    ("Interval", MethodRef { owner: "Ljava/lang/Object;", name: "interval", ret: "I", params: &[], mode: "int" }),
 ];
 
 pub fn getter(name: &str) -> Option<&'static MethodRef> {

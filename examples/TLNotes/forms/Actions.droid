@@ -1,0 +1,75 @@
+procedure Open();
+begin
+  TitleLine.Text := Arg(0)
+  BodyLabel.Text := Arg(1)
+  KindLine.Text := Arg(2)
+  WhenLine.Text := Arg(3)
+end;
+
+procedure OpenClick();
+begin
+  OpenForm('Card', TitleLine.Text, BodyLabel.Text, KindLine.Text, WhenLine.Text)
+end;
+
+procedure CopyClick();
+begin
+  CopyText(BodyLabel.Text)
+  Toast('Copied')
+end;
+
+procedure ShareClick();
+begin
+  Share(KindLine.Text + ': ' + BodyLabel.Text)
+end;
+
+procedure TrashClick();
+var
+  N: Integer;
+  Titles, Kinds, Marks, Line, Trash, TrashKinds: String;
+begin
+  Titles := ReadText('titles')
+  N := LineIndex(Titles, TitleLine.Text)
+  if N < 0 then
+    Toast('Not in the timeline')
+  else begin
+    Titles := DropAt(Titles, N)
+    WriteText('titles', Titles)
+    Kinds := ReadText('kinds')
+    Kinds := DropAt(Kinds, N)
+    WriteText('kinds', Kinds)
+    Marks := ReadText('marks')
+    if Marks <> '' then begin
+      Marks := DropAt(Marks, N)
+      WriteText('marks', Marks)
+    end
+    Marks := ReadText('days')
+    if Marks <> '' then begin
+      Marks := DropAt(Marks, N)
+      WriteText('days', Marks)
+    end
+    Line := ReadText('lines-' + KindLine.Text)
+    N := LineIndex(Line, TitleLine.Text)
+    if N >= 0 then begin
+      Line := DropAt(Line, N)
+      WriteText('lines-' + KindLine.Text, Line)
+    end
+    Trash := ReadText('trash')
+    TrashKinds := ReadText('trash-kinds')
+    if Trash = '' then begin
+      Trash := TitleLine.Text
+      TrashKinds := KindLine.Text
+    end else begin
+      Trash := Trash + GapLabel.Text + TitleLine.Text
+      TrashKinds := TrashKinds + GapLabel.Text + KindLine.Text
+    end
+    WriteText('trash', Trash)
+    WriteText('trash-kinds', TrashKinds)
+    Toast('Moved to trash')
+    Finish()
+  end
+end;
+
+procedure CloseClick();
+begin
+  Finish()
+end;

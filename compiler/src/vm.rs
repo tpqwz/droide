@@ -66,7 +66,7 @@ fn len_at(words: &[u16], pc: usize) -> Result<usize, CompileError> {
     let op = words[pc] & 0xFF;
     if matches!(
         op,
-        0x00 | 0x0E | 0x0F | 0x11 | 0x12 | 0x01 | 0x07 | 0x0A | 0x0B | 0x0C | 0x7B | 0x82 | 0x87
+        0x00 | 0x0E | 0x0F | 0x11 | 0x12 | 0x01 | 0x07 | 0x0A | 0x0B | 0x0C | 0x21 | 0x7B | 0x81 | 0x82 | 0x87
     ) {
         return Ok(1);
     }
@@ -89,14 +89,18 @@ fn len_at(words: &[u16], pc: usize) -> Result<usize, CompileError> {
             | 0x39
             | 0x52
             | 0x54
+            | 0x55
             | 0x59
             | 0x5B
+            | 0x5C
             | 0x60
+            | 0x62
             | 0x90
             | 0x91
             | 0x92
             | 0x93
             | 0x94
+            | 0x46
             | 0x4D
             | 0xA6
             | 0xA7
@@ -357,7 +361,7 @@ fn verify_method(
                     put(&mut regs, reg, Ty::Int, pc)?;
                     put(&mut regs, reg + 1, Ty::Int, pc)?;
                 }
-                0x60 => {
+                0x60 | 0x62 => {
                     let reg = ((words[pc] >> 8) & 0xFF) as usize;
                     put(
                         &mut regs,
@@ -428,6 +432,17 @@ fn verify_method(
                     need(&regs, src, "int", pc)?;
                     put(&mut regs, dest, Ty::Int, pc)?;
                 }
+                0x81 => {
+                    // int-to-long. The long occupies dest and dest + 1, so dest is even.
+                    let dest = ((words[pc] >> 8) & 0xF) as usize;
+                    let src = ((words[pc] >> 12) & 0xF) as usize;
+                    if dest % 2 != 0 {
+                        return Err(CompileError::bare(format!("int-to-long v{dest} is odd")));
+                    }
+                    need(&regs, src, "int", pc)?;
+                    put(&mut regs, dest, Ty::Int, pc)?;
+                    put(&mut regs, dest + 1, Ty::Int, pc)?;
+                }
                 0x82 => {
                     let dest = ((words[pc] >> 8) & 0xF) as usize;
                     let src = ((words[pc] >> 12) & 0xF) as usize;
@@ -450,7 +465,7 @@ fn verify_method(
                     let produced = if op >= 0xA6 { Ty::Float } else { Ty::Int };
                     put(&mut regs, dest, produced, pc)?;
                 }
-                0x52 | 0x54 => {
+                0x52 | 0x54 | 0x55 => {
                     let dest = ((words[pc] >> 8) & 0xF) as usize;
                     let obj = ((words[pc] >> 12) & 0xF) as usize;
                     need(&regs, obj, "ref", pc)?;
@@ -461,7 +476,7 @@ fn verify_method(
                         pc,
                     )?;
                 }
-                0x59 | 0x5B => {
+                0x59 | 0x5B | 0x5C => {
                     let src = ((words[pc] >> 8) & 0xF) as usize;
                     let obj = ((words[pc] >> 12) & 0xF) as usize;
                     need(&regs, obj, "ref", pc)?;
@@ -518,10 +533,24 @@ fn verify_method(
                     need(&regs, reg, "ref", pc)?;
                     put(&mut regs, reg, Ty::Ref, pc)?;
                 }
+                0x21 => {
+                    let dest = ((words[pc] >> 8) & 0xF) as usize;
+                    let array = ((words[pc] >> 12) & 0xF) as usize;
+                    need(&regs, array, "ref", pc)?;
+                    put(&mut regs, dest, Ty::Int, pc)?;
+                }
                 0x23 => {
                     let dest = ((words[pc] >> 8) & 0xF) as usize;
                     let size = ((words[pc] >> 12) & 0xF) as usize;
                     need(&regs, size, "int", pc)?;
+                    put(&mut regs, dest, Ty::Ref, pc)?;
+                }
+                0x46 => {
+                    let dest = ((words[pc] >> 8) & 0xFF) as usize;
+                    let array = (words[pc + 1] & 0xFF) as usize;
+                    let index = ((words[pc + 1] >> 8) & 0xFF) as usize;
+                    need(&regs, array, "ref", pc)?;
+                    need(&regs, index, "int", pc)?;
                     put(&mut regs, dest, Ty::Ref, pc)?;
                 }
                 0x4D => {

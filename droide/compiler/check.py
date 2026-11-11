@@ -10,6 +10,9 @@ BUILTINS = {
     "Question": {"args": ["String", "String"], "ret": None, "where": "form"},
     "Log": {"args": ["String"], "ret": None, "where": "any"},
     "OpenForm": {"args": ["String"], "ret": None, "where": "form"},
+    "Arg": {"args": ["Integer"], "ret": "String", "where": "form"},
+    "ArgInt": {"args": ["Integer"], "ret": "Integer", "where": "form"},
+    "ArgBool": {"args": ["Integer"], "ret": "Boolean", "where": "form"},
     "Finish": {"args": [], "ret": None, "where": "form"},
     "IntToStr": {"args": ["Integer"], "ret": "String", "where": "any"},
     "StrToInt": {"args": ["String"], "ret": "Integer", "where": "any"},
@@ -19,9 +22,21 @@ BUILTINS = {
     "ReadText": {"args": ["String"], "ret": "String", "where": "form"},
     "Where": {"args": [], "ret": "String", "where": "form"},
     "OpenCamera": {"args": [], "ret": None, "where": "form"},
+    "TakePhoto": {"args": ["String"], "ret": None, "where": "form"},
+    "OpenDocument": {"args": ["String"], "ret": None, "where": "form"},
     "Share": {"args": ["String"], "ret": None, "where": "form"},
     "CopyText": {"args": ["String"], "ret": None, "where": "form"},
     "PasteText": {"args": [], "ret": "String", "where": "form"},
+    "Today": {"args": [], "ret": "String", "where": "form"},
+    "Time": {"args": [], "ret": "String", "where": "form"},
+    "SameDays": {"args": ["String", "String"], "ret": "String", "where": "any"},
+    "JournalItems": {"args": ["String", "String"], "ret": "String", "where": "any"},
+    "JournalDetails": {"args": ["String", "String", "String"], "ret": "String", "where": "any"},
+    "LineIndex": {"args": ["String", "String"], "ret": "Integer", "where": "any"},
+    "DropAt": {"args": ["String", "Integer"], "ret": "String", "where": "any"},
+    "ReplaceAt": {"args": ["String", "Integer", "String"], "ret": "String", "where": "any"},
+    "LineAt": {"args": ["String", "Integer"], "ret": "String", "where": "any"},
+    "LineCount": {"args": ["String"], "ret": "Integer", "where": "any"},
     "Search": {"args": ["String"], "ret": "String", "where": "form"},
     "Lookup": {"args": ["String"], "ret": "String", "where": "form"},
     "Ingest": {"args": ["String", "String", "String"], "ret": "String", "where": "form"},
@@ -31,6 +46,8 @@ BUILTINS = {
 def _event_param_ok(event, kind, ty):
     if event in ("OnItemClick", "OnItemLongClick", "OnItemSelected"):
         return ty in ("View", "String", "Integer")
+    if event == "OnTimer":
+        return False
     if event == "OnChange":
         if kind in ("Edit", "Memo", "Number", "Password", "Email", "Phone"):
             return ty == "String"
@@ -505,6 +522,9 @@ class Checker:
             if parent.lower() == name.lower():
                 self.error(f"{name} parents itself", file=file)
                 continue
+            if comp.get("type") == "Timer":
+                self.error(f"{name} cannot have a parent", file=file)
+                continue
             seen = {name.lower()}
             current = parent
             direct = True
@@ -710,6 +730,8 @@ class Checker:
                         )
                     elif event == "OnChange":
                         self.error(_change_hint(comp["type"], handler), rec["routine"], file)
+                    elif event == "OnTimer":
+                        self.error(f"{handler} takes no parameters", rec["routine"], file)
                     elif len(rec["params"]) > 1:
                         self.error(f"{handler} takes no parameters, or one View", rec["routine"], file)
                     else:
@@ -937,6 +959,22 @@ class Checker:
             return ("builtin", canon), True
         return None, False
 
+    def _check_open_form(self, args, arg_types, node, file):
+        if not args or not isinstance(args[0], ast.Literal) or not isinstance(args[0].value, str):
+            self.error("OpenForm needs a string literal form name", node, file)
+        else:
+            match = next((n for n in self.forms if n.lower() == args[0].value.lower()), None)
+            if match is None:
+                self.error(f"unknown form {args[0].value}", args[0], file)
+            else:
+                node.form_name = match
+        extras = arg_types[1:]
+        if len(extras) > 4:
+            self.error("OpenForm passes at most 4 arguments", node, file)
+        for got, arg in zip(extras, args[1:]):
+            if got and got not in ("String", "Integer", "Boolean"):
+                self.error("OpenForm cannot pass a View", arg, file)
+
     def _check_call(self, name, args, node, scope, rec, file, form, as_stmt):
         target, _static = self._lookup_routine(name, rec, form)
         arg_types = [self._check_expr(a, scope, rec, file, form) for a in args]
@@ -952,21 +990,15 @@ class Checker:
             spec = BUILTINS[target[1]]
             if spec["where"] == "form" and form is None:
                 self.error(f"{target[1]} is only available on a form", node, file)
-            if len(arg_types) != len(spec["args"]):
+            if target[1] == "OpenForm":
+                # Extras are optional, so the one-string catalog arity does not apply.
+                self._check_open_form(args, arg_types, node, file)
+            elif len(arg_types) != len(spec["args"]):
                 self.error(f"{target[1]} expects {len(spec['args'])} arguments", node, file)
             else:
                 for got, expect in zip(arg_types, spec["args"]):
                     if got and got != expect:
                         self.error(f"{target[1]} expects {expect}, got {got}", node, file)
-            if target[1] == "OpenForm":
-                if not args or not isinstance(args[0], ast.Literal) or not isinstance(args[0].value, str):
-                    self.error("OpenForm needs a string literal form name", node, file)
-                else:
-                    match = next((n for n in self.forms if n.lower() == args[0].value.lower()), None)
-                    if match is None:
-                        self.error(f"unknown form {args[0].value}", args[0], file)
-                    else:
-                        node.form_name = match
             # Question stores the declared procedure name in form_name.
             # OpenForm stores a form name there. One call is never both.
             if target[1] == "Question" and form is not None and len(args) == len(spec["args"]):
@@ -981,6 +1013,22 @@ class Checker:
                         self.error(f"{named['routine'].name} must be a procedure", second, file)
                     elif named["params"]:
                         self.error(f"{named['routine'].name} takes no parameters", second, file)
+                    else:
+                        node.form_name = named["routine"].name
+            # TakePhoto and OpenDocument store the declared procedure name in
+            # form_name. The procedure takes one String, the result path.
+            if target[1] in ("TakePhoto", "OpenDocument") and form is not None and len(args) == len(spec["args"]):
+                first = args[0]
+                if not isinstance(first, ast.Literal) or not isinstance(first.value, str):
+                    self.error(f"{target[1]} needs a string literal procedure name", node, file)
+                else:
+                    named = form["routines"].get(first.value.lower())
+                    if named is None:
+                        self.error(f"unknown procedure {first.value}", first, file)
+                    elif named["ret"]:
+                        self.error(f"{named['routine'].name} must be a procedure", first, file)
+                    elif named["params"] != ["String"]:
+                        self.error(f"{named['routine'].name} takes one String", first, file)
                     else:
                         node.form_name = named["routine"].name
             node.resolved = ("builtin", target[1])

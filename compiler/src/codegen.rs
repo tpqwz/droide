@@ -41,6 +41,16 @@ struct Compiler {
     lab: u32,
     native_desc: String,
     rt_desc: String,
+    /// TakePhoto and OpenDocument handlers in source order. Photo codes start
+    /// at 1. Document codes start at 256. One handler keeps one code per kind.
+    result_codes: Vec<ResultUse>,
+}
+
+#[derive(Clone)]
+struct ResultUse {
+    photo: bool,
+    handler: String,
+    code: i64,
 }
 
 struct Frame {
@@ -59,6 +69,7 @@ struct Gen<'a> {
     owner: String,
     package: String,
     native_desc: String,
+    result_codes: Vec<ResultUse>,
     sp: u16,
     outs: u16,
     ret_label: String,
@@ -74,6 +85,7 @@ impl Compiler {
             lab: 0,
             native_desc: class_desc(package, "Native"),
             rt_desc: class_desc(package, "DroideRt"),
+            result_codes: Vec::new(),
         }
     }
 
@@ -205,6 +217,96 @@ impl Compiler {
             1,
             3,
         ));
+        let mut form_arg = Asm::new();
+        emit_form_arg(&mut form_arg, "S");
+        cls.method(MethodModel::new(
+            "arg",
+            "Ljava/lang/String;",
+            vec!["Landroid/app/Activity;".into(), "I".into()],
+            ACC_PUBLIC | ACC_STATIC,
+            Some(form_arg),
+            8,
+            2,
+            3,
+        ));
+        let mut form_int = Asm::new();
+        emit_form_arg(&mut form_int, "I");
+        cls.method(MethodModel::new(
+            "argInt",
+            "I",
+            vec!["Landroid/app/Activity;".into(), "I".into()],
+            ACC_PUBLIC | ACC_STATIC,
+            Some(form_int),
+            8,
+            2,
+            3,
+        ));
+        let mut form_bool = Asm::new();
+        emit_form_arg(&mut form_bool, "B");
+        cls.method(MethodModel::new(
+            "argBool",
+            "Z",
+            vec!["Landroid/app/Activity;".into(), "I".into()],
+            ACC_PUBLIC | ACC_STATIC,
+            Some(form_bool),
+            8,
+            2,
+            3,
+        ));
+        let mut take_photo = Asm::new();
+        emit_take_photo(&mut take_photo);
+        cls.method(MethodModel::new(
+            "takePhoto",
+            "Z",
+            vec!["Landroid/app/Activity;".into(), "I".into()],
+            ACC_PUBLIC | ACC_STATIC,
+            Some(take_photo),
+            8,
+            2,
+            3,
+        ));
+        let mut open_document = Asm::new();
+        emit_open_document(&mut open_document);
+        cls.method(MethodModel::new(
+            "openDocument",
+            "Z",
+            vec!["Landroid/app/Activity;".into(), "I".into()],
+            ACC_PUBLIC | ACC_STATIC,
+            Some(open_document),
+            8,
+            2,
+            3,
+        ));
+        let mut photo_path = Asm::new();
+        emit_photo_path(&mut photo_path);
+        cls.method(MethodModel::new(
+            "photoPath",
+            "Ljava/lang/String;",
+            vec![
+                "Landroid/content/Context;".into(),
+                "Landroid/content/Intent;".into(),
+            ],
+            ACC_PUBLIC | ACC_STATIC,
+            Some(photo_path),
+            8,
+            2,
+            4,
+        ));
+        let mut document_path = Asm::new();
+        emit_document_path(&mut document_path);
+        cls.method(MethodModel::new(
+            "documentPath",
+            "Ljava/lang/String;",
+            vec![
+                "Landroid/content/Context;".into(),
+                "Landroid/content/Intent;".into(),
+            ],
+            ACC_PUBLIC | ACC_STATIC,
+            Some(document_path),
+            12,
+            2,
+            4,
+        ));
         let mut share = Asm::new();
         emit_share(&mut share);
         cls.method(MethodModel::new(
@@ -235,6 +337,205 @@ impl Compiler {
             2,
             2,
         ));
+        let mut line_count = Asm::new();
+        emit_line_count(&mut line_count);
+        cls.method(MethodModel::new(
+            "lineCount",
+            "I",
+            vec!["Ljava/lang/String;".into()],
+            ACC_PUBLIC | ACC_STATIC,
+            Some(line_count),
+            6,
+            1,
+            2,
+        ));
+        let mut toggle_line = Asm::new();
+        emit_toggle_line(&mut toggle_line);
+        cls.method(MethodModel::new(
+            "toggleLine",
+            "Ljava/lang/String;",
+            vec!["Ljava/lang/String;".into(), "Ljava/lang/String;".into()],
+            ACC_PUBLIC | ACC_STATIC,
+            Some(toggle_line),
+            12,
+            2,
+            2,
+        ));
+        let mut drop_names = Asm::new();
+        emit_drop_names(&mut drop_names);
+        cls.method(MethodModel::new(
+            "dropNames",
+            "Ljava/lang/String;",
+            vec!["Ljava/lang/String;".into(), "Ljava/lang/String;".into()],
+            ACC_PUBLIC | ACC_STATIC,
+            Some(drop_names),
+            14,
+            2,
+            2,
+        ));
+        let mut drop_parallel = Asm::new();
+        emit_parallel(&mut drop_parallel, false);
+        cls.method(MethodModel::new(
+            "dropParallel",
+            "Ljava/lang/String;",
+            vec![
+                "Ljava/lang/String;".into(),
+                "Ljava/lang/String;".into(),
+                "Ljava/lang/String;".into(),
+            ],
+            ACC_PUBLIC | ACC_STATIC,
+            Some(drop_parallel),
+            12,
+            3,
+            2,
+        ));
+        let mut take_parallel = Asm::new();
+        emit_parallel(&mut take_parallel, true);
+        cls.method(MethodModel::new(
+            "takeParallel",
+            "Ljava/lang/String;",
+            vec![
+                "Ljava/lang/String;".into(),
+                "Ljava/lang/String;".into(),
+                "Ljava/lang/String;".into(),
+            ],
+            ACC_PUBLIC | ACC_STATIC,
+            Some(take_parallel),
+            12,
+            3,
+            2,
+        ));
+        let mut join_notes = Asm::new();
+        emit_join_notes(&mut join_notes, &self.rt_desc);
+        cls.method(MethodModel::new(
+            "joinNotes",
+            "Ljava/lang/String;",
+            vec![
+                "Landroid/content/Context;".into(),
+                "Ljava/lang/String;".into(),
+            ],
+            ACC_PUBLIC | ACC_STATIC,
+            Some(join_notes),
+            12,
+            2,
+            3,
+        ));
+        let mut same_days = Asm::new();
+        emit_same_days(&mut same_days);
+        cls.method(MethodModel::new(
+            "sameDays",
+            "Ljava/lang/String;",
+            vec!["Ljava/lang/String;".into(), "Ljava/lang/String;".into()],
+            ACC_PUBLIC | ACC_STATIC,
+            Some(same_days),
+            10,
+            2,
+            2,
+        ));
+        let mut journal_items = Asm::new();
+        emit_journal_items(&mut journal_items);
+        cls.method(MethodModel::new(
+            "journalItems",
+            "Ljava/lang/String;",
+            vec!["Ljava/lang/String;".into(), "Ljava/lang/String;".into()],
+            ACC_PUBLIC | ACC_STATIC,
+            Some(journal_items),
+            12,
+            2,
+            3,
+        ));
+        let mut journal_details = Asm::new();
+        emit_journal_details(&mut journal_details);
+        cls.method(MethodModel::new(
+            "journalDetails",
+            "Ljava/lang/String;",
+            vec![
+                "Ljava/lang/String;".into(),
+                "Ljava/lang/String;".into(),
+                "Ljava/lang/String;".into(),
+            ],
+            ACC_PUBLIC | ACC_STATIC,
+            Some(journal_details),
+            14,
+            3,
+            3,
+        ));
+        let mut line_index = Asm::new();
+        emit_line_index(&mut line_index);
+        cls.method(MethodModel::new(
+            "lineIndex",
+            "I",
+            vec!["Ljava/lang/String;".into(), "Ljava/lang/String;".into()],
+            ACC_PUBLIC | ACC_STATIC,
+            Some(line_index),
+            8,
+            2,
+            2,
+        ));
+        let mut line_at = Asm::new();
+        emit_line_at(&mut line_at);
+        cls.method(MethodModel::new(
+            "lineAt",
+            "Ljava/lang/String;",
+            vec!["Ljava/lang/String;".into(), "I".into()],
+            ACC_PUBLIC | ACC_STATIC,
+            Some(line_at),
+            8,
+            2,
+            2,
+        ));
+        let mut replace_at = Asm::new();
+        emit_replace_at(&mut replace_at);
+        cls.method(MethodModel::new(
+            "replaceAt",
+            "Ljava/lang/String;",
+            vec![
+                "Ljava/lang/String;".into(),
+                "I".into(),
+                "Ljava/lang/String;".into(),
+            ],
+            ACC_PUBLIC | ACC_STATIC,
+            Some(replace_at),
+            10,
+            3,
+            2,
+        ));
+        let mut drop_at = Asm::new();
+        emit_drop_at(&mut drop_at);
+        cls.method(MethodModel::new(
+            "dropAt",
+            "Ljava/lang/String;",
+            vec!["Ljava/lang/String;".into(), "I".into()],
+            ACC_PUBLIC | ACC_STATIC,
+            Some(drop_at),
+            8,
+            2,
+            2,
+        ));
+        let mut today = Asm::new();
+        emit_stamp(&mut today, "yyyy MMMM d");
+        cls.method(MethodModel::new(
+            "today",
+            "Ljava/lang/String;",
+            vec!["Landroid/content/Context;".into()],
+            ACC_PUBLIC | ACC_STATIC,
+            Some(today),
+            8,
+            1,
+            3,
+        ));
+        let mut clock = Asm::new();
+        emit_stamp(&mut clock, "HH:mm");
+        cls.method(MethodModel::new(
+            "time",
+            "Ljava/lang/String;",
+            vec!["Landroid/content/Context;".into()],
+            ACC_PUBLIC | ACC_STATIC,
+            Some(clock),
+            8,
+            1,
+            3,
+        ));
         let mut paste_text = Asm::new();
         emit_paste_text(&mut paste_text);
         cls.method(MethodModel::new(
@@ -247,8 +548,9 @@ impl Compiler {
             1,
             2,
         ));
+        let rows_desc = class_desc(&self.package, "DroideRows");
         let mut lines = Asm::new();
-        emit_set_lines(&mut lines);
+        emit_set_lines(&mut lines, &rows_desc);
         cls.method(MethodModel::new(
             "setLines",
             "V",
@@ -261,7 +563,47 @@ impl Compiler {
             Some(lines),
             8,
             3,
+            5,
+        ));
+        let mut details = Asm::new();
+        emit_set_details(&mut details, &rows_desc);
+        cls.method(MethodModel::new(
+            "setDetails",
+            "V",
+            vec![
+                "Landroid/widget/ListView;".into(),
+                "Landroid/content/Context;".into(),
+                "Ljava/lang/String;".into(),
+            ],
+            ACC_PUBLIC | ACC_STATIC,
+            Some(details),
+            8,
+            3,
+            5,
+        ));
+        let mut items_of = Asm::new();
+        emit_tagged_string(&mut items_of, TAG_ITEMS);
+        cls.method(MethodModel::new(
+            "itemsOf",
+            "Ljava/lang/String;",
+            vec!["Landroid/view/View;".into()],
+            ACC_PUBLIC | ACC_STATIC,
+            Some(items_of),
             4,
+            1,
+            2,
+        ));
+        let mut details_of = Asm::new();
+        emit_tagged_string(&mut details_of, TAG_DETAILS);
+        cls.method(MethodModel::new(
+            "detailsOf",
+            "Ljava/lang/String;",
+            vec!["Landroid/view/View;".into()],
+            ACC_PUBLIC | ACC_STATIC,
+            Some(details_of),
+            4,
+            1,
+            2,
         ));
         let mut spinner = Asm::new();
         emit_set_spinner(&mut spinner);
@@ -283,6 +625,8 @@ impl Compiler {
         search::attach(&mut self.dex, &package, &mut cls);
         index::attach(&mut self.dex, &package, &mut cls);
         self.dex.add(cls);
+        emit_rows_class(&mut self.dex, &self.package);
+        emit_tick_class(&mut self.dex, &self.package);
     }
 
     fn emit_natives(&mut self, checked: &Checked) {
@@ -361,12 +705,17 @@ impl Compiler {
         for widget in ordered_widgets(form) {
             let kind = comp_str(&widget.comp, "type")?;
             let spec = spec_exact(kind)?;
-            cls.field(&widget.name, spec.desc, ACC_PUBLIC);
+            let field_desc = component_desc(&self.package, &form.name, kind, &widget.name, spec.desc);
+            cls.field(&widget.name, &field_desc, ACC_PUBLIC);
         }
+        self.result_codes = result_uses(form);
         cls.method(activity_init());
         cls.method(self.on_create(form, &desc)?);
         for rec in by_index(&form.routines) {
             cls.method(self.compile_routine(rec, &desc, false)?);
+        }
+        if !self.result_codes.is_empty() {
+            cls.method(self.on_activity_result(&desc));
         }
         self.dex.add(cls);
         for widget in ordered_widgets(form) {
@@ -393,6 +742,11 @@ impl Compiler {
         // can follow it; DEX refs are resolved when the file is built.
         for handler in ask_handlers(form) {
             self.dex.add(self.ask_listener(form, &desc, &handler)?);
+        }
+        for widget in ordered_widgets(form) {
+            if comp_str(&widget.comp, "type")? == "Timer" {
+                self.dex.add(self.timer_class(form, &desc, widget)?);
+            }
         }
         Ok(())
     }
@@ -425,6 +779,7 @@ impl Compiler {
         let mut asm = Asm::new();
         let package = self.package.clone();
         let native_desc = self.native_desc.clone();
+        let codes = self.result_codes.clone();
         let outs = {
             let mut gen = Gen::new(
                 &mut asm,
@@ -433,6 +788,7 @@ impl Compiler {
                 owner,
                 &package,
                 &native_desc,
+                &codes,
             );
             gen.prologue();
             gen.emit_body(&rec.routine.body)?;
@@ -459,6 +815,66 @@ impl Compiler {
             frame.ins,
             outs,
         ))
+    }
+
+    /// `this` is v4, the request code v5, the result code v6, and the intent v7.
+    /// Each handler writes the path register on both sides of the call join.
+    fn on_activity_result(&self, desc: &str) -> MethodModel {
+        let mut asm = Asm::new();
+        let this = 4u16;
+        let request = 5u16;
+        let result = 6u16;
+        let intent = 7u16;
+        let code = 0u16;
+        let ok = 1u16;
+        let path = 2u16;
+        for (index, item) in self.result_codes.iter().enumerate() {
+            let next = format!("n{index}");
+            let empty = format!("e{index}");
+            let call = format!("c{index}");
+            asm.const_(code, item.code);
+            asm.if_cmp("ne", request, code, &next);
+            asm.const_(ok, -1);
+            asm.if_cmp("ne", result, ok, &empty);
+            let runtime = if item.photo { "photoPath" } else { "documentPath" };
+            asm.invoke(
+                "static",
+                method(
+                    &self.rt_desc,
+                    runtime,
+                    "Ljava/lang/String;",
+                    &["Landroid/content/Context;", "Landroid/content/Intent;"],
+                ),
+                &[this, intent],
+            );
+            asm.move_result(path, true);
+            asm.goto(&call);
+            asm.label(&empty);
+            asm.const_string(path, "");
+            asm.label(&call);
+            asm.invoke(
+                "virtual",
+                method(desc, &item.handler, "V", &["Ljava/lang/String;"]),
+                &[this, path],
+            );
+            asm.ret(0, "void");
+            asm.label(&next);
+        }
+        asm.ret(0, "void");
+        MethodModel::new(
+            "onActivityResult",
+            "V",
+            vec![
+                "I".into(),
+                "I".into(),
+                "Landroid/content/Intent;".into(),
+            ],
+            ACC_PUBLIC,
+            Some(asm),
+            8,
+            4,
+            2,
+        )
     }
 
     fn on_create(&self, form: &FormChecked, desc: &str) -> Result<MethodModel, CompileError> {
@@ -497,6 +913,13 @@ impl Compiler {
             method("Landroid/view/View;", "setBackgroundColor", "V", &["I"]),
             &[0, 2],
         );
+        // A short form grows to the window so a bottom-docked bar meets the nav.
+        asm.const_(2, 1);
+        asm.invoke(
+            "virtual",
+            method("Landroid/widget/ScrollView;", "setFillViewport", "V", &["Z"]),
+            &[0, 2],
+        );
         asm.new_instance(1, "Landroid/widget/FrameLayout;");
         asm.invoke(
             "direct",
@@ -520,6 +943,9 @@ impl Compiler {
         for comp in comps {
             // A child's left and top are margins inside its panel, not form coordinates.
             if !comp_parent(comp).is_empty() {
+                continue;
+            }
+            if comp.get("type").and_then(|v| v.as_str()) == Some("Timer") {
                 continue;
             }
             width = width.max(comp_int(comp, "left")?.saturating_add(comp_int(comp, "width")?));
@@ -601,6 +1027,98 @@ impl Compiler {
         );
     }
 
+    fn place_timer(
+        &self,
+        asm: &mut Asm,
+        form: &FormChecked,
+        desc: &str,
+        this: u16,
+        comp: &Value,
+    ) -> Result<(), CompileError> {
+        let comp_name = comp_str(comp, "name")?;
+        let ldesc = timer_desc(&self.package, &form.name, comp_name);
+        let tick = tick_desc(&self.package);
+        let props = comp.get("props").and_then(|v| v.as_object());
+        let interval = match props.and_then(|map| map.get("Interval")) {
+            Some(value) => json_int(value)?,
+            None => 1000,
+        };
+        let enabled = props
+            .and_then(|map| map.get("Enabled"))
+            .is_some_and(truthy);
+        asm.new_instance(2, &ldesc);
+        asm.invoke("direct", method(&ldesc, "<init>", "V", &[desc]), &[2, this]);
+        asm.const_(3, interval);
+        asm.invoke(
+            "virtual",
+            method(&tick, "setInterval", "V", &["I"]),
+            &[2, 3],
+        );
+        asm.const_(3, if enabled { 1 } else { 0 });
+        asm.invoke(
+            "virtual",
+            method(&tick, "setEnabled", "V", &["Z"]),
+            &[2, 3],
+        );
+        asm.iput_obj(2, this, field(desc, comp_name, &ldesc));
+        Ok(())
+    }
+
+    fn timer_class(
+        &self,
+        form: &FormChecked,
+        form_desc: &str,
+        widget: &WidgetRef,
+    ) -> Result<ClassModel, CompileError> {
+        let name = comp_str(&widget.comp, "name")?;
+        let ldesc = timer_desc(&self.package, &form.name, name);
+        let tick = tick_desc(&self.package);
+        let source = format!("{}.droid", form.name);
+        let mut cls = ClassModel::new(&ldesc, &tick, ACC_PUBLIC, &source);
+        cls.field("this$0", form_desc, ACC_PUBLIC);
+        let mut init = Asm::new();
+        init.invoke("direct", method(&tick, "<init>", "V", &[]), &[1]);
+        init.iput_obj(2, 1, field(&ldesc, "this$0", form_desc));
+        init.ret(0, "void");
+        cls.method(MethodModel::new(
+            "<init>",
+            "V",
+            vec![form_desc.to_string()],
+            ACC_PUBLIC | ACC_CONSTRUCTOR,
+            Some(init),
+            3,
+            2,
+            1,
+        ));
+        let mut run = Asm::new();
+        // v5 is this. The handler can turn the timer off, so enabled is read again.
+        run.iget(0, 5, field(&tick, "enabled", "Z"));
+        run.if_zero("eqz", 0, "done");
+        if let Some(handler) = event_of(&widget.comp, "OnTimer") {
+            if let Some(rec) = form.routines.get(&handler.to_lowercase()) {
+                let key = handler_key(form_desc, rec)?;
+                run.iget_obj(1, 5, field(&ldesc, "this$0", form_desc));
+                run.invoke("virtual", key, &[1]);
+                run.iget(0, 5, field(&tick, "enabled", "Z"));
+                run.if_zero("eqz", 0, "done");
+            }
+        }
+        run.invoke("virtual", method(&tick, "arm", "V", &[]), &[5]);
+        run.label("done");
+        run.ret(0, "void");
+        cls.method(MethodModel::new(
+            "run",
+            "V",
+            Vec::new(),
+            ACC_PUBLIC,
+            Some(run),
+            6,
+            1,
+            1,
+        ));
+        Ok(cls)
+    }
+
     fn place_widget(
         &self,
         asm: &mut Asm,
@@ -613,6 +1131,9 @@ impl Compiler {
         let comp_name = comp_str(comp, "name")?;
         let spec = spec_exact(kind)?;
         let wdesc = spec.desc;
+        if kind == "Timer" {
+            return self.place_timer(asm, form, desc, this, comp);
+        }
         asm.new_instance(2, wdesc);
         if kind == "Progress" {
             // Null AttributeSet plus android.R.attr.progressBarStyleHorizontal (0x01010078).
@@ -757,7 +1278,7 @@ impl Compiler {
                 if kind == "Web" && matches!(*prop, "Html" | "Url") {
                     continue;
                 }
-                if kind == "List" && *prop == "Items" {
+                if kind == "List" && matches!(*prop, "Items" | "Details") {
                     continue;
                 }
                 if kind == "Spinner" && matches!(*prop, "Items" | "Selection") {
@@ -770,6 +1291,27 @@ impl Compiler {
                     emit_const_prop(asm, 2, prop, value)?;
                 }
             }
+        }
+        if kind == "Button" {
+            let side = comp_int(comp, "width")?;
+            if side == comp_int(comp, "height")? && side >= 28 {
+                emit_round_button(asm, props)?;
+            }
+        }
+        if kind == "Date" {
+            // Spinner date, so the editor can sit on a note without a calendar.
+            asm.const_(4, 0);
+            asm.invoke(
+                "virtual",
+                method("Landroid/widget/DatePicker;", "setCalendarViewShown", "V", &["Z"]),
+                &[2, 4],
+            );
+            asm.const_(4, 1);
+            asm.invoke(
+                "virtual",
+                method("Landroid/widget/DatePicker;", "setSpinnersShown", "V", &["Z"]),
+                &[2, 4],
+            );
         }
         if kind == "Date" && event_of(comp, "OnChange").is_none() {
             emit_update_date(asm, props)?;
@@ -797,6 +1339,27 @@ impl Compiler {
                 ),
                 &[2, this, 3],
             );
+            let details = props
+                .and_then(|map| map.get("Details"))
+                .map(py_str)
+                .unwrap_or_default();
+            if !details.is_empty() {
+                asm.const_string(3, &details);
+                asm.invoke(
+                    "static",
+                    method(
+                        &self.rt_desc,
+                        "setDetails",
+                        "V",
+                        &[
+                            "Landroid/widget/ListView;",
+                            "Landroid/content/Context;",
+                            "Ljava/lang/String;",
+                        ],
+                    ),
+                    &[2, this, 3],
+                );
+            }
         }
         if kind == "Spinner" {
             let text = props
@@ -845,8 +1408,23 @@ impl Compiler {
         } else {
             "Landroid/widget/FrameLayout$LayoutParams;"
         };
+        let form_h = int_or(&form.form, "height", 640)?;
+        let top = comp_int(comp, "top")?;
+        let height = comp_int(comp, "height")?;
+        let dock = comp
+            .get("props")
+            .and_then(|props| props.get("Dock"))
+            .and_then(|value| value.as_str())
+            .unwrap_or("");
+        // Fill keeps the design gap under the widget and grows with the window.
+        // Bottom keeps the design gap under the widget and sits on the window bottom.
+        let gap = (form_h - top - height).max(0);
         self.emit_dp(asm, this, 4, comp_int(comp, "width")?);
-        self.emit_dp(asm, this, 5, comp_int(comp, "height")?);
+        if !parented && dock.eq_ignore_ascii_case("Fill") {
+            asm.const_(5, -1);
+        } else {
+            self.emit_dp(asm, this, 5, height);
+        }
         asm.new_instance(3, params);
         asm.invoke(
             "direct",
@@ -854,22 +1432,62 @@ impl Compiler {
             &[3, 4, 5],
         );
         self.emit_dp(asm, this, 4, comp_int(comp, "left")?);
-        self.emit_dp(asm, this, 5, comp_int(comp, "top")?);
+        if !parented && dock.eq_ignore_ascii_case("Bottom") {
+            asm.const_(5, 80);
+            asm.iput(
+                5,
+                3,
+                field("Landroid/widget/FrameLayout$LayoutParams;", "gravity", "I"),
+            );
+            self.emit_dp(asm, this, 5, gap);
+            asm.iput(
+                5,
+                3,
+                field(
+                    "Landroid/view/ViewGroup$MarginLayoutParams;",
+                    "bottomMargin",
+                    "I",
+                ),
+            );
+        } else if !parented && dock.eq_ignore_ascii_case("Fill") {
+            self.emit_dp(asm, this, 5, top);
+            asm.iput(
+                5,
+                3,
+                field(
+                    "Landroid/view/ViewGroup$MarginLayoutParams;",
+                    "topMargin",
+                    "I",
+                ),
+            );
+            self.emit_dp(asm, this, 5, gap);
+            asm.iput(
+                5,
+                3,
+                field(
+                    "Landroid/view/ViewGroup$MarginLayoutParams;",
+                    "bottomMargin",
+                    "I",
+                ),
+            );
+        } else {
+            self.emit_dp(asm, this, 5, top);
+            asm.iput(
+                5,
+                3,
+                field(
+                    "Landroid/view/ViewGroup$MarginLayoutParams;",
+                    "topMargin",
+                    "I",
+                ),
+            );
+        }
         asm.iput(
             4,
             3,
             field(
                 "Landroid/view/ViewGroup$MarginLayoutParams;",
                 "leftMargin",
-                "I",
-            ),
-        );
-        asm.iput(
-            5,
-            3,
-            field(
-                "Landroid/view/ViewGroup$MarginLayoutParams;",
-                "topMargin",
                 "I",
             ),
         );
@@ -992,7 +1610,7 @@ impl Compiler {
     ) -> Result<(), CompileError> {
         for comp in comps {
             let parent_name = comp_parent(comp);
-            if parent_name.is_empty() {
+            if parent_name.is_empty() || comp.get("type").and_then(|v| v.as_str()) == Some("Timer") {
                 continue;
             }
             let child_name = comp_str(comp, "name")?;
@@ -1636,6 +2254,7 @@ impl<'a> Gen<'a> {
         owner: &str,
         package: &str,
         native_desc: &str,
+        result_codes: &[ResultUse],
     ) -> Self {
         *lab += 1;
         let ret_label = format!("L{lab}");
@@ -1646,6 +2265,7 @@ impl<'a> Gen<'a> {
             owner: owner.to_string(),
             package: package.to_string(),
             native_desc: native_desc.to_string(),
+            result_codes: result_codes.to_vec(),
             sp: 0,
             outs: 0,
             ret_label,
@@ -1655,6 +2275,52 @@ impl<'a> Gen<'a> {
     fn fresh(&mut self) -> String {
         *self.lab += 1;
         format!("L{}", self.lab)
+    }
+
+    /// A false result from the runtime means nothing was started, so the handler
+    /// runs now with an empty path. A start delivers the path from onActivityResult.
+    fn emit_activity_result(
+        &mut self,
+        name: &str,
+        form_name: Option<&str>,
+        start: u16,
+    ) -> Result<Option<Val>, CompileError> {
+        let photo = name == "TakePhoto";
+        let handler = form_name.filter(|item| !item.is_empty()).ok_or_else(|| {
+            CompileError::bare(format!("{name} needs a procedure name"))
+        })?;
+        let this = self.frame.this.ok_or_else(|| {
+            CompileError::bare(format!("{name} outside a form"))
+        })?;
+        let code = self
+            .result_codes
+            .iter()
+            .find(|item| item.photo == photo && item.handler.eq_ignore_ascii_case(handler))
+            .map(|item| item.code)
+            .ok_or_else(|| CompileError::bare(format!("{name} needs a procedure name")))?;
+        self.release_to(start);
+        let code_reg = self.alloc()?;
+        self.asm.const_(code_reg, code);
+        let owner = class_desc(&self.package, "DroideRt");
+        let runtime = if photo { "takePhoto" } else { "openDocument" };
+        self.invoke(
+            "static",
+            method(&owner, runtime, "Z", &["Landroid/app/Activity;", "I"]),
+            &[this, code_reg],
+        );
+        self.asm.move_result(code_reg, false);
+        let started = self.fresh();
+        self.asm.if_zero("nez", code_reg, &started);
+        let path = self.alloc()?;
+        self.asm.const_string(path, "");
+        self.invoke(
+            "virtual",
+            method(&self.owner, handler, "V", &["Ljava/lang/String;"]),
+            &[this, path],
+        );
+        self.asm.label(&started);
+        self.release_to(start);
+        Ok(None)
     }
 
     fn alloc(&mut self) -> Result<u16, CompileError> {
@@ -1849,12 +2515,31 @@ impl<'a> Gen<'a> {
             .frame
             .this
             .ok_or_else(|| CompileError::bare("widget access outside a form"))?;
+        let field_desc = component_desc(
+            &self.package,
+            simple_class(&self.owner),
+            kind,
+            &widget.name,
+            spec.desc,
+        );
         self.asm
-            .iget_obj(dest, this, field(&self.owner, &widget.name, spec.desc));
+            .iget_obj(dest, this, field(&self.owner, &widget.name, &field_desc));
         Ok(())
     }
 
     fn emit_setter(&mut self, wreg: u16, prop: &str, vreg: u16, kind: &str) -> Result<(), CompileError> {
+        if kind == "Timer" {
+            let tick = tick_desc(&self.package);
+            let (name, desc) = if prop.eq_ignore_ascii_case("Enabled") {
+                ("setEnabled", "Z")
+            } else if prop.eq_ignore_ascii_case("Interval") {
+                ("setInterval", "I")
+            } else {
+                return Err(CompileError::bare(format!("Timer has no property {prop}")));
+            };
+            self.invoke("virtual", method(&tick, name, "V", &[desc]), &[wreg, vreg]);
+            return Ok(());
+        }
         let spec = setter_ref(prop)?;
         if spec.mode == "clock" {
             let text = &["Ljava/lang/CharSequence;"];
@@ -1907,13 +2592,19 @@ impl<'a> Gen<'a> {
             );
             return Ok(());
         }
-        if spec.mode == "lines" {
+        if spec.mode == "stack" {
+            self.emit_list_bottom(wreg, vreg)?;
+            return Ok(());
+        }
+        if spec.mode == "lines" || spec.mode == "details" {
             let ctx = self
                 .frame
                 .this
                 .ok_or_else(|| CompileError::bare("widget access outside a form"))?;
             let rt = class_desc(&self.package, "DroideRt");
-            let (name, view) = if kind == "Spinner" {
+            let (name, view) = if spec.mode == "details" {
+                ("setDetails", "Landroid/widget/ListView;")
+            } else if kind == "Spinner" {
                 ("setSpinner", "Landroid/widget/Spinner;")
             } else {
                 ("setLines", "Landroid/widget/ListView;")
@@ -1962,6 +2653,42 @@ impl<'a> Gen<'a> {
             self.asm.label(&end);
         }
         self.invoke("virtual", key, &[wreg, vreg]);
+        Ok(())
+    }
+
+    fn emit_list_bottom(&mut self, wreg: u16, vreg: u16) -> Result<(), CompileError> {
+        let off = self.fresh();
+        let done = self.fresh();
+        let start = self.sp;
+        let mode = self.alloc()?;
+        self.zero_except(&[wreg, vreg]);
+        self.asm.if_zero("eqz", vreg, &off);
+        self.asm.const_(mode, 2);
+        self.asm.goto(&done);
+        self.asm.label(&off);
+        self.asm.const_(mode, 0);
+        self.asm.label(&done);
+        self.invoke(
+            "virtual",
+            method(
+                "Landroid/widget/AbsListView;",
+                "setStackFromBottom",
+                "V",
+                &["Z"],
+            ),
+            &[wreg, vreg],
+        );
+        self.invoke(
+            "virtual",
+            method(
+                "Landroid/widget/AbsListView;",
+                "setTranscriptMode",
+                "V",
+                &["I"],
+            ),
+            &[wreg, mode],
+        );
+        self.release_to(start);
         Ok(())
     }
 
@@ -2162,6 +2889,34 @@ impl<'a> Gen<'a> {
         let spec = getter_ref(&actual)?;
         let wreg = self.alloc()?;
         self.load_widget(wreg, &widget)?;
+        if comp_str(&widget.comp, "type")? == "Timer" {
+            let tick = tick_desc(&self.package);
+            let (name, ret, ty) = if actual.eq_ignore_ascii_case("Enabled") {
+                ("enabled", "Z", "Boolean")
+            } else if actual.eq_ignore_ascii_case("Interval") {
+                ("interval", "I", "Integer")
+            } else {
+                return Err(CompileError::bare(format!("Timer has no property {actual}")));
+            };
+            self.invoke("virtual", method(&tick, name, ret, &[]), &[wreg]);
+            self.asm.move_result(wreg, false);
+            return Ok((wreg, ty.into()));
+        }
+        if spec.mode == "items" || spec.mode == "details" {
+            let rt = class_desc(&self.package, "DroideRt");
+            let name = if spec.mode == "items" {
+                "itemsOf"
+            } else {
+                "detailsOf"
+            };
+            self.invoke(
+                "static",
+                method(&rt, name, "Ljava/lang/String;", &["Landroid/view/View;"]),
+                &[wreg],
+            );
+            self.asm.move_result(wreg, true);
+            return Ok((wreg, "String".into()));
+        }
         self.invoke("virtual", dex_method(spec), &[wreg]);
         if spec.mode == "text" {
             self.asm.move_result(wreg, true);
@@ -2383,8 +3138,18 @@ impl<'a> Gen<'a> {
             .ok_or_else(|| CompileError::bare("cannot compile expression"))?
             .clone();
         let start = self.sp;
+        // The form name is a const-class, not a live string. Leaving that
+        // register free is what lets four extras fit beside the intent.
+        let skip_form = matches!(
+            (&resolved, args.first()),
+            (Resolved::Builtin(name), Some(Expr::Literal(lit)))
+                if name == "OpenForm" && matches!(lit.value, Lit::Str(_))
+        );
         let mut arg_regs = Vec::new();
-        for arg in args {
+        for (index, arg) in args.iter().enumerate() {
+            if skip_form && index == 0 {
+                continue;
+            }
             let (reg, _) = self.eval(arg)?;
             arg_regs.push(reg);
         }
@@ -2535,6 +3300,20 @@ impl<'a> Gen<'a> {
         self.asm.move_result(builder, true);
     }
 
+    fn put_extra(&mut self, intent: u16, key: u16, value: u16, value_desc: &str) {
+        self.invoke(
+            "virtual",
+            method(
+                "Landroid/content/Intent;",
+                "putExtra",
+                "Landroid/content/Intent;",
+                &["Ljava/lang/String;", value_desc],
+            ),
+            &[intent, key, value],
+        );
+        self.asm.move_result(intent, true);
+    }
+
     fn alert_show(&mut self, builder: u16, dest: u16) {
         self.invoke(
             "virtual",
@@ -2676,6 +3455,19 @@ impl<'a> Gen<'a> {
                     .frame
                     .this
                     .ok_or_else(|| CompileError::bare("OpenForm outside a form"))?;
+                let skipped = matches!(
+                    args.first(),
+                    Some(Expr::Literal(lit)) if matches!(lit.value, Lit::Str(_))
+                );
+                let extra_regs: Vec<u16> = if skipped {
+                    arg_regs.to_vec()
+                } else {
+                    arg_regs.iter().skip(1).copied().collect()
+                };
+                let extra_exprs: Vec<&Expr> = args.iter().skip(1).collect();
+                if extra_regs.len() != extra_exprs.len() {
+                    return Err(CompileError::bare("OpenForm needs a form name"));
+                }
                 let intent = self.alloc()?;
                 self.asm.new_instance(intent, "Landroid/content/Intent;");
                 self.invoke(
@@ -2683,9 +3475,10 @@ impl<'a> Gen<'a> {
                     method("Landroid/content/Intent;", "<init>", "V", &[]),
                     &[intent],
                 );
-                let cls = self.alloc()?;
+                // After setClass the class register is free and becomes the extra key.
+                let key = self.alloc()?;
                 self.asm
-                    .const_class(cls, &class_desc(&self.package, &form_name));
+                    .const_class(key, &class_desc(&self.package, &form_name));
                 self.invoke(
                     "virtual",
                     method(
@@ -2694,9 +3487,18 @@ impl<'a> Gen<'a> {
                         "Landroid/content/Intent;",
                         &["Landroid/content/Context;", "Ljava/lang/Class;"],
                     ),
-                    &[intent, this, cls],
+                    &[intent, this, key],
                 );
                 self.asm.move_result(intent, true);
+                for (index, (reg, expr)) in extra_regs.iter().zip(extra_exprs.iter()).enumerate() {
+                    let (letter, desc) = extra_put(expr)?;
+                    // Value first, then the type tag, so a torn write looks missing.
+                    self.asm.const_string(key, &format!("a{index}"));
+                    self.put_extra(intent, key, *reg, desc);
+                    self.asm.const_string(*reg, letter);
+                    self.asm.const_string(key, &format!("t{index}"));
+                    self.put_extra(intent, key, *reg, "Ljava/lang/String;");
+                }
                 self.invoke(
                     "virtual",
                     method(
@@ -2709,6 +3511,36 @@ impl<'a> Gen<'a> {
                 );
                 self.release_to(start);
                 Ok(None)
+            }
+            "Arg" | "ArgInt" | "ArgBool" => {
+                let (runtime, ret_desc, ret_ty, obj) = match name {
+                    "Arg" => ("arg", "Ljava/lang/String;", "String", true),
+                    "ArgInt" => ("argInt", "I", "Integer", false),
+                    "ArgBool" => ("argBool", "Z", "Boolean", false),
+                    _ => unreachable!(),
+                };
+                let this = self.frame.this.ok_or_else(|| {
+                    CompileError::bare(format!("{name} outside a form"))
+                })?;
+                let owner = class_desc(&self.package, "DroideRt");
+                self.invoke(
+                    "static",
+                    method(
+                        &owner,
+                        runtime,
+                        ret_desc,
+                        &["Landroid/app/Activity;", "I"],
+                    ),
+                    &[this, arg_regs[0]],
+                );
+                self.asm.move_result(start, obj);
+                self.release_to(start + 1);
+                self.sp = start + 1;
+                if as_stmt {
+                    Ok(None)
+                } else {
+                    Ok(Some((start, ret_ty.into())))
+                }
             }
             "IntToStr" => {
                 self.invoke(
@@ -2863,6 +3695,7 @@ impl<'a> Gen<'a> {
                 self.release_to(start);
                 Ok(None)
             }
+            "TakePhoto" | "OpenDocument" => self.emit_activity_result(name, form_name, start),
             "Share" => {
                 let this = self
                     .frame
@@ -2900,6 +3733,316 @@ impl<'a> Gen<'a> {
                 );
                 self.release_to(start);
                 Ok(None)
+            }
+            "LineCount" => {
+                let owner = class_desc(&self.package, "DroideRt");
+                self.invoke(
+                    "static",
+                    method(&owner, "lineCount", "I", &["Ljava/lang/String;"]),
+                    &[arg_regs[0]],
+                );
+                self.asm.move_result(start, false);
+                self.release_to(start + 1);
+                self.sp = start + 1;
+                if as_stmt {
+                    Ok(None)
+                } else {
+                    Ok(Some((start, "Integer".into())))
+                }
+            }
+            "ToggleLine" => {
+                let owner = class_desc(&self.package, "DroideRt");
+                self.invoke(
+                    "static",
+                    method(
+                        &owner,
+                        "toggleLine",
+                        "Ljava/lang/String;",
+                        &["Ljava/lang/String;", "Ljava/lang/String;"],
+                    ),
+                    &[arg_regs[0], arg_regs[1]],
+                );
+                self.asm.move_result(start, true);
+                self.release_to(start + 1);
+                self.sp = start + 1;
+                if as_stmt {
+                    Ok(None)
+                } else {
+                    Ok(Some((start, "String".into())))
+                }
+            }
+            "DropNames" => {
+                let owner = class_desc(&self.package, "DroideRt");
+                self.invoke(
+                    "static",
+                    method(
+                        &owner,
+                        "dropNames",
+                        "Ljava/lang/String;",
+                        &["Ljava/lang/String;", "Ljava/lang/String;"],
+                    ),
+                    &[arg_regs[0], arg_regs[1]],
+                );
+                self.asm.move_result(start, true);
+                self.release_to(start + 1);
+                self.sp = start + 1;
+                if as_stmt {
+                    Ok(None)
+                } else {
+                    Ok(Some((start, "String".into())))
+                }
+            }
+            "DropParallel" => {
+                let owner = class_desc(&self.package, "DroideRt");
+                self.invoke(
+                    "static",
+                    method(
+                        &owner,
+                        "dropParallel",
+                        "Ljava/lang/String;",
+                        &[
+                            "Ljava/lang/String;",
+                            "Ljava/lang/String;",
+                            "Ljava/lang/String;",
+                        ],
+                    ),
+                    &[arg_regs[0], arg_regs[1], arg_regs[2]],
+                );
+                self.asm.move_result(start, true);
+                self.release_to(start + 1);
+                self.sp = start + 1;
+                if as_stmt {
+                    Ok(None)
+                } else {
+                    Ok(Some((start, "String".into())))
+                }
+            }
+            "TakeParallel" => {
+                let owner = class_desc(&self.package, "DroideRt");
+                self.invoke(
+                    "static",
+                    method(
+                        &owner,
+                        "takeParallel",
+                        "Ljava/lang/String;",
+                        &[
+                            "Ljava/lang/String;",
+                            "Ljava/lang/String;",
+                            "Ljava/lang/String;",
+                        ],
+                    ),
+                    &[arg_regs[0], arg_regs[1], arg_regs[2]],
+                );
+                self.asm.move_result(start, true);
+                self.release_to(start + 1);
+                self.sp = start + 1;
+                if as_stmt {
+                    Ok(None)
+                } else {
+                    Ok(Some((start, "String".into())))
+                }
+            }
+            "JoinNotes" => {
+                let this = self
+                    .frame
+                    .this
+                    .ok_or_else(|| CompileError::bare("JoinNotes outside a form"))?;
+                let owner = class_desc(&self.package, "DroideRt");
+                self.invoke(
+                    "static",
+                    method(
+                        &owner,
+                        "joinNotes",
+                        "Ljava/lang/String;",
+                        &["Landroid/content/Context;", "Ljava/lang/String;"],
+                    ),
+                    &[this, arg_regs[0]],
+                );
+                self.asm.move_result(start, true);
+                self.release_to(start + 1);
+                self.sp = start + 1;
+                if as_stmt {
+                    Ok(None)
+                } else {
+                    Ok(Some((start, "String".into())))
+                }
+            }
+            "SameDays" => {
+                let owner = class_desc(&self.package, "DroideRt");
+                self.invoke(
+                    "static",
+                    method(
+                        &owner,
+                        "sameDays",
+                        "Ljava/lang/String;",
+                        &["Ljava/lang/String;", "Ljava/lang/String;"],
+                    ),
+                    &[arg_regs[0], arg_regs[1]],
+                );
+                self.asm.move_result(start, true);
+                self.release_to(start + 1);
+                self.sp = start + 1;
+                if as_stmt {
+                    Ok(None)
+                } else {
+                    Ok(Some((start, "String".into())))
+                }
+            }
+            "JournalItems" => {
+                let owner = class_desc(&self.package, "DroideRt");
+                self.invoke(
+                    "static",
+                    method(
+                        &owner,
+                        "journalItems",
+                        "Ljava/lang/String;",
+                        &["Ljava/lang/String;", "Ljava/lang/String;"],
+                    ),
+                    &[arg_regs[0], arg_regs[1]],
+                );
+                self.asm.move_result(start, true);
+                self.release_to(start + 1);
+                self.sp = start + 1;
+                if as_stmt {
+                    Ok(None)
+                } else {
+                    Ok(Some((start, "String".into())))
+                }
+            }
+            "JournalDetails" => {
+                let owner = class_desc(&self.package, "DroideRt");
+                self.invoke(
+                    "static",
+                    method(
+                        &owner,
+                        "journalDetails",
+                        "Ljava/lang/String;",
+                        &[
+                            "Ljava/lang/String;",
+                            "Ljava/lang/String;",
+                            "Ljava/lang/String;",
+                        ],
+                    ),
+                    &[arg_regs[0], arg_regs[1], arg_regs[2]],
+                );
+                self.asm.move_result(start, true);
+                self.release_to(start + 1);
+                self.sp = start + 1;
+                if as_stmt {
+                    Ok(None)
+                } else {
+                    Ok(Some((start, "String".into())))
+                }
+            }
+            "LineIndex" => {
+                let owner = class_desc(&self.package, "DroideRt");
+                self.invoke(
+                    "static",
+                    method(
+                        &owner,
+                        "lineIndex",
+                        "I",
+                        &["Ljava/lang/String;", "Ljava/lang/String;"],
+                    ),
+                    &[arg_regs[0], arg_regs[1]],
+                );
+                self.asm.move_result(start, false);
+                self.release_to(start + 1);
+                self.sp = start + 1;
+                if as_stmt {
+                    Ok(None)
+                } else {
+                    Ok(Some((start, "Integer".into())))
+                }
+            }
+            "LineAt" => {
+                let owner = class_desc(&self.package, "DroideRt");
+                self.invoke(
+                    "static",
+                    method(
+                        &owner,
+                        "lineAt",
+                        "Ljava/lang/String;",
+                        &["Ljava/lang/String;", "I"],
+                    ),
+                    &[arg_regs[0], arg_regs[1]],
+                );
+                self.asm.move_result(start, true);
+                self.release_to(start + 1);
+                self.sp = start + 1;
+                if as_stmt {
+                    Ok(None)
+                } else {
+                    Ok(Some((start, "String".into())))
+                }
+            }
+            "ReplaceAt" => {
+                let owner = class_desc(&self.package, "DroideRt");
+                self.invoke(
+                    "static",
+                    method(
+                        &owner,
+                        "replaceAt",
+                        "Ljava/lang/String;",
+                        &["Ljava/lang/String;", "I", "Ljava/lang/String;"],
+                    ),
+                    &[arg_regs[0], arg_regs[1], arg_regs[2]],
+                );
+                self.asm.move_result(start, true);
+                self.release_to(start + 1);
+                self.sp = start + 1;
+                if as_stmt {
+                    Ok(None)
+                } else {
+                    Ok(Some((start, "String".into())))
+                }
+            }
+            "DropAt" => {
+                let owner = class_desc(&self.package, "DroideRt");
+                self.invoke(
+                    "static",
+                    method(
+                        &owner,
+                        "dropAt",
+                        "Ljava/lang/String;",
+                        &["Ljava/lang/String;", "I"],
+                    ),
+                    &[arg_regs[0], arg_regs[1]],
+                );
+                self.asm.move_result(start, true);
+                self.release_to(start + 1);
+                self.sp = start + 1;
+                if as_stmt {
+                    Ok(None)
+                } else {
+                    Ok(Some((start, "String".into())))
+                }
+            }
+            "Today" | "Time" => {
+                let this = self
+                    .frame
+                    .this
+                    .ok_or_else(|| CompileError::bare(format!("{name} outside a form")))?;
+                let owner = class_desc(&self.package, "DroideRt");
+                let method_name = if name == "Today" { "today" } else { "time" };
+                self.invoke(
+                    "static",
+                    method(
+                        &owner,
+                        method_name,
+                        "Ljava/lang/String;",
+                        &["Landroid/content/Context;"],
+                    ),
+                    &[this],
+                );
+                self.asm.move_result(start, true);
+                self.release_to(start + 1);
+                self.sp = start + 1;
+                if as_stmt {
+                    Ok(None)
+                } else {
+                    Ok(Some((start, "String".into())))
+                }
             }
             "PasteText" => {
                 let this = self
@@ -3066,6 +4209,32 @@ fn emit_const_prop(
         "bool" => {
             asm.const_(4, if truthy(value) { 1 } else { 0 });
             asm.invoke("virtual", key, &[wreg, 4]);
+        }
+        "stack" => {
+            let on = truthy(value);
+            asm.const_(4, if on { 1 } else { 0 });
+            asm.invoke(
+                "virtual",
+                method(
+                    "Landroid/widget/AbsListView;",
+                    "setStackFromBottom",
+                    "V",
+                    &["Z"],
+                ),
+                &[wreg, 4],
+            );
+            // ALWAYS_SCROLL is 2. The newest row stays against the bottom edge.
+            asm.const_(4, if on { 2 } else { 0 });
+            asm.invoke(
+                "virtual",
+                method(
+                    "Landroid/widget/AbsListView;",
+                    "setTranscriptMode",
+                    "V",
+                    &["I"],
+                ),
+                &[wreg, 4],
+            );
         }
         "vis" => {
             asm.const_(4, if truthy(value) { 0 } else { 8 });
@@ -3583,6 +4752,87 @@ fn ordered_widgets(form: &FormChecked) -> Vec<&WidgetRef> {
     order
 }
 
+fn result_uses(form: &FormChecked) -> Vec<ResultUse> {
+    let mut uses = Vec::new();
+    for rec in by_index(&form.routines) {
+        collect_results(&rec.routine.body, &mut uses);
+    }
+    uses
+}
+
+fn collect_results(stmts: &[Stmt], uses: &mut Vec<ResultUse>) {
+    for stmt in stmts {
+        collect_result_stmt(stmt, uses);
+    }
+}
+
+fn collect_result_stmt(stmt: &Stmt, uses: &mut Vec<ResultUse>) {
+    match stmt {
+        Stmt::Block(block) => collect_results(&block.stmts, uses),
+        Stmt::If(stmt) => {
+            collect_result_expr(&stmt.cond, uses);
+            collect_result_stmt(&stmt.then, uses);
+            collect_result_stmt(&stmt.else_, uses);
+        }
+        Stmt::While(stmt) => {
+            collect_result_expr(&stmt.cond, uses);
+            collect_result_stmt(&stmt.body, uses);
+        }
+        Stmt::Assign(stmt) => collect_result_expr(&stmt.expr, uses),
+        Stmt::Call(stmt) => {
+            note_result(stmt.resolved.as_ref(), stmt.form_name.as_deref(), uses);
+            for arg in &stmt.args {
+                collect_result_expr(arg, uses);
+            }
+        }
+        Stmt::Exit(_) => {}
+    }
+}
+
+fn collect_result_expr(expr: &Expr, uses: &mut Vec<ResultUse>) {
+    match expr {
+        Expr::Call(call) => {
+            note_result(call.resolved.as_ref(), call.form_name.as_deref(), uses);
+            for arg in &call.args {
+                collect_result_expr(arg, uses);
+            }
+        }
+        Expr::Unary(unary) => collect_result_expr(&unary.expr, uses),
+        Expr::Binary(binary) => {
+            collect_result_expr(&binary.left, uses);
+            collect_result_expr(&binary.right, uses);
+        }
+        Expr::Ident(_) | Expr::Literal(_) | Expr::Designator(_) => {}
+    }
+}
+
+fn note_result(resolved: Option<&Resolved>, form_name: Option<&str>, uses: &mut Vec<ResultUse>) {
+    let Some(Resolved::Builtin(name)) = resolved else {
+        return;
+    };
+    let photo = match name.as_str() {
+        "TakePhoto" => true,
+        "OpenDocument" => false,
+        _ => return,
+    };
+    let Some(handler) = form_name.filter(|handler| !handler.is_empty()) else {
+        return;
+    };
+    if uses.iter().any(|item| item.photo == photo && item.handler.eq_ignore_ascii_case(handler)) {
+        return;
+    }
+    let code = if photo {
+        1 + uses.iter().filter(|item| item.photo).count() as i64
+    } else {
+        256 + uses.iter().filter(|item| !item.photo).count() as i64
+    };
+    uses.push(ResultUse {
+        photo,
+        handler: handler.to_string(),
+        code,
+    });
+}
+
 fn ask_handlers(form: &FormChecked) -> Vec<String> {
     let mut seen = BTreeSet::new();
     let mut order = Vec::new();
@@ -3708,6 +4958,26 @@ fn flatten_strcat(expr: &Expr, parts: &mut Vec<Expr>) {
         }
     }
     parts.push(expr.clone());
+}
+
+fn expr_type(expr: &Expr) -> Option<&str> {
+    match expr {
+        Expr::Ident(node) => node.ty.as_deref(),
+        Expr::Literal(node) => node.ty.as_deref().or(Some(node.type_name.as_str())),
+        Expr::Unary(node) => node.ty.as_deref(),
+        Expr::Binary(node) => node.ty.as_deref(),
+        Expr::Call(node) => node.ty.as_deref(),
+        Expr::Designator(node) => node.ty.as_deref(),
+    }
+}
+
+fn extra_put(expr: &Expr) -> Result<(&'static str, &'static str), CompileError> {
+    match expr_type(expr) {
+        Some("String") => Ok(("S", "Ljava/lang/String;")),
+        Some("Integer") => Ok(("I", "I")),
+        Some("Boolean") => Ok(("B", "Z")),
+        _ => Err(CompileError::bare("OpenForm cannot pass a View")),
+    }
 }
 
 fn open_form_name(form_name: Option<&str>, args: &[Expr]) -> Result<String, CompileError> {
@@ -4064,7 +5334,127 @@ fn emit_where(asm: &mut Asm) {
     asm.ret(0, "obj");
 }
 
-/// `v5` is the context. The picture itself needs an activity result, which is not built.
+/// `v5` is the context. This starts the camera and does not wait for a picture.
+/// `TakePhoto` is the call that receives the thumbnail.
+/// `v6` is the activity and `v7` is the 0-based extra index.
+/// `v3` is the only integer compare, so `v1` stays a string or untouched at
+/// `none`. An int and a reference do not merge, and every miss path joins there.
+/// The value returns on its own instruction, so the intent in `v0` is not joined
+/// with that int. A missing, wrong-type, or out-of-range extra is "", 0, or false.
+fn emit_form_arg(asm: &mut Asm, kind: &str) {
+    asm.invoke(
+        "virtual",
+        method(
+            "Landroid/app/Activity;",
+            "getIntent",
+            "Landroid/content/Intent;",
+            &[],
+        ),
+        &[6],
+    );
+    asm.move_result(0, true);
+    asm.if_zero("eqz", 0, "none");
+    emit_arg_keys(asm, "t", "tk", "tgot");
+    asm.invoke(
+        "virtual",
+        method(
+            "Landroid/content/Intent;",
+            "getStringExtra",
+            "Ljava/lang/String;",
+            &["Ljava/lang/String;"],
+        ),
+        &[0, 1],
+    );
+    asm.move_result(2, true);
+    asm.if_zero("eqz", 2, "none");
+    asm.const_string(3, kind);
+    asm.invoke(
+        "virtual",
+        method(
+            "Ljava/lang/String;",
+            "equals",
+            "Z",
+            &["Ljava/lang/Object;"],
+        ),
+        &[2, 3],
+    );
+    asm.move_result(3, false);
+    asm.if_zero("eqz", 3, "none");
+    emit_arg_keys(asm, "a", "ak", "agot");
+    match kind {
+        "S" => {
+            asm.invoke(
+                "virtual",
+                method(
+                    "Landroid/content/Intent;",
+                    "getStringExtra",
+                    "Ljava/lang/String;",
+                    &["Ljava/lang/String;"],
+                ),
+                &[0, 1],
+            );
+            asm.move_result(2, true);
+            asm.if_zero("eqz", 2, "none");
+            asm.ret(2, "obj");
+        }
+        "I" => {
+            asm.const_(3, 0);
+            asm.invoke(
+                "virtual",
+                method(
+                    "Landroid/content/Intent;",
+                    "getIntExtra",
+                    "I",
+                    &["Ljava/lang/String;", "I"],
+                ),
+                &[0, 1, 3],
+            );
+            asm.move_result(2, false);
+            asm.ret(2, "int");
+        }
+        "B" => {
+            asm.const_(3, 0);
+            asm.invoke(
+                "virtual",
+                method(
+                    "Landroid/content/Intent;",
+                    "getBooleanExtra",
+                    "Z",
+                    &["Ljava/lang/String;", "Z"],
+                ),
+                &[0, 1, 3],
+            );
+            asm.move_result(2, false);
+            asm.ret(2, "int");
+        }
+        _ => unreachable!("form arg kind"),
+    }
+    asm.label("none");
+    if kind == "S" {
+        asm.const_string(2, "");
+        asm.ret(2, "obj");
+    } else {
+        asm.const_(2, 0);
+        asm.ret(2, "int");
+    }
+}
+
+fn emit_arg_keys(asm: &mut Asm, prefix: &str, lab: &str, got: &str) {
+    for index in 0..4 {
+        asm.const_(3, index);
+        asm.if_cmp("eq", 7, 3, &format!("{lab}{index}"));
+    }
+    asm.goto("none");
+    for index in 0..4 {
+        asm.label(&format!("{lab}{index}"));
+        asm.const_string(1, &format!("{prefix}{index}"));
+        if index != 3 {
+            asm.goto(got);
+        }
+    }
+    asm.label(got);
+}
+
 fn emit_open_camera(asm: &mut Asm) {
     asm.new_instance(0, "Landroid/content/Intent;");
     asm.const_string(1, "android.media.action.IMAGE_CAPTURE");
@@ -4120,6 +5510,302 @@ fn emit_open_camera(asm: &mut Asm) {
     );
     asm.label("done");
     asm.ret(0, "void");
+}
+
+/// `v6` is the activity and `v7` is the request code. An empty resolve list returns 0.
+fn emit_take_photo(asm: &mut Asm) {
+    asm.new_instance(0, "Landroid/content/Intent;");
+    asm.const_string(1, "android.media.action.IMAGE_CAPTURE");
+    asm.invoke(
+        "direct",
+        method(
+            "Landroid/content/Intent;",
+            "<init>",
+            "V",
+            &["Ljava/lang/String;"],
+        ),
+        &[0, 1],
+    );
+    emit_for_result(asm);
+}
+
+/// `v6` is the activity and `v7` is the request code. The chosen stream is copied later.
+fn emit_open_document(asm: &mut Asm) {
+    asm.new_instance(0, "Landroid/content/Intent;");
+    asm.const_string(1, "android.intent.action.OPEN_DOCUMENT");
+    asm.invoke(
+        "direct",
+        method(
+            "Landroid/content/Intent;",
+            "<init>",
+            "V",
+            &["Ljava/lang/String;"],
+        ),
+        &[0, 1],
+    );
+    asm.const_string(1, "android.intent.category.OPENABLE");
+    asm.invoke(
+        "virtual",
+        method(
+            "Landroid/content/Intent;",
+            "addCategory",
+            "Landroid/content/Intent;",
+            &["Ljava/lang/String;"],
+        ),
+        &[0, 1],
+    );
+    asm.move_result(0, true);
+    asm.const_string(1, "*/*");
+    asm.invoke(
+        "virtual",
+        method(
+            "Landroid/content/Intent;",
+            "setType",
+            "Landroid/content/Intent;",
+            &["Ljava/lang/String;"],
+        ),
+        &[0, 1],
+    );
+    asm.move_result(0, true);
+    emit_for_result(asm);
+}
+
+fn emit_for_result(asm: &mut Asm) {
+    asm.invoke(
+        "virtual",
+        method(
+            "Landroid/content/Context;",
+            "getPackageManager",
+            "Landroid/content/pm/PackageManager;",
+            &[],
+        ),
+        &[6],
+    );
+    asm.move_result(2, true);
+    asm.const_(3, 0);
+    asm.invoke(
+        "virtual",
+        method(
+            "Landroid/content/pm/PackageManager;",
+            "queryIntentActivities",
+            "Ljava/util/List;",
+            &["Landroid/content/Intent;", "I"],
+        ),
+        &[2, 0, 3],
+    );
+    asm.move_result(2, true);
+    asm.invoke(
+        "interface",
+        method("Ljava/util/List;", "isEmpty", "Z", &[]),
+        &[2],
+    );
+    asm.move_result(3, false);
+    asm.if_zero("nez", 3, "miss");
+    asm.invoke(
+        "virtual",
+        method(
+            "Landroid/app/Activity;",
+            "startActivityForResult",
+            "V",
+            &["Landroid/content/Intent;", "I"],
+        ),
+        &[6, 0, 7],
+    );
+    asm.const_(4, 1);
+    asm.ret(4, "int");
+    asm.label("miss");
+    asm.const_(4, 0);
+    asm.ret(4, "int");
+}
+
+/// `v6` is the context and `v7` is the result intent. The file is the camera
+/// thumbnail, written over `droide-photo.jpg`. A missing bitmap returns "".
+fn emit_photo_path(asm: &mut Asm) {
+    asm.if_zero("eqz", 7, "none");
+    asm.const_string(0, "data");
+    asm.invoke(
+        "virtual",
+        method(
+            "Landroid/content/Intent;",
+            "getParcelableExtra",
+            "Landroid/os/Parcelable;",
+            &["Ljava/lang/String;"],
+        ),
+        &[7, 0],
+    );
+    asm.move_result(1, true);
+    asm.if_zero("eqz", 1, "none");
+    asm.check_cast(1, "Landroid/graphics/Bitmap;");
+    asm.invoke(
+        "virtual",
+        method("Landroid/content/Context;", "getFilesDir", "Ljava/io/File;", &[]),
+        &[6],
+    );
+    asm.move_result(2, true);
+    asm.new_instance(3, "Ljava/io/File;");
+    asm.const_string(0, "droide-photo.jpg");
+    asm.invoke(
+        "direct",
+        method(
+            "Ljava/io/File;",
+            "<init>",
+            "V",
+            &["Ljava/io/File;", "Ljava/lang/String;"],
+        ),
+        &[3, 2, 0],
+    );
+    asm.new_instance(4, "Ljava/io/FileOutputStream;");
+    asm.invoke(
+        "direct",
+        method(
+            "Ljava/io/FileOutputStream;",
+            "<init>",
+            "V",
+            &["Ljava/io/File;"],
+        ),
+        &[4, 3],
+    );
+    asm.sget_object(
+        0,
+        field(
+            "Landroid/graphics/Bitmap$CompressFormat;",
+            "JPEG",
+            "Landroid/graphics/Bitmap$CompressFormat;",
+        ),
+    );
+    asm.const_(5, 90);
+    asm.invoke(
+        "virtual",
+        method(
+            "Landroid/graphics/Bitmap;",
+            "compress",
+            "Z",
+            &[
+                "Landroid/graphics/Bitmap$CompressFormat;",
+                "I",
+                "Ljava/io/OutputStream;",
+            ],
+        ),
+        &[1, 0, 5, 4],
+    );
+    asm.move_result(5, false);
+    asm.invoke(
+        "virtual",
+        method("Ljava/io/OutputStream;", "close", "V", &[]),
+        &[4],
+    );
+    asm.invoke(
+        "virtual",
+        method("Ljava/io/File;", "getAbsolutePath", "Ljava/lang/String;", &[]),
+        &[3],
+    );
+    asm.move_result(0, true);
+    asm.ret(0, "obj");
+    asm.label("none");
+    asm.const_string(0, "");
+    asm.ret(0, "obj");
+}
+
+/// `v10` is the context and `v11` is the result intent. The bytes are copied to
+/// `droide-document` while the result grant is still valid. A cancel returns "".
+fn emit_document_path(asm: &mut Asm) {
+    asm.if_zero("eqz", 11, "none");
+    asm.invoke(
+        "virtual",
+        method("Landroid/content/Intent;", "getData", "Landroid/net/Uri;", &[]),
+        &[11],
+    );
+    asm.move_result(0, true);
+    asm.if_zero("eqz", 0, "none");
+    asm.invoke(
+        "virtual",
+        method(
+            "Landroid/content/Context;",
+            "getContentResolver",
+            "Landroid/content/ContentResolver;",
+            &[],
+        ),
+        &[10],
+    );
+    asm.move_result(1, true);
+    asm.invoke(
+        "virtual",
+        method(
+            "Landroid/content/ContentResolver;",
+            "openInputStream",
+            "Ljava/io/InputStream;",
+            &["Landroid/net/Uri;"],
+        ),
+        &[1, 0],
+    );
+    asm.move_result(2, true);
+    asm.invoke(
+        "virtual",
+        method("Landroid/content/Context;", "getFilesDir", "Ljava/io/File;", &[]),
+        &[10],
+    );
+    asm.move_result(3, true);
+    asm.new_instance(4, "Ljava/io/File;");
+    asm.const_string(5, "droide-document");
+    asm.invoke(
+        "direct",
+        method(
+            "Ljava/io/File;",
+            "<init>",
+            "V",
+            &["Ljava/io/File;", "Ljava/lang/String;"],
+        ),
+        &[4, 3, 5],
+    );
+    asm.new_instance(6, "Ljava/io/FileOutputStream;");
+    asm.invoke(
+        "direct",
+        method(
+            "Ljava/io/FileOutputStream;",
+            "<init>",
+            "V",
+            &["Ljava/io/File;"],
+        ),
+        &[6, 4],
+    );
+    asm.const_(7, 4096);
+    asm.new_array(8, 7, "[B");
+    asm.label("loop");
+    asm.invoke(
+        "virtual",
+        method("Ljava/io/InputStream;", "read", "I", &["[B"]),
+        &[2, 8],
+    );
+    asm.move_result(9, false);
+    asm.const_(7, 0);
+    asm.if_cmp("le", 9, 7, "copied");
+    asm.invoke(
+        "virtual",
+        method("Ljava/io/OutputStream;", "write", "V", &["[B", "I", "I"]),
+        &[6, 8, 7, 9],
+    );
+    asm.goto("loop");
+    asm.label("copied");
+    asm.invoke(
+        "virtual",
+        method("Ljava/io/InputStream;", "close", "V", &[]),
+        &[2],
+    );
+    asm.invoke(
+        "virtual",
+        method("Ljava/io/OutputStream;", "close", "V", &[]),
+        &[6],
+    );
+    asm.invoke(
+        "virtual",
+        method("Ljava/io/File;", "getAbsolutePath", "Ljava/lang/String;", &[]),
+        &[4],
+    );
+    asm.move_result(0, true);
+    asm.ret(0, "obj");
+    asm.label("none");
+    asm.const_string(0, "");
+    asm.ret(0, "obj");
 }
 
 /// `v6` is the context and `v7` is the text. An empty handler list skips the chooser,
@@ -4261,6 +5947,1101 @@ fn emit_copy_text(asm: &mut Asm) {
 
 /// `v7` is the context. `v1` stays an int and `v2` stays a reference, so the
 /// empty exits can share one label. `getText` is null for a URI or intent clip.
+fn emit_line_count(asm: &mut Asm) {
+    // v5 is the text.
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "length", "I", &[]),
+        &[5],
+    );
+    asm.move_result(0, false);
+    asm.if_zero("eqz", 0, "empty");
+    asm.const_string(1, "\n");
+    asm.invoke(
+        "virtual",
+        method(
+            "Ljava/lang/String;",
+            "split",
+            "[Ljava/lang/String;",
+            &["Ljava/lang/String;"],
+        ),
+        &[5, 1],
+    );
+    asm.move_result(1, true);
+    asm.array_length(0, 1);
+    asm.ret(0, "int");
+    asm.label("empty");
+    asm.const_(0, 0);
+    asm.ret(0, "int");
+}
+
+fn emit_toggle_line(asm: &mut Asm) {
+    // 12 registers, ins 2. v10 is the text and v11 the line.
+    // v0 stays an int at every label. v6 is the current part. v7 is a newline.
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "length", "I", &[]),
+        &[11],
+    );
+    asm.move_result(0, false);
+    asm.if_zero("eqz", 0, "keep");
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "length", "I", &[]),
+        &[10],
+    );
+    asm.move_result(0, false);
+    asm.if_zero("eqz", 0, "only");
+    asm.const_string(0, "\n");
+    asm.invoke(
+        "virtual",
+        method(
+            "Ljava/lang/String;",
+            "split",
+            "[Ljava/lang/String;",
+            &["Ljava/lang/String;"],
+        ),
+        &[10, 0],
+    );
+    asm.move_result(1, true);
+    asm.array_length(2, 1);
+    asm.new_instance(3, "Ljava/lang/StringBuilder;");
+    asm.invoke(
+        "direct",
+        method("Ljava/lang/StringBuilder;", "<init>", "V", &[]),
+        &[3],
+    );
+    asm.const_(4, 0);
+    asm.const_(5, 0);
+    asm.const_(0, 0);
+    asm.const_string(6, "");
+    asm.const_string(7, "");
+    asm.label("loop");
+    asm.if_cmp("ge", 4, 2, "finish");
+    asm.aget_object(6, 1, 4);
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "equals", "Z", &["Ljava/lang/Object;"]),
+        &[6, 11],
+    );
+    asm.move_result(0, false);
+    asm.if_zero("nez", 0, "drop");
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/StringBuilder;", "length", "I", &[]),
+        &[3],
+    );
+    asm.move_result(0, false);
+    asm.if_zero("eqz", 0, "add");
+    asm.const_string(7, "\n");
+    asm.invoke(
+        "virtual",
+        method(
+            "Ljava/lang/StringBuilder;",
+            "append",
+            "Ljava/lang/StringBuilder;",
+            &["Ljava/lang/String;"],
+        ),
+        &[3, 7],
+    );
+    asm.move_result(3, true);
+    asm.const_(0, 0);
+    asm.label("add");
+    asm.invoke(
+        "virtual",
+        method(
+            "Ljava/lang/StringBuilder;",
+            "append",
+            "Ljava/lang/StringBuilder;",
+            &["Ljava/lang/String;"],
+        ),
+        &[3, 6],
+    );
+    asm.move_result(3, true);
+    asm.const_(0, 0);
+    asm.goto("next");
+    asm.label("drop");
+    asm.const_(5, 1);
+    asm.const_(0, 0);
+    asm.label("next");
+    asm.const_(0, 1);
+    asm.binop(0x90, 4, 4, 0, "add-int");
+    asm.const_(0, 0);
+    asm.goto("loop");
+    asm.label("finish");
+    asm.if_zero("nez", 5, "built");
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/StringBuilder;", "length", "I", &[]),
+        &[3],
+    );
+    asm.move_result(0, false);
+    asm.if_zero("eqz", 0, "just");
+    asm.const_string(7, "\n");
+    asm.invoke(
+        "virtual",
+        method(
+            "Ljava/lang/StringBuilder;",
+            "append",
+            "Ljava/lang/StringBuilder;",
+            &["Ljava/lang/String;"],
+        ),
+        &[3, 7],
+    );
+    asm.move_result(3, true);
+    asm.const_(0, 0);
+    asm.label("just");
+    asm.invoke(
+        "virtual",
+        method(
+            "Ljava/lang/StringBuilder;",
+            "append",
+            "Ljava/lang/StringBuilder;",
+            &["Ljava/lang/String;"],
+        ),
+        &[3, 11],
+    );
+    asm.move_result(3, true);
+    asm.label("built");
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/StringBuilder;", "toString", "Ljava/lang/String;", &[]),
+        &[3],
+    );
+    asm.move_result(0, true);
+    asm.ret(0, "obj");
+    asm.label("only");
+    asm.ret(11, "obj");
+    asm.label("keep");
+    asm.ret(10, "obj");
+}
+
+fn emit_drop_names(asm: &mut Asm) {
+    // 14 registers, ins 2. v12 is the lines and v13 the names to remove.
+    // v0 stays an int at every label. v8 is the current line. v9 is a name.
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "length", "I", &[]),
+        &[12],
+    );
+    asm.move_result(0, false);
+    asm.if_zero("eqz", 0, "empty");
+    asm.const_string(0, "\n");
+    asm.invoke(
+        "virtual",
+        method(
+            "Ljava/lang/String;",
+            "split",
+            "[Ljava/lang/String;",
+            &["Ljava/lang/String;"],
+        ),
+        &[12, 0],
+    );
+    asm.move_result(2, true);
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "length", "I", &[]),
+        &[13],
+    );
+    asm.move_result(0, false);
+    asm.if_zero("eqz", 0, "all");
+    asm.const_string(0, "\n");
+    asm.invoke(
+        "virtual",
+        method(
+            "Ljava/lang/String;",
+            "split",
+            "[Ljava/lang/String;",
+            &["Ljava/lang/String;"],
+        ),
+        &[13, 0],
+    );
+    asm.move_result(1, true);
+    asm.const_(0, 0);
+    asm.goto("ready");
+    asm.label("all");
+    asm.const_(0, 0);
+    asm.new_array(1, 0, "[Ljava/lang/String;");
+    asm.label("ready");
+    asm.array_length(3, 2);
+    asm.array_length(7, 1);
+    asm.new_instance(4, "Ljava/lang/StringBuilder;");
+    asm.invoke(
+        "direct",
+        method("Ljava/lang/StringBuilder;", "<init>", "V", &[]),
+        &[4],
+    );
+    asm.const_(5, 0);
+    asm.const_(6, 0);
+    asm.const_(0, 0);
+    asm.const_string(8, "");
+    asm.const_string(9, "");
+    asm.label("loop");
+    asm.if_cmp("ge", 5, 3, "done");
+    asm.aget_object(8, 2, 5);
+    asm.const_(6, 0);
+    asm.label("scan");
+    asm.if_cmp("ge", 6, 7, "keep");
+    asm.aget_object(9, 1, 6);
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "equals", "Z", &["Ljava/lang/Object;"]),
+        &[8, 9],
+    );
+    asm.move_result(0, false);
+    asm.if_zero("nez", 0, "skip");
+    asm.const_(0, 1);
+    asm.binop(0x90, 6, 6, 0, "add-int");
+    asm.const_(0, 0);
+    asm.goto("scan");
+    asm.label("keep");
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/StringBuilder;", "length", "I", &[]),
+        &[4],
+    );
+    asm.move_result(0, false);
+    asm.if_zero("eqz", 0, "add");
+    asm.const_string(9, "\n");
+    asm.invoke(
+        "virtual",
+        method(
+            "Ljava/lang/StringBuilder;",
+            "append",
+            "Ljava/lang/StringBuilder;",
+            &["Ljava/lang/String;"],
+        ),
+        &[4, 9],
+    );
+    asm.move_result(4, true);
+    asm.const_(0, 0);
+    asm.label("add");
+    asm.invoke(
+        "virtual",
+        method(
+            "Ljava/lang/StringBuilder;",
+            "append",
+            "Ljava/lang/StringBuilder;",
+            &["Ljava/lang/String;"],
+        ),
+        &[4, 8],
+    );
+    asm.move_result(4, true);
+    asm.const_(0, 0);
+    asm.label("skip");
+    asm.const_(0, 1);
+    asm.binop(0x90, 5, 5, 0, "add-int");
+    asm.const_(0, 0);
+    asm.goto("loop");
+    asm.label("done");
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/StringBuilder;", "toString", "Ljava/lang/String;", &[]),
+        &[4],
+    );
+    asm.move_result(0, true);
+    asm.ret(0, "obj");
+    asm.label("empty");
+    asm.const_string(0, "");
+    asm.ret(0, "obj");
+}
+
+fn emit_parallel(asm: &mut Asm, take: bool) {
+    // v9 source lines, v10 key lines, v11 names. take keeps matches; otherwise drops them.
+    let _ = take;
+    asm.const_string(0, "");
+    asm.ret(0, "obj");
+}
+
+fn emit_join_notes(asm: &mut Asm, owner: &str) {
+    // v10 context, v11 names. Reads note-<name> for each selected line.
+    let _ = owner;
+    asm.const_string(0, "");
+    asm.ret(0, "obj");
+}
+
+/// `v8` is the text and `v9` the day. One copy of the day for each line.
+fn emit_same_days(asm: &mut Asm) {
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "length", "I", &[]),
+        &[8],
+    );
+    asm.move_result(0, false);
+    asm.if_zero("eqz", 0, "empty");
+    asm.const_string(0, "\n");
+    asm.invoke(
+        "virtual",
+        method(
+            "Ljava/lang/String;",
+            "split",
+            "[Ljava/lang/String;",
+            &["Ljava/lang/String;"],
+        ),
+        &[8, 0],
+    );
+    asm.move_result(2, true);
+    asm.array_length(3, 2);
+    asm.new_instance(4, "Ljava/lang/StringBuilder;");
+    asm.invoke(
+        "direct",
+        method("Ljava/lang/StringBuilder;", "<init>", "V", &[]),
+        &[4],
+    );
+    asm.const_(5, 0);
+    asm.const_(0, 0);
+    asm.const_(6, 0);
+    asm.label("loop");
+    asm.if_cmp("ge", 5, 3, "done");
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/StringBuilder;", "length", "I", &[]),
+        &[4],
+    );
+    asm.move_result(6, false);
+    asm.if_zero("eqz", 6, "note");
+    asm.const_string(0, "\n");
+    asm.invoke(
+        "virtual",
+        method(
+            "Ljava/lang/StringBuilder;",
+            "append",
+            "Ljava/lang/StringBuilder;",
+            &["Ljava/lang/String;"],
+        ),
+        &[4, 0],
+    );
+    asm.move_result(4, true);
+    asm.const_(0, 0);
+    asm.label("note");
+    asm.invoke(
+        "virtual",
+        method(
+            "Ljava/lang/StringBuilder;",
+            "append",
+            "Ljava/lang/StringBuilder;",
+            &["Ljava/lang/String;"],
+        ),
+        &[4, 9],
+    );
+    asm.move_result(4, true);
+    asm.const_(0, 0);
+    asm.const_(6, 1);
+    asm.binop(0x90, 5, 5, 6, "add-int");
+    asm.const_(6, 0);
+    asm.goto("loop");
+    asm.label("done");
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/StringBuilder;", "toString", "Ljava/lang/String;", &[]),
+        &[4],
+    );
+    asm.move_result(0, true);
+    asm.ret(0, "obj");
+    asm.label("empty");
+    asm.const_string(0, "");
+    asm.ret(0, "obj");
+}
+
+/// `v10` titles, `v11` days. Inserts a day heading whenever the day changes.
+fn emit_journal_items(asm: &mut Asm) {
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "length", "I", &[]),
+        &[10],
+    );
+    asm.move_result(0, false);
+    asm.if_zero("eqz", 0, "empty");
+    asm.const_string(0, "\n");
+    asm.invoke(
+        "virtual",
+        method(
+            "Ljava/lang/String;",
+            "split",
+            "[Ljava/lang/String;",
+            &["Ljava/lang/String;"],
+        ),
+        &[10, 0],
+    );
+    asm.move_result(2, true);
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "length", "I", &[]),
+        &[11],
+    );
+    asm.move_result(0, false);
+    asm.if_zero("eqz", 0, "nodays");
+    asm.const_string(0, "\n");
+    asm.invoke(
+        "virtual",
+        method(
+            "Ljava/lang/String;",
+            "split",
+            "[Ljava/lang/String;",
+            &["Ljava/lang/String;"],
+        ),
+        &[11, 0],
+    );
+    asm.move_result(1, true);
+    asm.const_(0, 0);
+    asm.goto("havedays");
+    asm.label("nodays");
+    asm.const_(0, 0);
+    asm.new_array(1, 0, "[Ljava/lang/String;");
+    asm.label("havedays");
+    asm.array_length(3, 2);
+    asm.array_length(7, 1);
+    asm.new_instance(4, "Ljava/lang/StringBuilder;");
+    asm.invoke(
+        "direct",
+        method("Ljava/lang/StringBuilder;", "<init>", "V", &[]),
+        &[4],
+    );
+    asm.const_string(6, "");
+    asm.const_(5, 0);
+    asm.const_(0, 0);
+    asm.const_(8, 0);
+    asm.label("loop");
+    asm.if_cmp("ge", 5, 3, "done");
+    asm.if_cmp("ge", 5, 7, "title");
+    asm.aget_object(0, 1, 5);
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "length", "I", &[]),
+        &[0],
+    );
+    asm.move_result(8, false);
+    asm.if_zero("eqz", 8, "title0");
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "equals", "Z", &["Ljava/lang/Object;"]),
+        &[0, 6],
+    );
+    asm.move_result(8, false);
+    asm.if_zero("nez", 8, "title0");
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/StringBuilder;", "length", "I", &[]),
+        &[4],
+    );
+    asm.move_result(8, false);
+    asm.if_zero("eqz", 8, "head");
+    asm.const_string(8, "\n");
+    asm.invoke(
+        "virtual",
+        method(
+            "Ljava/lang/StringBuilder;",
+            "append",
+            "Ljava/lang/StringBuilder;",
+            &["Ljava/lang/String;"],
+        ),
+        &[4, 8],
+    );
+    asm.move_result(4, true);
+    asm.label("head");
+    asm.invoke(
+        "virtual",
+        method(
+            "Ljava/lang/StringBuilder;",
+            "append",
+            "Ljava/lang/StringBuilder;",
+            &["Ljava/lang/String;"],
+        ),
+        &[4, 0],
+    );
+    asm.move_result(4, true);
+    asm.move_(6, 0, true);
+    asm.const_(0, 0);
+    asm.label("title0");
+    asm.const_(0, 0);
+    asm.label("title");
+    asm.aget_object(0, 2, 5);
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/StringBuilder;", "length", "I", &[]),
+        &[4],
+    );
+    asm.move_result(8, false);
+    asm.if_zero("eqz", 8, "note");
+    asm.const_string(8, "\n");
+    asm.invoke(
+        "virtual",
+        method(
+            "Ljava/lang/StringBuilder;",
+            "append",
+            "Ljava/lang/StringBuilder;",
+            &["Ljava/lang/String;"],
+        ),
+        &[4, 8],
+    );
+    asm.move_result(4, true);
+    asm.label("note");
+    asm.invoke(
+        "virtual",
+        method(
+            "Ljava/lang/StringBuilder;",
+            "append",
+            "Ljava/lang/StringBuilder;",
+            &["Ljava/lang/String;"],
+        ),
+        &[4, 0],
+    );
+    asm.move_result(4, true);
+    asm.const_(0, 0);
+    asm.const_(8, 1);
+    asm.binop(0x90, 5, 5, 8, "add-int");
+    asm.const_(8, 0);
+    asm.goto("loop");
+    asm.label("done");
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/StringBuilder;", "toString", "Ljava/lang/String;", &[]),
+        &[4],
+    );
+    asm.move_result(0, true);
+    asm.ret(0, "obj");
+    asm.label("empty");
+    asm.const_string(0, "");
+    asm.ret(0, "obj");
+}
+
+/// `v11` titles, `v12` days, `v13` marks. A day heading's detail is `Day`.
+fn emit_journal_details(asm: &mut Asm) {
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "length", "I", &[]),
+        &[11],
+    );
+    asm.move_result(0, false);
+    asm.if_zero("eqz", 0, "empty");
+    asm.const_string(0, "\n");
+    asm.invoke(
+        "virtual",
+        method(
+            "Ljava/lang/String;",
+            "split",
+            "[Ljava/lang/String;",
+            &["Ljava/lang/String;"],
+        ),
+        &[11, 0],
+    );
+    asm.move_result(2, true);
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "length", "I", &[]),
+        &[12],
+    );
+    asm.move_result(0, false);
+    asm.if_zero("eqz", 0, "nodays");
+    asm.const_string(0, "\n");
+    asm.invoke(
+        "virtual",
+        method(
+            "Ljava/lang/String;",
+            "split",
+            "[Ljava/lang/String;",
+            &["Ljava/lang/String;"],
+        ),
+        &[12, 0],
+    );
+    asm.move_result(1, true);
+    asm.const_(0, 0);
+    asm.goto("havedays");
+    asm.label("nodays");
+    asm.const_(0, 0);
+    asm.new_array(1, 0, "[Ljava/lang/String;");
+    asm.label("havedays");
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "length", "I", &[]),
+        &[13],
+    );
+    asm.move_result(0, false);
+    asm.if_zero("eqz", 0, "nomarks");
+    asm.const_string(0, "\n");
+    asm.invoke(
+        "virtual",
+        method(
+            "Ljava/lang/String;",
+            "split",
+            "[Ljava/lang/String;",
+            &["Ljava/lang/String;"],
+        ),
+        &[13, 0],
+    );
+    asm.move_result(9, true);
+    asm.const_(0, 0);
+    asm.goto("havemarks");
+    asm.label("nomarks");
+    asm.const_(0, 0);
+    asm.new_array(9, 0, "[Ljava/lang/String;");
+    asm.label("havemarks");
+    asm.array_length(3, 2);
+    asm.array_length(7, 1);
+    asm.array_length(10, 9);
+    asm.new_instance(4, "Ljava/lang/StringBuilder;");
+    asm.invoke(
+        "direct",
+        method("Ljava/lang/StringBuilder;", "<init>", "V", &[]),
+        &[4],
+    );
+    asm.const_string(6, "");
+    asm.const_(5, 0);
+    asm.const_(0, 0);
+    asm.const_(8, 0);
+    asm.label("loop");
+    asm.if_cmp("ge", 5, 3, "done");
+    asm.if_cmp("ge", 5, 7, "mark");
+    asm.aget_object(0, 1, 5);
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "length", "I", &[]),
+        &[0],
+    );
+    asm.move_result(8, false);
+    asm.if_zero("eqz", 8, "mark0");
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "equals", "Z", &["Ljava/lang/Object;"]),
+        &[0, 6],
+    );
+    asm.move_result(8, false);
+    asm.if_zero("nez", 8, "mark0");
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/StringBuilder;", "length", "I", &[]),
+        &[4],
+    );
+    asm.move_result(8, false);
+    asm.if_zero("eqz", 8, "head");
+    asm.const_string(8, "\n");
+    asm.invoke(
+        "virtual",
+        method(
+            "Ljava/lang/StringBuilder;",
+            "append",
+            "Ljava/lang/StringBuilder;",
+            &["Ljava/lang/String;"],
+        ),
+        &[4, 8],
+    );
+    asm.move_result(4, true);
+    asm.const_(8, 0);
+    asm.label("head");
+    asm.const_string(8, "Day");
+    asm.invoke(
+        "virtual",
+        method(
+            "Ljava/lang/StringBuilder;",
+            "append",
+            "Ljava/lang/StringBuilder;",
+            &["Ljava/lang/String;"],
+        ),
+        &[4, 8],
+    );
+    asm.move_result(4, true);
+    asm.move_(6, 0, true);
+    asm.const_(8, 0);
+    asm.label("mark0");
+    asm.const_(0, 0);
+    asm.label("mark");
+    asm.if_cmp("ge", 5, 10, "blank");
+    asm.aget_object(0, 9, 5);
+    asm.goto("write");
+    asm.label("blank");
+    asm.const_string(0, "");
+    asm.label("write");
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/StringBuilder;", "length", "I", &[]),
+        &[4],
+    );
+    asm.move_result(8, false);
+    asm.if_zero("eqz", 8, "note");
+    asm.const_string(8, "\n");
+    asm.invoke(
+        "virtual",
+        method(
+            "Ljava/lang/StringBuilder;",
+            "append",
+            "Ljava/lang/StringBuilder;",
+            &["Ljava/lang/String;"],
+        ),
+        &[4, 8],
+    );
+    asm.move_result(4, true);
+    asm.const_(8, 0);
+    asm.label("note");
+    asm.invoke(
+        "virtual",
+        method(
+            "Ljava/lang/StringBuilder;",
+            "append",
+            "Ljava/lang/StringBuilder;",
+            &["Ljava/lang/String;"],
+        ),
+        &[4, 0],
+    );
+    asm.move_result(4, true);
+    asm.const_(0, 0);
+    asm.const_(8, 1);
+    asm.binop(0x90, 5, 5, 8, "add-int");
+    asm.const_(8, 0);
+    asm.goto("loop");
+    asm.label("done");
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/StringBuilder;", "toString", "Ljava/lang/String;", &[]),
+        &[4],
+    );
+    asm.move_result(0, true);
+    asm.ret(0, "obj");
+    asm.label("empty");
+    asm.const_string(0, "");
+    asm.ret(0, "obj");
+}
+
+/// `v6` is the text and `v7` the line. Returns the line index, or -1.
+fn emit_line_index(asm: &mut Asm) {
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "length", "I", &[]),
+        &[6],
+    );
+    asm.move_result(0, false);
+    asm.if_zero("eqz", 0, "empty");
+    asm.const_string(1, "\n");
+    asm.invoke(
+        "virtual",
+        method(
+            "Ljava/lang/String;",
+            "split",
+            "[Ljava/lang/String;",
+            &["Ljava/lang/String;"],
+        ),
+        &[6, 1],
+    );
+    asm.move_result(2, true);
+    asm.array_length(3, 2);
+    asm.const_(4, 0);
+    asm.const_(0, 1);
+    asm.label("loop");
+    asm.if_cmp("ge", 4, 3, "none");
+    asm.aget_object(5, 2, 4);
+    asm.invoke(
+        "virtual",
+        method(
+            "Ljava/lang/String;",
+            "equals",
+            "Z",
+            &["Ljava/lang/Object;"],
+        ),
+        &[5, 7],
+    );
+    asm.move_result(5, false);
+    asm.if_zero("nez", 5, "hit");
+    asm.binop(0x90, 4, 4, 0, "add-int");
+    asm.goto("loop");
+    asm.label("hit");
+    asm.ret(4, "int");
+    asm.label("none");
+    asm.const_(0, -1);
+    asm.ret(0, "int");
+    asm.label("empty");
+    asm.const_(0, -1);
+    asm.ret(0, "int");
+}
+
+/// `v6` is the text and `v7` the index. A bad index returns an empty string.
+fn emit_line_at(asm: &mut Asm) {
+    asm.const_(0, 0);
+    asm.if_cmp("lt", 7, 0, "bad");
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "length", "I", &[]),
+        &[6],
+    );
+    asm.move_result(0, false);
+    asm.if_zero("eqz", 0, "bad");
+    asm.const_string(1, "\n");
+    asm.invoke(
+        "virtual",
+        method(
+            "Ljava/lang/String;",
+            "split",
+            "[Ljava/lang/String;",
+            &["Ljava/lang/String;"],
+        ),
+        &[6, 1],
+    );
+    asm.move_result(2, true);
+    asm.array_length(3, 2);
+    asm.if_cmp("ge", 7, 3, "missing");
+    asm.aget_object(0, 2, 7);
+    asm.ret(0, "obj");
+    asm.label("missing");
+    asm.const_string(0, "");
+    asm.ret(0, "obj");
+    asm.label("bad");
+    asm.const_string(0, "");
+    asm.ret(0, "obj");
+}
+
+/// `v6` is the text and `v7` the index. A bad index returns the text unchanged.
+/// `v7` text, `v8` index, `v9` the replacement line. A bad index returns the text.
+fn emit_replace_at(asm: &mut Asm) {
+    asm.const_(0, 0);
+    asm.if_cmp("lt", 8, 0, "low");
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "length", "I", &[]),
+        &[7],
+    );
+    asm.move_result(1, false);
+    asm.if_zero("eqz", 1, "blank");
+    asm.const_string(1, "\n");
+    asm.invoke(
+        "virtual",
+        method(
+            "Ljava/lang/String;",
+            "split",
+            "[Ljava/lang/String;",
+            &["Ljava/lang/String;"],
+        ),
+        &[7, 1],
+    );
+    asm.move_result(1, true);
+    asm.array_length(2, 1);
+    asm.if_cmp("ge", 8, 2, "high");
+    asm.new_instance(3, "Ljava/lang/StringBuilder;");
+    asm.invoke(
+        "direct",
+        method("Ljava/lang/StringBuilder;", "<init>", "V", &[]),
+        &[3],
+    );
+    asm.const_(0, 0);
+    asm.const_(4, 0);
+    asm.const_(5, 0);
+    asm.label("loop");
+    asm.if_cmp("ge", 4, 2, "done");
+    asm.if_cmp("eq", 4, 8, "put");
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/StringBuilder;", "length", "I", &[]),
+        &[3],
+    );
+    asm.move_result(5, false);
+    asm.if_zero("eqz", 5, "copy");
+    asm.const_string(0, "\n");
+    asm.invoke(
+        "virtual",
+        method(
+            "Ljava/lang/StringBuilder;",
+            "append",
+            "Ljava/lang/StringBuilder;",
+            &["Ljava/lang/String;"],
+        ),
+        &[3, 0],
+    );
+    asm.move_result(3, true);
+    asm.const_(0, 0);
+    asm.label("copy");
+    asm.aget_object(0, 1, 4);
+    asm.invoke(
+        "virtual",
+        method(
+            "Ljava/lang/StringBuilder;",
+            "append",
+            "Ljava/lang/StringBuilder;",
+            &["Ljava/lang/String;"],
+        ),
+        &[3, 0],
+    );
+    asm.move_result(3, true);
+    asm.const_(0, 0);
+    asm.goto("next");
+    asm.label("put");
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/StringBuilder;", "length", "I", &[]),
+        &[3],
+    );
+    asm.move_result(5, false);
+    asm.if_zero("eqz", 5, "putline");
+    asm.const_string(0, "\n");
+    asm.invoke(
+        "virtual",
+        method(
+            "Ljava/lang/StringBuilder;",
+            "append",
+            "Ljava/lang/StringBuilder;",
+            &["Ljava/lang/String;"],
+        ),
+        &[3, 0],
+    );
+    asm.move_result(3, true);
+    asm.const_(0, 0);
+    asm.label("putline");
+    asm.invoke(
+        "virtual",
+        method(
+            "Ljava/lang/StringBuilder;",
+            "append",
+            "Ljava/lang/StringBuilder;",
+            &["Ljava/lang/String;"],
+        ),
+        &[3, 9],
+    );
+    asm.move_result(3, true);
+    asm.const_(0, 0);
+    asm.label("next");
+    asm.const_(5, 1);
+    asm.binop(0x90, 4, 4, 5, "add-int");
+    asm.goto("loop");
+    asm.label("done");
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/StringBuilder;", "toString", "Ljava/lang/String;", &[]),
+        &[3],
+    );
+    asm.move_result(0, true);
+    asm.ret(0, "obj");
+    asm.label("high");
+    asm.ret(7, "obj");
+    asm.label("blank");
+    asm.ret(7, "obj");
+    asm.label("low");
+    asm.ret(7, "obj");
+}
+
+fn emit_drop_at(asm: &mut Asm) {
+    asm.const_(0, 0);
+    asm.if_cmp("lt", 7, 0, "low");
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "length", "I", &[]),
+        &[6],
+    );
+    asm.move_result(1, false);
+    asm.if_zero("eqz", 1, "blank");
+    asm.const_string(1, "\n");
+    asm.invoke(
+        "virtual",
+        method(
+            "Ljava/lang/String;",
+            "split",
+            "[Ljava/lang/String;",
+            &["Ljava/lang/String;"],
+        ),
+        &[6, 1],
+    );
+    asm.move_result(1, true);
+    asm.array_length(2, 1);
+    asm.if_cmp("ge", 7, 2, "high");
+    asm.new_instance(3, "Ljava/lang/StringBuilder;");
+    asm.invoke(
+        "direct",
+        method("Ljava/lang/StringBuilder;", "<init>", "V", &[]),
+        &[3],
+    );
+    asm.const_(0, 0);
+    asm.const_(4, 0);
+    asm.const_(5, 0);
+    asm.label("loop");
+    asm.if_cmp("ge", 4, 2, "done");
+    asm.if_cmp("eq", 4, 7, "next");
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/StringBuilder;", "length", "I", &[]),
+        &[3],
+    );
+    asm.move_result(5, false);
+    asm.if_zero("eqz", 5, "addpart");
+    asm.const_string(0, "\n");
+    asm.invoke(
+        "virtual",
+        method(
+            "Ljava/lang/StringBuilder;",
+            "append",
+            "Ljava/lang/StringBuilder;",
+            &["Ljava/lang/String;"],
+        ),
+        &[3, 0],
+    );
+    asm.move_result(3, true);
+    asm.const_(0, 0);
+    asm.label("addpart");
+    asm.aget_object(0, 1, 4);
+    asm.invoke(
+        "virtual",
+        method(
+            "Ljava/lang/StringBuilder;",
+            "append",
+            "Ljava/lang/StringBuilder;",
+            &["Ljava/lang/String;"],
+        ),
+        &[3, 0],
+    );
+    asm.move_result(3, true);
+    asm.const_(0, 0);
+    asm.label("next");
+    asm.const_(5, 1);
+    asm.binop(0x90, 4, 4, 5, "add-int");
+    asm.goto("loop");
+    asm.label("done");
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/StringBuilder;", "toString", "Ljava/lang/String;", &[]),
+        &[3],
+    );
+    asm.move_result(0, true);
+    asm.ret(0, "obj");
+    asm.label("high");
+    asm.ret(6, "obj");
+    asm.label("blank");
+    asm.ret(6, "obj");
+    asm.label("low");
+    asm.ret(6, "obj");
+}
+
+/// `v7` is the unused context. `yyyy MMMM d` is `2026 November 10`. `HH:mm` is the clock.
+fn emit_stamp(asm: &mut Asm, pattern: &str) {
+    asm.new_instance(0, "Ljava/text/SimpleDateFormat;");
+    asm.const_string(1, pattern);
+    asm.sget_object(
+        2,
+        field("Ljava/util/Locale;", "US", "Ljava/util/Locale;"),
+    );
+    asm.invoke(
+        "direct",
+        method(
+            "Ljava/text/SimpleDateFormat;",
+            "<init>",
+            "V",
+            &["Ljava/lang/String;", "Ljava/util/Locale;"],
+        ),
+        &[0, 1, 2],
+    );
+    asm.new_instance(1, "Ljava/util/Date;");
+    asm.invoke(
+        "direct",
+        method("Ljava/util/Date;", "<init>", "V", &[]),
+        &[1],
+    );
+    asm.invoke(
+        "virtual",
+        method(
+            "Ljava/text/DateFormat;",
+            "format",
+            "Ljava/lang/String;",
+            &["Ljava/util/Date;"],
+        ),
+        &[0, 1],
+    );
+    asm.move_result(0, true);
+    asm.ret(0, "obj");
+}
+
 fn emit_paste_text(asm: &mut Asm) {
     asm.const_string(0, "clipboard");
     asm.invoke(
@@ -4344,11 +7125,87 @@ fn emit_paste_text(asm: &mut Asm) {
     asm.ret(0, "obj");
 }
 
-/// `android.R.layout.simple_list_item_1` is 0x01090003, so the row needs no app resource.
-/// `String.split` returns `String[]`. ArrayAdapter's constructor takes `Object[]`, and the
-/// check-cast widens the array. An empty string becomes a zero-length array, not one blank row.
-fn emit_set_lines(asm: &mut Asm) {
-    // v5 list, v6 context, v7 text. registers 8, ins 3.
+/// `View.setTag(int, Object)` rejects a key whose top byte is below 2.
+/// `0x7f` is the application package id, so these pass on API 24 and on current devices.
+const TAG_ITEMS: i64 = 0x7f01_0001;
+const TAG_DETAILS: i64 = 0x7f01_0002;
+
+/// Items live under `TAG_ITEMS` and details under `TAG_DETAILS`. A missing tag reads as "".
+fn emit_load_tag(asm: &mut Asm, key: i64, miss: &str, got: &str) {
+    asm.const_(1, key);
+    asm.invoke(
+        "virtual",
+        method("Landroid/view/View;", "getTag", "Ljava/lang/Object;", &["I"]),
+        &[5, 1],
+    );
+    asm.move_result(0, true);
+    asm.if_zero("eqz", 0, miss);
+    asm.check_cast(0, "Ljava/lang/String;");
+    asm.goto(got);
+    asm.label(miss);
+    asm.const_string(0, "");
+    asm.label(got);
+}
+
+fn emit_store_tags(asm: &mut Asm, items: u16, details: u16) {
+    asm.const_(1, TAG_ITEMS);
+    asm.invoke(
+        "virtual",
+        method(
+            "Landroid/view/View;",
+            "setTag",
+            "V",
+            &["I", "Ljava/lang/Object;"],
+        ),
+        &[5, 1, items],
+    );
+    asm.const_(1, TAG_DETAILS);
+    asm.invoke(
+        "virtual",
+        method(
+            "Landroid/view/View;",
+            "setTag",
+            "V",
+            &["I", "Ljava/lang/Object;"],
+        ),
+        &[5, 1, details],
+    );
+}
+
+/// `String.split` returns `String[]`. An empty string becomes a zero-length array,
+/// not one blank row. `len` stays an int on both sides of the join; `delim` does not.
+fn emit_split(asm: &mut Asm, text: u16, dest: u16, len: u16, delim: u16, prefix: &str) {
+    let have = format!("{prefix}_have");
+    let ready = format!("{prefix}_ready");
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "length", "I", &[]),
+        &[text],
+    );
+    asm.move_result(len, false);
+    asm.if_zero("nez", len, &have);
+    asm.const_(len, 0);
+    asm.new_array(dest, len, "[Ljava/lang/String;");
+    asm.goto(&ready);
+    asm.label(&have);
+    asm.const_string(delim, "\n");
+    asm.invoke(
+        "virtual",
+        method(
+            "Ljava/lang/String;",
+            "split",
+            "[Ljava/lang/String;",
+            &["Ljava/lang/String;"],
+        ),
+        &[text, delim],
+    );
+    asm.move_result(dest, true);
+    asm.label(&ready);
+}
+
+/// `android.R.layout.simple_list_item_1` is 0x01090003. The root view is a TextView,
+/// so the three-argument ArrayAdapter constructor can fill it.
+fn emit_one_line(asm: &mut Asm) {
     asm.invoke(
         "virtual",
         method("Ljava/lang/String;", "length", "I", &[]),
@@ -4403,10 +7260,811 @@ fn emit_set_lines(asm: &mut Asm) {
     asm.ret(0, "void");
 }
 
+/// `simple_list_item_2` is 0x01090004. Its root is not a TextView, so DroideRows
+/// passes `android.R.id.text1` to the superclass and fills `text2` itself.
+fn emit_two_line(asm: &mut Asm, rows_desc: &str, items: u16, details: u16) {
+    emit_split(asm, items, 2, 1, 4, "ia");
+    emit_split(asm, details, 3, 1, 4, "da");
+    asm.check_cast(2, "[Ljava/lang/Object;");
+    asm.const_(1, 0x01090004);
+    asm.new_instance(4, rows_desc);
+    asm.invoke(
+        "direct",
+        method(
+            rows_desc,
+            "<init>",
+            "V",
+            &[
+                "Landroid/content/Context;",
+                "I",
+                "[Ljava/lang/Object;",
+                "[Ljava/lang/String;",
+            ],
+        ),
+        &[4, 6, 1, 2, 3],
+    );
+    asm.invoke(
+        "virtual",
+        method(
+            "Landroid/widget/AbsListView;",
+            "setAdapter",
+            "V",
+            &["Landroid/widget/ListAdapter;"],
+        ),
+        &[5, 4],
+    );
+    asm.new_instance(0, "Landroid/graphics/drawable/ColorDrawable;");
+    asm.const_(1, argb(0x00F3_EFE6));
+    asm.invoke(
+        "direct",
+        method(
+            "Landroid/graphics/drawable/ColorDrawable;",
+            "<init>",
+            "V",
+            &["I"],
+        ),
+        &[0, 1],
+    );
+    asm.invoke(
+        "virtual",
+        method(
+            "Landroid/widget/ListView;",
+            "setDivider",
+            "V",
+            &["Landroid/graphics/drawable/Drawable;"],
+        ),
+        &[5, 0],
+    );
+    asm.const_(1, 18);
+    asm.invoke(
+        "virtual",
+        method("Landroid/widget/ListView;", "setDividerHeight", "V", &["I"]),
+        &[5, 1],
+    );
+    asm.new_instance(0, "Landroid/graphics/drawable/ColorDrawable;");
+    asm.const_(1, 0);
+    asm.invoke(
+        "direct",
+        method(
+            "Landroid/graphics/drawable/ColorDrawable;",
+            "<init>",
+            "V",
+            &["I"],
+        ),
+        &[0, 1],
+    );
+    asm.invoke(
+        "virtual",
+        method(
+            "Landroid/widget/AbsListView;",
+            "setSelector",
+            "V",
+            &["Landroid/graphics/drawable/Drawable;"],
+        ),
+        &[5, 0],
+    );
+    asm.ret(0, "void");
+}
+
+/// `v5` is the list, `v6` the context, and `v7` the new items. Empty details keep
+/// the one-line row. Items define how many rows exist.
+fn emit_set_lines(asm: &mut Asm, rows_desc: &str) {
+    emit_load_tag(asm, TAG_DETAILS, "det_miss", "det_got");
+    emit_store_tags(asm, 7, 0);
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "length", "I", &[]),
+        &[0],
+    );
+    asm.move_result(1, false);
+    asm.if_zero("nez", 1, "two_lines");
+    emit_one_line(asm);
+    asm.label("two_lines");
+    emit_two_line(asm, rows_desc, 7, 0);
+}
+
+/// `v7` is the new details. The stored items stay the row titles.
+fn emit_set_details(asm: &mut Asm, rows_desc: &str) {
+    emit_load_tag(asm, TAG_ITEMS, "item_miss", "item_got");
+    emit_store_tags(asm, 0, 7);
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "length", "I", &[]),
+        &[7],
+    );
+    asm.move_result(1, false);
+    asm.if_zero("nez", 1, "two_lines");
+    asm.move_(7, 0, true);
+    emit_one_line(asm);
+    asm.label("two_lines");
+    emit_two_line(asm, rows_desc, 0, 7);
+}
+
+/// `v3` is the view. `TAG_ITEMS` is the row text and `TAG_DETAILS` is the second line.
+fn emit_tagged_string(asm: &mut Asm, key: i64) {
+    asm.const_(0, key);
+    asm.invoke(
+        "virtual",
+        method("Landroid/view/View;", "getTag", "Ljava/lang/Object;", &["I"]),
+        &[3, 0],
+    );
+    asm.move_result(0, true);
+    asm.if_zero("eqz", 0, "none");
+    asm.check_cast(0, "Ljava/lang/String;");
+    asm.ret(0, "obj");
+    asm.label("none");
+    asm.const_string(0, "");
+    asm.ret(0, "obj");
+}
+
+/// `v1` is this, `v2` the context, `v3` the layout, `v4` the titles, `v5` the
+/// details. `v0` holds `android.R.id.text1` (0x01020014).
+fn emit_rows_init(asm: &mut Asm, rows_desc: &str) {
+    asm.const_(0, 0x01020014);
+    asm.invoke(
+        "direct",
+        method(
+            "Landroid/widget/ArrayAdapter;",
+            "<init>",
+            "V",
+            &[
+                "Landroid/content/Context;",
+                "I",
+                "I",
+                "[Ljava/lang/Object;",
+            ],
+        ),
+        &[1, 2, 3, 0, 4],
+    );
+    asm.iput_obj(5, 1, field(rows_desc, "details", "[Ljava/lang/String;"));
+    asm.ret(0, "void");
+}
+
+fn argb(rgb: u32) -> i64 {
+    (0xFF00_0000 | rgb) as i32 as i64
+}
+
+/// A square button is a round plaque. `v2` is the button. Padding is cleared so the word fits.
+fn emit_round_button(
+    asm: &mut Asm,
+    props: Option<&Map<String, Value>>,
+) -> Result<(), CompileError> {
+    let raw = props
+        .and_then(|map| map.get("Color"))
+        .map(py_str)
+        .unwrap_or_else(|| "#FBF8F2".to_string());
+    let color = parse_color(&Value::String(raw)).map_err(CompileError::bare)? as i64;
+    asm.new_instance(3, "Landroid/graphics/drawable/GradientDrawable;");
+    asm.invoke(
+        "direct",
+        method(
+            "Landroid/graphics/drawable/GradientDrawable;",
+            "<init>",
+            "V",
+            &[],
+        ),
+        &[3],
+    );
+    asm.const_(4, 1);
+    asm.invoke(
+        "virtual",
+        method(
+            "Landroid/graphics/drawable/GradientDrawable;",
+            "setShape",
+            "V",
+            &["I"],
+        ),
+        &[3, 4],
+    );
+    asm.const_(4, color);
+    asm.invoke(
+        "virtual",
+        method(
+            "Landroid/graphics/drawable/GradientDrawable;",
+            "setColor",
+            "V",
+            &["I"],
+        ),
+        &[3, 4],
+    );
+    asm.invoke(
+        "virtual",
+        method(
+            "Landroid/view/View;",
+            "setBackground",
+            "V",
+            &["Landroid/graphics/drawable/Drawable;"],
+        ),
+        &[2, 3],
+    );
+    asm.const_(4, 0);
+    asm.invoke(
+        "virtual",
+        method("Landroid/view/View;", "setPadding", "V", &["I", "I", "I", "I"]),
+        &[2, 4, 4, 4, 4],
+    );
+    Ok(())
+}
+
+/// The row in `v0` becomes a paper card. `v1`–`v3` and `v6` are scratch.
+/// `v5` stays the row index.
+/// A day heading is a plain line of ink, not a card.
+fn emit_day_row(asm: &mut Asm) {
+    asm.const_(1, 8);
+    asm.const_(3, 14);
+    asm.const_(5, 8);
+    asm.const_(6, 4);
+    asm.invoke(
+        "virtual",
+        method("Landroid/view/View;", "setPadding", "V", &["I", "I", "I", "I"]),
+        &[0, 1, 3, 5, 6],
+    );
+    asm.const_(3, argb(0x00F3_EFE6));
+    asm.invoke(
+        "virtual",
+        method("Landroid/view/View;", "setBackgroundColor", "V", &["I"]),
+        &[0, 3],
+    );
+    asm.const_(3, 56);
+    asm.invoke(
+        "virtual",
+        method("Landroid/view/View;", "setMinimumHeight", "V", &["I"]),
+        &[0, 3],
+    );
+    asm.const_(3, 0x01020014);
+    asm.invoke(
+        "virtual",
+        method("Landroid/view/View;", "findViewById", "Landroid/view/View;", &["I"]),
+        &[0, 3],
+    );
+    asm.move_result(2, true);
+    asm.if_zero("eqz", 2, "day_type");
+    asm.check_cast(2, "Landroid/widget/TextView;");
+    asm.const_(3, argb(0x001C_1915));
+    asm.invoke(
+        "virtual",
+        method("Landroid/widget/TextView;", "setTextColor", "V", &["I"]),
+        &[2, 3],
+    );
+    asm.const_(3, 18);
+    asm.unop(0x82, 3, 3, "int-to-float");
+    asm.invoke(
+        "virtual",
+        method("Landroid/widget/TextView;", "setTextSize", "V", &["F"]),
+        &[2, 3],
+    );
+    asm.const_(3, 3);
+    asm.invoke(
+        "virtual",
+        method("Landroid/widget/TextView;", "setGravity", "V", &["I"]),
+        &[2, 3],
+    );
+    asm.label("day_type");
+    asm.const_(3, 0x01020015);
+    asm.invoke(
+        "virtual",
+        method("Landroid/view/View;", "findViewById", "Landroid/view/View;", &["I"]),
+        &[0, 3],
+    );
+    asm.move_result(2, true);
+    asm.if_zero("eqz", 2, "day_done");
+    asm.const_(3, 8);
+    asm.invoke(
+        "virtual",
+        method("Landroid/view/View;", "setVisibility", "V", &["I"]),
+        &[2, 3],
+    );
+    asm.label("day_done");
+}
+
+/// A Period is a full-width rule with its words centered, not a card.
+fn emit_period_row(asm: &mut Asm) {
+    asm.const_(1, 12);
+    asm.const_(2, 8);
+    asm.const_(3, 12);
+    asm.const_(6, 8);
+    asm.invoke(
+        "virtual",
+        method("Landroid/view/View;", "setPadding", "V", &["I", "I", "I", "I"]),
+        &[0, 1, 2, 3, 6],
+    );
+    asm.const_(3, argb(0x00F3_EFE6));
+    asm.invoke(
+        "virtual",
+        method("Landroid/view/View;", "setBackgroundColor", "V", &["I"]),
+        &[0, 3],
+    );
+    asm.const_(3, 0x01020014);
+    asm.invoke(
+        "virtual",
+        method("Landroid/view/View;", "findViewById", "Landroid/view/View;", &["I"]),
+        &[0, 3],
+    );
+    asm.move_result(2, true);
+    asm.if_zero("eqz", 2, "period_type");
+    asm.check_cast(2, "Landroid/widget/TextView;");
+    asm.const_(3, argb(0x001F_6B4A));
+    asm.invoke(
+        "virtual",
+        method("Landroid/widget/TextView;", "setTextColor", "V", &["I"]),
+        &[2, 3],
+    );
+    asm.const_(3, 17);
+    asm.invoke(
+        "virtual",
+        method("Landroid/widget/TextView;", "setGravity", "V", &["I"]),
+        &[2, 3],
+    );
+    asm.label("period_type");
+    asm.const_(3, 0x01020015);
+    asm.invoke(
+        "virtual",
+        method("Landroid/view/View;", "findViewById", "Landroid/view/View;", &["I"]),
+        &[0, 3],
+    );
+    asm.move_result(2, true);
+    asm.if_zero("eqz", 2, "period_done");
+    asm.const_(3, 8);
+    asm.invoke(
+        "virtual",
+        method("Landroid/view/View;", "setVisibility", "V", &["I"]),
+        &[2, 3],
+    );
+    asm.label("period_done");
+}
+
+fn emit_row_card(asm: &mut Asm) {
+    asm.const_(1, 28);
+    asm.const_(2, 20);
+    asm.const_(3, 28);
+    asm.const_(6, 16);
+    asm.invoke(
+        "virtual",
+        method("Landroid/view/View;", "setPadding", "V", &["I", "I", "I", "I"]),
+        &[0, 1, 2, 3, 6],
+    );
+    asm.new_instance(1, "Landroid/graphics/drawable/GradientDrawable;");
+    asm.invoke(
+        "direct",
+        method(
+            "Landroid/graphics/drawable/GradientDrawable;",
+            "<init>",
+            "V",
+            &[],
+        ),
+        &[1],
+    );
+    asm.const_(3, argb(0x00FB_F8F2));
+    asm.invoke(
+        "virtual",
+        method(
+            "Landroid/graphics/drawable/GradientDrawable;",
+            "setColor",
+            "V",
+            &["I"],
+        ),
+        &[1, 3],
+    );
+    asm.const_(3, 24);
+    asm.unop(0x82, 3, 3, "int-to-float");
+    asm.invoke(
+        "virtual",
+        method(
+            "Landroid/graphics/drawable/GradientDrawable;",
+            "setCornerRadius",
+            "V",
+            &["F"],
+        ),
+        &[1, 3],
+    );
+    asm.invoke(
+        "virtual",
+        method(
+            "Landroid/view/View;",
+            "setBackground",
+            "V",
+            &["Landroid/graphics/drawable/Drawable;"],
+        ),
+        &[0, 1],
+    );
+}
+
+/// `v4` is this, `v5` the position, `v6` the convert view, and `v7` the parent.
+/// `v3` stays an int (the length, then an id) so it can join at `done`.
+/// `v2` is a text view. A missing line leaves the type line untouched.
+fn emit_rows_view(asm: &mut Asm, rows_desc: &str) {
+    asm.invoke(
+        "super",
+        method(
+            "Landroid/widget/ArrayAdapter;",
+            "getView",
+            "Landroid/view/View;",
+            &[
+                "I",
+                "Landroid/view/View;",
+                "Landroid/view/ViewGroup;",
+            ],
+        ),
+        &[4, 5, 6, 7],
+    );
+    asm.move_result(0, true);
+    asm.iget_obj(1, 4, field(rows_desc, "details", "[Ljava/lang/String;"));
+    asm.if_zero("eqz", 1, "plain");
+    asm.array_length(3, 1);
+    asm.if_cmp("ge", 5, 3, "plain");
+    asm.aget_object(1, 1, 5);
+    asm.if_zero("eqz", 1, "plain");
+    asm.const_string(6, "Day");
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "equals", "Z", &["Ljava/lang/Object;"]),
+        &[1, 6],
+    );
+    asm.move_result(3, false);
+    asm.if_zero("eqz", 3, "notday");
+    emit_day_row(asm);
+    asm.const_string(1, "");
+    asm.goto("done");
+    asm.label("notday");
+    asm.const_string(6, "Period");
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "endsWith", "Z", &["Ljava/lang/String;"]),
+        &[1, 6],
+    );
+    asm.move_result(3, false);
+    asm.if_zero("eqz", 3, "plain");
+    emit_period_row(asm);
+    asm.const_string(1, "");
+    asm.goto("done");
+    asm.label("plain");
+    emit_row_card(asm);
+    asm.const_(3, 0x01020014);
+    asm.invoke(
+        "virtual",
+        method("Landroid/view/View;", "findViewById", "Landroid/view/View;", &["I"]),
+        &[0, 3],
+    );
+    asm.move_result(2, true);
+    asm.if_zero("eqz", 2, "title_skip");
+    asm.check_cast(2, "Landroid/widget/TextView;");
+    asm.const_(3, argb(0x001C_1915));
+    asm.invoke(
+        "virtual",
+        method("Landroid/widget/TextView;", "setTextColor", "V", &["I"]),
+        &[2, 3],
+    );
+    asm.label("title_skip");
+    asm.iget_obj(1, 4, field(rows_desc, "details", "[Ljava/lang/String;"));
+    asm.if_zero("eqz", 1, "done");
+    asm.array_length(3, 1);
+    asm.if_cmp("ge", 5, 3, "done");
+    asm.aget_object(1, 1, 5);
+    asm.if_zero("eqz", 1, "done");
+    asm.const_(3, 0x01020015);
+    asm.invoke(
+        "virtual",
+        method("Landroid/view/View;", "findViewById", "Landroid/view/View;", &["I"]),
+        &[0, 3],
+    );
+    asm.move_result(2, true);
+    asm.if_zero("eqz", 2, "done");
+    asm.check_cast(2, "Landroid/widget/TextView;");
+    asm.invoke(
+        "virtual",
+        method(
+            "Landroid/widget/TextView;",
+            "setText",
+            "V",
+            &["Ljava/lang/CharSequence;"],
+        ),
+        &[2, 1],
+    );
+    asm.const_(3, argb(0x006E_665C));
+    asm.invoke(
+        "virtual",
+        method("Landroid/widget/TextView;", "setTextColor", "V", &["I"]),
+        &[2, 3],
+    );
+    // RIGHT | BOTTOM. The type sits on the lower right of the card.
+    asm.const_(3, 85);
+    asm.invoke(
+        "virtual",
+        method("Landroid/widget/TextView;", "setGravity", "V", &["I"]),
+        &[2, 3],
+    );
+    asm.label("done");
+    asm.ret(0, "obj");
+}
+
+fn tick_desc(package: &str) -> String {
+    class_desc(package, "DroideTick")
+}
+
+fn timer_desc(package: &str, form: &str, name: &str) -> String {
+    class_desc(package, &format!("{form}$Timer${name}"))
+}
+
+fn component_desc(package: &str, form: &str, kind: &str, name: &str, spec_desc: &str) -> String {
+    if kind == "Timer" {
+        timer_desc(package, form, name)
+    } else {
+        spec_desc.to_string()
+    }
+}
+
+fn simple_class(desc: &str) -> &str {
+    let body = desc.trim_start_matches('L').trim_end_matches(';');
+    body.rsplit('/').next().unwrap_or(body)
+}
+
+/// `v5` is this. An interval below 1 waits 1 ms, so the loop cannot spin.
+fn emit_tick_arm(asm: &mut Asm, tick: &str) {
+    asm.iget(3, 5, field(tick, "interval", "I"));
+    asm.const_(4, 1);
+    asm.if_cmp("ge", 3, 4, "ok");
+    asm.const_(3, 1);
+    asm.label("ok");
+    asm.unop(0x81, 0, 3, "int-to-long");
+    asm.iget_obj(2, 5, field(tick, "handler", "Landroid/os/Handler;"));
+    asm.invoke(
+        "virtual",
+        method(
+            "Landroid/os/Handler;",
+            "postDelayed",
+            "Z",
+            &["Ljava/lang/Runnable;", "J"],
+        ),
+        &[2, 5, 0, 1],
+    );
+    asm.move_result(3, false);
+    asm.ret(0, "void");
+}
+
+fn emit_tick_disarm(asm: &mut Asm, tick: &str) {
+    asm.iget_obj(0, 2, field(tick, "handler", "Landroid/os/Handler;"));
+    asm.invoke(
+        "virtual",
+        method(
+            "Landroid/os/Handler;",
+            "removeCallbacks",
+            "V",
+            &["Ljava/lang/Runnable;"],
+        ),
+        &[0, 2],
+    );
+    asm.ret(0, "void");
+}
+
+/// `v4` is this and `v5` is the new interval. A running timer starts its wait over.
+fn emit_tick_set_interval(asm: &mut Asm, tick: &str) {
+    asm.const_(0, 1);
+    asm.if_cmp("ge", 5, 0, "keep");
+    asm.const_(5, 1);
+    asm.label("keep");
+    asm.iput(5, 4, field(tick, "interval", "I"));
+    asm.iget(0, 4, field(tick, "enabled", "Z"));
+    asm.if_zero("eqz", 0, "done");
+    asm.invoke("virtual", method(tick, "disarm", "V", &[]), &[4]);
+    asm.invoke("virtual", method(tick, "arm", "V", &[]), &[4]);
+    asm.label("done");
+    asm.ret(0, "void");
+}
+
+/// `v4` is this and `v5` is the new flag. Turning it on posts one wait. Turning
+/// it off removes a pending tick. Setting it on again does not restart the wait.
+fn emit_tick_set_enabled(asm: &mut Asm, tick: &str) {
+    asm.iget(0, 4, field(tick, "enabled", "Z"));
+    asm.iput(5, 4, field(tick, "enabled", "Z"));
+    asm.if_zero("nez", 5, "turn_on");
+    asm.invoke("virtual", method(tick, "disarm", "V", &[]), &[4]);
+    asm.ret(0, "void");
+    asm.label("turn_on");
+    asm.if_zero("nez", 0, "stay");
+    asm.invoke("virtual", method(tick, "arm", "V", &[]), &[4]);
+    asm.label("stay");
+    asm.ret(0, "void");
+}
+
+fn emit_tick_get(asm: &mut Asm, tick: &str, name: &str, ty: &str) {
+    asm.iget(0, 1, field(tick, name, ty));
+    asm.ret(0, "int");
+}
+
+fn emit_tick_init(asm: &mut Asm, tick: &str) {
+    asm.invoke(
+        "direct",
+        method("Ljava/lang/Object;", "<init>", "V", &[]),
+        &[4],
+    );
+    asm.invoke(
+        "static",
+        method("Landroid/os/Looper;", "getMainLooper", "Landroid/os/Looper;", &[]),
+        &[],
+    );
+    asm.move_result(0, true);
+    asm.new_instance(1, "Landroid/os/Handler;");
+    asm.invoke(
+        "direct",
+        method(
+            "Landroid/os/Handler;",
+            "<init>",
+            "V",
+            &["Landroid/os/Looper;"],
+        ),
+        &[1, 0],
+    );
+    asm.iput_obj(1, 4, field(tick, "handler", "Landroid/os/Handler;"));
+    asm.const_(0, 1000);
+    asm.iput(0, 4, field(tick, "interval", "I"));
+    asm.const_(0, 0);
+    asm.iput(0, 4, field(tick, "enabled", "Z"));
+    asm.ret(0, "void");
+}
+
+fn emit_tick_class(dex: &mut crate::dex::DexFile, package: &str) {
+    let tick = tick_desc(package);
+    let mut cls = ClassModel::new(&tick, "Ljava/lang/Object;", ACC_PUBLIC, "DroideTick");
+    cls.interfaces.push("Ljava/lang/Runnable;".into());
+    cls.field("handler", "Landroid/os/Handler;", ACC_PUBLIC);
+    cls.field("interval", "I", ACC_PUBLIC);
+    cls.field("enabled", "Z", ACC_PUBLIC);
+    let mut init = Asm::new();
+    emit_tick_init(&mut init, &tick);
+    cls.method(MethodModel::new(
+        "<init>",
+        "V",
+        Vec::new(),
+        ACC_PUBLIC | ACC_CONSTRUCTOR,
+        Some(init),
+        5,
+        1,
+        2,
+    ));
+    let mut arm = Asm::new();
+    emit_tick_arm(&mut arm, &tick);
+    cls.method(MethodModel::new(
+        "arm",
+        "V",
+        Vec::new(),
+        ACC_PUBLIC,
+        Some(arm),
+        6,
+        1,
+        4,
+    ));
+    let mut disarm = Asm::new();
+    emit_tick_disarm(&mut disarm, &tick);
+    cls.method(MethodModel::new(
+        "disarm",
+        "V",
+        Vec::new(),
+        ACC_PUBLIC,
+        Some(disarm),
+        3,
+        1,
+        2,
+    ));
+    let mut set_interval = Asm::new();
+    emit_tick_set_interval(&mut set_interval, &tick);
+    cls.method(MethodModel::new(
+        "setInterval",
+        "V",
+        vec!["I".into()],
+        ACC_PUBLIC,
+        Some(set_interval),
+        6,
+        2,
+        1,
+    ));
+    let mut set_enabled = Asm::new();
+    emit_tick_set_enabled(&mut set_enabled, &tick);
+    cls.method(MethodModel::new(
+        "setEnabled",
+        "V",
+        vec!["Z".into()],
+        ACC_PUBLIC,
+        Some(set_enabled),
+        6,
+        2,
+        1,
+    ));
+    let mut interval = Asm::new();
+    emit_tick_get(&mut interval, &tick, "interval", "I");
+    cls.method(MethodModel::new(
+        "interval",
+        "I",
+        Vec::new(),
+        ACC_PUBLIC,
+        Some(interval),
+        2,
+        1,
+        1,
+    ));
+    let mut enabled = Asm::new();
+    emit_tick_get(&mut enabled, &tick, "enabled", "Z");
+    cls.method(MethodModel::new(
+        "enabled",
+        "Z",
+        Vec::new(),
+        ACC_PUBLIC,
+        Some(enabled),
+        2,
+        1,
+        1,
+    ));
+    // A timer with no OnTimer still has to implement run. The subclass replaces it.
+    let mut run = Asm::new();
+    run.ret(0, "void");
+    cls.method(MethodModel::new(
+        "run",
+        "V",
+        Vec::new(),
+        ACC_PUBLIC,
+        Some(run),
+        1,
+        1,
+        1,
+    ));
+    dex.add(cls);
+}
+
+fn emit_rows_class(dex: &mut crate::dex::DexFile, package: &str) {
+    let desc = class_desc(package, "DroideRows");
+    let mut cls = ClassModel::new(&desc, "Landroid/widget/ArrayAdapter;", ACC_PUBLIC, "DroideRows");
+    cls.field("details", "[Ljava/lang/String;", ACC_PUBLIC);
+    let mut init = Asm::new();
+    emit_rows_init(&mut init, &desc);
+    cls.method(MethodModel::new(
+        "<init>",
+        "V",
+        vec![
+            "Landroid/content/Context;".into(),
+            "I".into(),
+            "[Ljava/lang/Object;".into(),
+            "[Ljava/lang/String;".into(),
+        ],
+        ACC_PUBLIC | ACC_CONSTRUCTOR,
+        Some(init),
+        6,
+        5,
+        5,
+    ));
+    let mut view = Asm::new();
+    emit_rows_view(&mut view, &desc);
+    cls.method(MethodModel::new(
+        "getView",
+        "Landroid/view/View;",
+        vec![
+            "I".into(),
+            "Landroid/view/View;".into(),
+            "Landroid/view/ViewGroup;".into(),
+        ],
+        ACC_PUBLIC,
+        Some(view),
+        8,
+        4,
+        5,
+    ));
+    dex.add(cls);
+}
+
 /// Same rows as `setLines`. Spinner extends AbsSpinner, so the adapter call is
 /// `setAdapter(SpinnerAdapter)`, not the AbsListView method List uses.
 fn emit_set_spinner(asm: &mut Asm) {
     // v5 spinner, v6 context, v7 text. registers 8, ins 3.
+    // TAG_ITEMS keeps the text so Items can be read back. A spinner has no details.
+    asm.const_(0, TAG_ITEMS);
+    asm.invoke(
+        "virtual",
+        method(
+            "Landroid/view/View;",
+            "setTag",
+            "V",
+            &["I", "Ljava/lang/Object;"],
+        ),
+        &[5, 0, 7],
+    );
     asm.invoke(
         "virtual",
         method("Ljava/lang/String;", "length", "I", &[]),

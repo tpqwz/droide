@@ -55,12 +55,14 @@ const KINDS: &[Kind] = &[
     Kind { name: "List", group: "Lists", w: 328, h: 200 },
     Kind { name: "Spinner", group: "Lists", w: 240, h: 48 },
     Kind { name: "Web", group: "Web", w: 328, h: 200 },
+    Kind { name: "Timer", group: "Time", w: 160, h: 36 },
 ];
 
 fn kind_events(kind: &str) -> &'static [&'static str] {
     match kind {
         "List" => &["OnItemClick", "OnItemLongClick"],
         "Spinner" => &["OnItemSelected"],
+        "Timer" => &["OnTimer"],
         "Edit" | "Memo" | "Number" | "Password" | "Email" | "Phone" | "Check" | "Radio"
         | "Switch" | "Toggle" | "Seek" | "Rating" | "Picker" | "Time" | "Date" => {
             &["OnClick", "OnLongClick", "OnChange"]
@@ -86,9 +88,10 @@ fn kind_props(kind: &str) -> &'static [&'static str] {
         "Time" => &["Is24Hour", "Hour", "Minute", "Enabled", "Visible"],
         "Date" => &["Year", "Month", "Day", "Enabled", "Visible"],
         "Panel" => &["Direction", "Color", "Enabled", "Visible"],
-        "List" => &["Items", "Color", "Enabled", "Visible"],
+        "List" => &["Items", "Details", "Color", "Bottom", "Enabled", "Visible"],
         "Spinner" => &["Items", "Selection", "Color", "Enabled", "Visible"],
         "Web" => &["Html", "Url", "Enabled", "Visible"],
+        "Timer" => &["Interval", "Enabled"],
         _ => &[],
     }
 }
@@ -1203,14 +1206,14 @@ impl Studio {
                         }
                     });
                     let props = kind_props(&kind);
-                    for prop in ["Text", "Hint", "Format", "TextOn", "TextOff", "Html", "Url", "Items"] {
+                    for prop in ["Text", "Hint", "Format", "TextOn", "TextOff", "Html", "Url", "Items", "Details"] {
                         if props.contains(&prop) {
                             dirty |= edit_string(ui, comp, prop);
                         }
                     }
                     for prop in [
                         "TextSize", "Max", "Progress", "Stars", "Rating", "MinValue", "MaxValue", "Value",
-                        "Hour", "Minute", "Year", "Month", "Day", "Selection",
+                        "Hour", "Minute", "Year", "Month", "Day", "Selection", "Interval",
                     ] {
                         if props.contains(&prop) {
                             dirty |= edit_number(ui, comp, prop);
@@ -1257,6 +1260,9 @@ impl Studio {
                     }
                     if props.contains(&"Visible") {
                         dirty |= edit_flag(ui, comp, "Visible", true);
+                    }
+                    if props.contains(&"Bottom") {
+                        dirty |= edit_flag(ui, comp, "Bottom", false);
                     }
                     let mut event_names: Vec<String> =
                         kind_events(&kind).iter().map(|name| (*name).to_string()).collect();
@@ -2080,12 +2086,43 @@ fn paint_widget(
     let color = color_of(&prop_s(comp, "TextColor"));
     match comp.kind.as_str() {
         "Button" => {
-            let rich = RichText::new(text.clone()).size(size);
+            let fill = prop_s(comp, "Color");
+            let square = (rect.width() - rect.height()).abs() < 6.0 && rect.width() >= 28.0;
+            if !fill.is_empty() && square {
+                let bg = color_of(&fill);
+                let radius = rect.width().min(rect.height()) * 0.5;
+                ui.painter().circle_filled(rect.center(), radius, bg);
+                let ink = if prop_s(comp, "TextColor").is_empty() {
+                    Color32::from_rgb(0x1C, 0x19, 0x15)
+                } else {
+                    color
+                };
+                ui.painter().text(
+                    rect.center(),
+                    egui::Align2::CENTER_CENTER,
+                    text.as_str(),
+                    egui::FontId::proportional(size),
+                    ink,
+                );
+                let sense = if live { Sense::click() } else { Sense::hover() };
+                Some(ui.interact(rect, ui.id().with(("plaque", &comp.name)), sense))
+            } else {
+            let mut rich = RichText::new(text.clone()).size(size);
+            if !prop_s(comp, "TextColor").is_empty() {
+                rich = rich.color(color);
+            }
             let mut button = Button::new(rich).min_size(rect.size());
+            if !fill.is_empty() {
+                button = button
+                    .fill(color_of(&fill))
+                    .stroke(Stroke::NONE)
+                    .corner_radius(8.0);
+            }
             if !live {
                 button = button.sense(Sense::hover());
             }
             Some(ui.put(rect, button))
+            }
         }
         "Toggle" => {
             let label = if *checked {
@@ -2113,7 +2150,7 @@ fn paint_widget(
                 .hint_text(hint)
                 .desired_width(rect.width())
                 .interactive(live);
-            Some(ui.put(rect, edit))
+            Some(ui.put(rect, field_edit(edit, comp, rect, color)))
         }
         "Password" => {
             let hint = prop_s(comp, "Hint");
@@ -2122,7 +2159,7 @@ fn paint_widget(
                 .hint_text(hint)
                 .desired_width(rect.width())
                 .interactive(live);
-            Some(ui.put(rect, edit))
+            Some(ui.put(rect, field_edit(edit, comp, rect, color)))
         }
         "Memo" => {
             let hint = prop_s(comp, "Hint");
@@ -2130,7 +2167,7 @@ fn paint_widget(
                 .hint_text(hint)
                 .desired_width(rect.width())
                 .interactive(live);
-            Some(ui.put(rect, edit))
+            Some(ui.put(rect, field_edit(edit, comp, rect, color)))
         }
         "Check" | "Switch" => {
             let label = RichText::new(prop_s(comp, "Text")).size(size).color(color);
@@ -2259,17 +2296,49 @@ fn paint_widget(
             }
         }
         "Clock" => {
+            let prev = ui.clip_rect();
+            ui.set_clip_rect(prev.intersect(rect));
             let shown = prop_or(comp, "Format", "HH:mm");
             let rich = RichText::new(shown).size(size).color(color);
-            Some(ui.put(rect, Label::new(rich).selectable(false)))
+            let response = ui.put(rect, Label::new(rich).selectable(false));
+            ui.set_clip_rect(prev);
+            Some(response)
         }
         "Panel" => {
             let fill = color_of(&prop_or(comp, "Color", "#E4E8EE"));
-            ui.painter().rect_filled(rect, 6, fill);
+            let rad = if rect.height() <= 6.0 || rect.width() <= 6.0 {
+                0.0
+            } else if rect.height() <= 48.0 && rect.width() > rect.height() * 3.0 {
+                rect.height() * 0.5
+            } else {
+                6.0
+            };
+            ui.painter().rect_filled(rect, rad, fill);
             None
         }
         "List" => {
             let fill = color_of(&prop_or(comp, "Color", "#FBF9F4"));
+            let items = prop_s(comp, "Items");
+            let details = prop_s(comp, "Details");
+            let titles: Vec<&str> = items.split('\n').collect();
+            let subs: Vec<&str> = details.split('\n').collect();
+            let two = subs.iter().any(|line| !line.trim().is_empty());
+            let lines: Vec<&str> = if two {
+                Vec::new()
+            } else {
+                items
+                    .split('\n')
+                    .map(str::trim)
+                    .filter(|line| !line.is_empty())
+                    .take(6)
+                    .collect()
+            };
+            let font = egui::FontId::proportional(14.0);
+            let ink = Color32::from_rgb(0x1C, 0x24, 0x30);
+            let rule = Color32::from_rgb(0xE4, 0xDD, 0xD4);
+            if two {
+                paint_note_cards(ui, rect, fill, &titles, &subs);
+            } else {
             ui.painter().rect_filled(rect, 6, fill);
             ui.painter().rect_stroke(
                 rect,
@@ -2277,16 +2346,6 @@ fn paint_widget(
                 Stroke::new(1.0, Color32::from_rgb(0xC4, 0xBE, 0xB4)),
                 egui::StrokeKind::Inside,
             );
-            let items = prop_s(comp, "Items");
-            let lines: Vec<&str> = items
-                .split('\n')
-                .map(str::trim)
-                .filter(|line| !line.is_empty())
-                .take(6)
-                .collect();
-            let font = egui::FontId::proportional(14.0);
-            let ink = Color32::from_rgb(0x1C, 0x24, 0x30);
-            let rule = Color32::from_rgb(0xE4, 0xDD, 0xD4);
             if lines.is_empty() {
                 ui.painter().text(
                     rect.left_top() + egui::vec2(12.0, 10.0),
@@ -2319,6 +2378,7 @@ fn paint_widget(
                         );
                     }
                 }
+            }
             }
             None
         }
@@ -2363,6 +2423,30 @@ fn paint_widget(
             );
             None
         }
+        "Timer" => {
+            let prev = ui.clip_rect();
+            ui.set_clip_rect(prev.intersect(rect));
+            ui.painter().rect_filled(rect, 8, Color32::from_rgb(0xF4, 0xF0, 0xE8));
+            ui.painter().rect_stroke(
+                rect,
+                8,
+                Stroke::new(1.0, Color32::from_rgb(0xC4, 0xBE, 0xB4)),
+                egui::StrokeKind::Inside,
+            );
+            if rect.width() >= 48.0 {
+                let interval = prop_i(comp, "Interval").unwrap_or(1000);
+                let font = egui::FontId::proportional(13.0);
+                ui.painter().text(
+                    rect.left_center() + egui::vec2(10.0, 0.0),
+                    egui::Align2::LEFT_CENTER,
+                    format!("Timer  {interval} ms"),
+                    font,
+                    Color32::from_rgb(0x1C, 0x24, 0x30),
+                );
+            }
+            ui.set_clip_rect(prev);
+            None
+        }
         "Web" => {
             ui.painter().rect_filled(rect, 6, Color32::from_rgb(0x1C, 0x24, 0x30));
             ui.painter().rect_stroke(
@@ -2401,6 +2485,96 @@ fn paint_widget(
             let shown = if text.is_empty() { " ".to_string() } else { text.clone() };
             let rich = RichText::new(shown).size(size).color(color);
             Some(ui.put(rect, Label::new(rich).selectable(false)))
+        }
+    }
+}
+
+fn field_edit<'t>(
+    edit: egui::TextEdit<'t>,
+    comp: &Component,
+    rect: Rect,
+    color: Color32,
+) -> egui::TextEdit<'t> {
+    let mut edit = edit;
+    let fill = prop_s(comp, "Color");
+    if !fill.is_empty() {
+        let bg = color_of(&fill);
+        let rad = if rect.height() <= 48.0 && rect.width() > rect.height() * 3.0 {
+            rect.height() * 0.5
+        } else {
+            8.0
+        };
+        edit = edit.background_color(bg).frame(
+            egui::Frame::new()
+                .fill(bg)
+                .corner_radius(rad)
+                .inner_margin(egui::Margin::symmetric(10, 6)),
+        );
+    }
+    if !prop_s(comp, "TextColor").is_empty() {
+        edit = edit.text_color(color);
+    }
+    edit
+}
+
+fn paint_note_cards(ui: &mut egui::Ui, rect: Rect, page: Color32, titles: &[&str], subs: &[&str]) {
+    ui.painter().rect_filled(rect, 0.0, page);
+    let card = Color32::from_rgb(0xFB, 0xF8, 0xF2);
+    let ink = Color32::from_rgb(0x1C, 0x19, 0x15);
+    let mute = Color32::from_rgb(0x6E, 0x66, 0x5C);
+    let line = Color32::from_rgb(0xE4, 0xDA, 0xCB);
+    let font = egui::FontId::proportional(15.0);
+    let foot = egui::FontId::proportional(10.0);
+    let count = titles.len().max(subs.len()).min(8);
+    let card_h = 62.0;
+    let gap = 8.0;
+    let mut rows = Vec::new();
+    for i in 0..count {
+        let y = rect.top() + 2.0 + i as f32 * (card_h + gap);
+        if y + 24.0 > rect.bottom() {
+            break;
+        }
+        let h = card_h.min(rect.bottom() - y);
+        let card_rect = Rect::from_min_size(
+            egui::pos2(rect.left(), y),
+            egui::vec2(rect.width().max(8.0), h),
+        );
+        let title = titles.get(i).copied().unwrap_or("").trim().to_string();
+        let sub = subs.get(i).copied().unwrap_or("").trim().to_string();
+        rows.push((card_rect, title, sub));
+    }
+    for (card_rect, _, _) in &rows {
+        ui.painter().rect_filled(*card_rect, 10.0, card);
+        ui.painter().rect_stroke(
+            *card_rect,
+            10.0,
+            Stroke::new(1.0, line),
+            egui::StrokeKind::Inside,
+        );
+    }
+    for (card_rect, title, sub) in &rows {
+        let shown = if title.is_empty() { " " } else { title.as_str() };
+        let galley = ui.fonts_mut(|fonts| {
+            fonts.layout(
+                shown.to_string(),
+                font.clone(),
+                ink,
+                (card_rect.width() - 20.0).max(8.0),
+            )
+        });
+        ui.painter().galley(
+            egui::pos2(card_rect.left() + 10.0, card_rect.top() + 8.0),
+            galley,
+            ink,
+        );
+        if !sub.is_empty() {
+            ui.painter().text(
+                egui::pos2(card_rect.right() - 10.0, card_rect.bottom() - 6.0),
+                egui::Align2::RIGHT_BOTTOM,
+                sub.to_uppercase(),
+                foot.clone(),
+                mute,
+            );
         }
     }
 }
@@ -2659,6 +2833,7 @@ fn default_props(kind: &str) -> BTreeMap<String, Value> {
         }
         "List" => {
             props.insert("Items".into(), json!("One\nTwo\nThree"));
+            props.insert("Details".into(), json!(""));
             props.insert("Color".into(), json!("#FBF9F4"));
         }
         "Spinner" => {
@@ -2669,6 +2844,10 @@ fn default_props(kind: &str) -> BTreeMap<String, Value> {
         "Web" => {
             props.insert("Html".into(), json!(""));
             props.insert("Url".into(), json!(""));
+        }
+        "Timer" => {
+            props.insert("Interval".into(), json!(1000));
+            props.insert("Enabled".into(), json!(false));
         }
         _ => {}
     }
@@ -2873,6 +3052,8 @@ fn plan_handler(
         }
         let params = if event == "OnItemClick" || event == "OnItemSelected" {
             "Row: String"
+        } else if event == "OnTimer" {
+            ""
         } else {
             "Sender: View"
         };
@@ -3545,7 +3726,7 @@ fn project_from_args() -> PathBuf {
                 std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")).join(path)
             }
         }
-        None => find_repo().join("examples").join("Hello"),
+        None => find_repo().join("examples").join("TLNotes"),
     };
     path
 }
@@ -3656,6 +3837,10 @@ mod nav_tests {
         assert_eq!(spin.event, "OnItemSelected");
         assert_eq!(spin.handler, "Kind1ItemSelected");
         assert!(spin.source.contains("procedure Kind1ItemSelected(Row: String);"));
+        let clock = plan_handler("Timer", "Clock", &BTreeMap::new(), "");
+        assert_eq!(clock.event, "OnTimer");
+        assert_eq!(clock.handler, "ClockTimer");
+        assert!(clock.source.contains("procedure ClockTimer();"));
     }
 }
 

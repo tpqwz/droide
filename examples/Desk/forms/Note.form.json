@@ -1,0 +1,108 @@
+{
+  "name": "Note",
+  "title": "Note",
+  "background": "#EFEAE2",
+  "width": 360,
+  "height": 640,
+  "events": {
+    "OnCreate": "Start"
+  },
+  "components": [
+    {
+      "type": "Label",
+      "name": "Heading",
+      "left": 16,
+      "top": 16,
+      "width": 328,
+      "height": 32,
+      "props": {
+        "Text": "Note",
+        "TextColor": "#1C2430",
+        "TextSize": 22
+      },
+      "events": {}
+    },
+    {
+      "type": "Edit",
+      "name": "TitleEdit",
+      "left": 16,
+      "top": 60,
+      "width": 328,
+      "height": 44,
+      "props": {
+        "Hint": "Title",
+        "Text": "",
+        "TextSize": 16
+      },
+      "events": {}
+    },
+    {
+      "type": "Memo",
+      "name": "BodyEdit",
+      "left": 16,
+      "top": 116,
+      "width": 328,
+      "height": 280,
+      "props": {
+        "Hint": "Write here",
+        "Text": "",
+        "TextSize": 16
+      },
+      "events": {}
+    },
+    {
+      "type": "Button",
+      "name": "SaveButton",
+      "left": 16,
+      "top": 412,
+      "width": 160,
+      "height": 44,
+      "props": { "Text": "Save", "TextSize": 15 },
+      "events": { "OnClick": "SaveClick" }
+    },
+    {
+      "type": "Button",
+      "name": "PasteButton",
+      "left": 184,
+      "top": 412,
+      "width": 160,
+      "height": 44,
+      "props": { "Text": "Paste", "TextSize": 15 },
+      "events": { "OnClick": "PasteClick" }
+    },
+    {
+      "type": "Button",
+      "name": "ShareButton",
+      "left": 16,
+      "top": 468,
+      "width": 160,
+      "height": 44,
+      "props": { "Text": "Share", "TextSize": 15 },
+      "events": { "OnClick": "ShareClick" }
+    },
+    {
+      "type": "Button",
+      "name": "CloseButton",
+      "left": 184,
+      "top": 468,
+      "width": 160,
+      "height": 44,
+      "props": { "Text": "Close", "TextSize": 15 },
+      "events": { "OnClick": "CloseClick" }
+    },
+    {
+      "type": "Label",
+      "name": "BreakLabel",
+      "left": 0,
+      "top": 0,
+      "width": 4,
+      "height": 4,
+      "props": {
+        "Text": "\n",
+        "TextSize": 1,
+        "TextColor": "#EFEAE2"
+      },
+      "events": {}
+    }
+  ]
+}

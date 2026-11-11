@@ -464,6 +464,247 @@ class ProjectTests(unittest.TestCase):
                 messages,
             )
 
+    def test_list_details_compile(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "Rows"
+            Project.create(root, "Rows", "com.example.rows")
+            form = json.loads((root / "forms" / "Main.form.json").read_text(encoding="utf-8"))
+            rows = {
+                "type": "List",
+                "name": "Rows",
+                "left": 16,
+                "top": 16,
+                "width": 328,
+                "height": 200,
+                "props": {"Items": "Ada\nGrace", "Details": "Lovelace\nHopper", "Color": "#FBF9F4"},
+                "events": {"OnItemClick": "Pick"},
+            }
+            form["components"] = [rows]
+            (root / "forms" / "Main.form.json").write_text(json.dumps(form), encoding="utf-8")
+            (root / "forms" / "Main.droid").write_text(
+                "procedure Pick(Row: String);\nvar\n  Title: String;\n  Sub: String;\nbegin\n"
+                "  Title := Rows.Items\n  Sub := Rows.Details\n"
+                "  Rows.Items := Title\n  Rows.Details := Sub\nend;\n",
+                encoding="utf-8",
+            )
+            compiled = compile_project(root)
+            self.assertEqual(compiled["errors"], [], compiled["errors"])
+            verify_image(compiled["dex"].image)
+            listing = "\n".join(compiled["dex"].listing)
+            main = _class_body(listing, "Lcom/example/rows/Main;")
+            self.assertLess(main.index("->setLines"), main.index("->setDetails"))
+            pick = _method_body(listing, "Pick(")
+            self.assertIn("->itemsOf", pick)
+            self.assertIn("->detailsOf", pick)
+            self.assertIn("->setLines", pick)
+            self.assertIn("->setDetails", pick)
+            click = _class_body(listing, "Lcom/example/rows/Main$Item$Rows;")
+            self.assertIn("getItemAtPosition", click)
+            for needle in (
+                "class Lcom/example/rows/DroideRows;",
+                "getView",
+                "array-length",
+                "aget-object",
+                "findViewById",
+                "#17367043",
+                "#17367044",
+                "#16908308",
+                "#16908309",
+                "#2130771969",
+                "#2130771970",
+                "setTag",
+                "getTag",
+                "invoke-direct {v1, v2, v3, v0, v4}, Landroid/widget/ArrayAdapter;-><init>",
+                "check-cast v2, Landroid/widget/TextView;",
+                "setCornerRadius",
+                "setDivider",
+            ):
+                self.assertIn(needle, listing, needle)
+            self.assertFalse(class_ok("DroideRows"))
+            methods = compiled["dex"].image["methods"]
+            self.assertIn(
+                (
+                    "Lcom/example/rows/DroideRows;",
+                    "<init>",
+                    "V",
+                    ("Landroid/content/Context;", "I", "[Ljava/lang/Object;", "[Ljava/lang/String;"),
+                ),
+                methods,
+            )
+            self.assertIn(
+                (
+                    "Lcom/example/rows/DroideRt;",
+                    "setDetails",
+                    "V",
+                    ("Landroid/widget/ListView;", "Landroid/content/Context;", "Ljava/lang/String;"),
+                ),
+                methods,
+            )
+            self.assertIn(
+                ("Lcom/example/rows/DroideRows;", "details", "[Ljava/lang/String;"),
+                compiled["dex"].image["fields"],
+            )
+
+    def test_list_details_reject(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "BadRows"
+            Project.create(root, "BadRows", "com.example.badrows")
+            form = json.loads((root / "forms" / "Main.form.json").read_text(encoding="utf-8"))
+            form["components"] = [
+                {
+                    "type": "List", "name": "Rows",
+                    "left": 16, "top": 16, "width": 328, "height": 200,
+                    "props": {"Items": "One", "Details": "", "Color": "#FBF9F4"},
+                    "events": {},
+                },
+                {
+                    "type": "Spinner", "name": "Kind1",
+                    "left": 16, "top": 80, "width": 240, "height": 48,
+                    "props": {"Items": "Red", "Selection": 0, "Color": "#FBF9F4"},
+                    "events": {},
+                },
+            ]
+            (root / "forms" / "Main.form.json").write_text(json.dumps(form), encoding="utf-8")
+            (root / "forms" / "Main.droid").write_text(
+                "procedure Show();\nbegin\n  Kind1.Details := 'x'\n  Rows.Details := 1\nend;\n",
+                encoding="utf-8",
+            )
+            compiled = compile_project(root, codegen=False)
+            messages = [err["message"] for err in compiled["errors"]]
+            for needle in ("Spinner has no property Details", "Details expects String"):
+                self.assertTrue(any(needle in msg for msg in messages), (needle, messages))
+
+    def test_timer_compiles(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "Tick"
+            Project.create(root, "Tick", "com.example.tick")
+            form = json.loads((root / "forms" / "Main.form.json").read_text(encoding="utf-8"))
+            form["components"] = [{
+                "type": "Timer",
+                "name": "Clock",
+                "left": 16,
+                "top": 16,
+                "width": 160,
+                "height": 36,
+                "props": {"Interval": 250, "Enabled": True},
+                "events": {"OnTimer": "Tick"},
+            }]
+            (root / "forms" / "Main.form.json").write_text(json.dumps(form), encoding="utf-8")
+            (root / "forms" / "Main.droid").write_text(
+                "procedure Tick();\nvar\n  N: Integer;\n  On: Boolean;\nbegin\n"
+                "  N := Clock.Interval\n  On := Clock.Enabled\n"
+                "  Clock.Interval := 500\n  Clock.Enabled := false\nend;\n",
+                encoding="utf-8",
+            )
+            compiled = compile_project(root)
+            self.assertEqual(compiled["errors"], [], compiled["errors"])
+            verify_image(compiled["dex"].image)
+            listing = "\n".join(compiled["dex"].listing)
+            main = _class_body(listing, "Lcom/example/tick/Main;")
+            self.assertLess(main.index("setInterval"), main.index("setEnabled"))
+            self.assertIn("#250", main)
+            self.assertEqual(main.count("->addView"), 1, main)
+            tick = _method_body(listing, "Tick(")
+            self.assertIn("->interval", tick)
+            self.assertIn("->enabled", tick)
+            self.assertIn("->setInterval", tick)
+            self.assertIn("->setEnabled", tick)
+            run = _class_body(listing, "Lcom/example/tick/Main$Timer$Clock;")
+            self.assertIn("->Tick", run)
+            self.assertIn("->arm", run)
+            for needle in (
+                "class Lcom/example/tick/DroideTick;",
+                "getMainLooper",
+                "postDelayed",
+                "removeCallbacks",
+                "int-to-long",
+                "iget-boolean",
+                "iput-boolean",
+            ):
+                self.assertIn(needle, listing, needle)
+            self.assertFalse(class_ok("DroideTick"))
+            methods = compiled["dex"].image["methods"]
+            self.assertIn(
+                (
+                    "Landroid/os/Handler;",
+                    "postDelayed",
+                    "Z",
+                    ("Ljava/lang/Runnable;", "J"),
+                ),
+                methods,
+            )
+            self.assertIn(
+                "Lcom/example/tick/Main$Timer$Clock;",
+                compiled["dex"].image["classes"],
+            )
+
+    def test_timer_rejects_a_bad_handler(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "BadTick"
+            Project.create(root, "BadTick", "com.example.badtick")
+            form = json.loads((root / "forms" / "Main.form.json").read_text(encoding="utf-8"))
+            form["components"] = [
+                {
+                    "type": "Timer", "name": "Clock", "parent": "Box",
+                    "left": 16, "top": 16, "width": 160, "height": 36,
+                    "props": {"Interval": 1000, "Enabled": False},
+                    "events": {"OnTimer": "Tick"},
+                },
+                {
+                    "type": "Panel", "name": "Box",
+                    "left": 16, "top": 80, "width": 200, "height": 80,
+                    "props": {"Direction": "Vertical", "Color": "#E4E8EE"},
+                    "events": {},
+                },
+            ]
+            (root / "forms" / "Main.form.json").write_text(json.dumps(form), encoding="utf-8")
+            (root / "forms" / "Main.droid").write_text(
+                "procedure Tick(Sender: View);\nbegin\nend;\n",
+                encoding="utf-8",
+            )
+            compiled = compile_project(root, codegen=False)
+            messages = [err["message"] for err in compiled["errors"]]
+            for needle in ("Tick takes no parameters", "Clock cannot have a parent"):
+                self.assertTrue(any(needle in msg for msg in messages), (needle, messages))
+
+    def test_tlnotes_sample_compiles(self):
+        compiled = compile_project(ROOT / "examples" / "TLNotes")
+        self.assertEqual(compiled["errors"], [], compiled["errors"])
+        verify_image(compiled["dex"].image)
+        listing = "\n".join(compiled["dex"].listing)
+        for needle in (
+            "class Lcom/droide/tlnotes/Main$Timer$Pulse;",
+            "->ingest",
+            "->lookup",
+            "->takePhoto",
+            "->openDocument",
+            "->setDetails",
+            "->setStackFromBottom",
+            "->setFillViewport",
+            "->today",
+            "->time",
+            "bottomMargin",
+            "Card$Select$KindSpin",
+        ):
+            self.assertIn(needle, listing, needle)
+
+    def test_desk_sample_compiles(self):
+        compiled = compile_project(ROOT / "examples" / "Desk")
+        self.assertEqual(compiled["errors"], [], compiled["errors"])
+        verify_image(compiled["dex"].image)
+        listing = "\n".join(compiled["dex"].listing)
+        for needle in (
+            "class Lcom/droide/desk/Main$Timer$Pulse;",
+            "class Lcom/droide/desk/DroideTick;",
+            "postDelayed",
+            "->takePhoto",
+            "->openDocument",
+            "->setDetails",
+            "->arg",
+            "#17367044",
+        ):
+            self.assertIn(needle, listing, needle)
+
     def test_message_and_question_compile(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / "Ask"
@@ -641,6 +882,311 @@ class ProjectTests(unittest.TestCase):
                 "PasteText expects 0 arguments",
             ):
                 self.assertTrue(any(needle in msg for msg in messages), (needle, messages))
+
+    def test_activity_results_compile(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "Shot"
+            Project.create(root, "Shot", "com.example.shot")
+            form = json.loads((root / "forms" / "Main.form.json").read_text(encoding="utf-8"))
+            form["components"] = []
+            (root / "forms" / "Main.form.json").write_text(json.dumps(form), encoding="utf-8")
+            (root / "forms" / "Main.droid").write_text(
+                "procedure Show();\nbegin\n"
+                "  TakePhoto('Got')\n  TakePhoto('Got')\n  OpenDocument('Got')\n"
+                "  OpenDocument('Other')\n  TakePhoto('Next')\n  OpenCamera()\nend;\n"
+                "procedure Got(Path: String);\nbegin\nend;\n"
+                "procedure Other(Path: String);\nbegin\nend;\n"
+                "procedure Next(Path: String);\nbegin\nend;\n",
+                encoding="utf-8",
+            )
+            compiled = compile_project(root)
+            self.assertEqual(compiled["errors"], [], compiled["errors"])
+            verify_image(compiled["dex"].image)
+            listing = "\n".join(compiled["dex"].listing)
+            self.assertNotIn("$Ask$", listing)
+            show = _method_body(listing, "Show(")
+            self.assertEqual(show.count("->takePhoto"), 3, show)
+            self.assertEqual(show.count("->openDocument"), 2, show)
+            self.assertEqual(show.count("->openCamera"), 1, show)
+            self.assertEqual(show.count("->Got"), 3, show)
+            answered = _method_body(listing, "onActivityResult(")
+            self.assertEqual(answered.count("->Got"), 2, answered)
+            self.assertEqual(answered.count("->Other"), 1, answered)
+            self.assertEqual(answered.count("->Next"), 1, answered)
+            self.assertIn("->photoPath", answered)
+            self.assertIn("->documentPath", answered)
+            photo_code = answered.index("const/4 v0, #1")
+            got_doc = answered.index("const/16 v0, #256")
+            other_doc = answered.index("const/16 v0, #257")
+            next_code = answered.index("const/4 v0, #2")
+            self.assertLess(photo_code, got_doc)
+            self.assertLess(got_doc, other_doc)
+            self.assertLess(other_doc, next_code)
+            got = answered.index("->Got")
+            got_again = answered.index("->Got", got + 4)
+            other = answered.index("->Other")
+            nxt = answered.index("->Next")
+            self.assertLess(got, got_again)
+            self.assertLess(got_again, other)
+            self.assertLess(other, nxt)
+            camera = _method_body(listing, "openCamera(")
+            self.assertIn("android.media.action.IMAGE_CAPTURE", camera)
+            self.assertIn("->startActivity", camera)
+            self.assertNotIn("startActivityForResult", camera)
+            take = _method_body(listing, "takePhoto(")
+            self.assertIn("android.media.action.IMAGE_CAPTURE", take)
+            self.assertIn("startActivityForResult", take)
+            self.assertLess(take.index("queryIntentActivities"), take.index("startActivityForResult"))
+            document = _method_body(listing, "openDocument(")
+            self.assertIn("android.intent.action.OPEN_DOCUMENT", document)
+            self.assertIn("android.intent.category.OPENABLE", document)
+            self.assertIn("*/*", document)
+            self.assertIn("addCategory", document)
+            self.assertIn("setType", document)
+            self.assertIn("startActivityForResult", document)
+            photo = _method_body(listing, "photoPath(")
+            self.assertIn("droide-photo.jpg", photo)
+            self.assertIn("sget-object", photo)
+            self.assertIn("JPEG", photo)
+            self.assertIn("getParcelableExtra", photo)
+            self.assertIn('"data"', photo)
+            compress = photo.index("compress")
+            self.assertLess(photo.index("move-result", compress), photo.index("close", compress))
+            self.assertIn("#90", photo)
+            copied = _method_body(listing, "documentPath(")
+            self.assertIn("droide-document", copied)
+            self.assertIn("openInputStream", copied)
+            self.assertIn("#4096", copied)
+            self.assertIn("if-le", copied)
+            self.assertLess(copied.index("->read"), copied.index("->write"))
+            methods = compiled["dex"].image["methods"]
+            self.assertIn(
+                (
+                    "Landroid/app/Activity;",
+                    "startActivityForResult",
+                    "V",
+                    ("Landroid/content/Intent;", "I"),
+                ),
+                methods,
+            )
+            self.assertIn(
+                (
+                    "Lcom/example/shot/Main;",
+                    "onActivityResult",
+                    "V",
+                    ("I", "I", "Landroid/content/Intent;"),
+                ),
+                methods,
+            )
+            self.assertIn(
+                (
+                    "Landroid/graphics/Bitmap;",
+                    "compress",
+                    "Z",
+                    ("Landroid/graphics/Bitmap$CompressFormat;", "I", "Ljava/io/OutputStream;"),
+                ),
+                methods,
+            )
+            self.assertIn(
+                (
+                    "Landroid/content/ContentResolver;",
+                    "openInputStream",
+                    "Ljava/io/InputStream;",
+                    ("Landroid/net/Uri;",),
+                ),
+                methods,
+            )
+            self.assertIn(
+                (
+                    "Ljava/io/OutputStream;",
+                    "write",
+                    "V",
+                    ("[B", "I", "I"),
+                ),
+                methods,
+            )
+            self.assertIn(
+                (
+                    "Landroid/graphics/Bitmap$CompressFormat;",
+                    "JPEG",
+                    "Landroid/graphics/Bitmap$CompressFormat;",
+                ),
+                compiled["dex"].image["fields"],
+            )
+
+    def test_activity_results_reject_a_bad_handler(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "BadShot"
+            Project.create(root, "BadShot", "com.example.badshot")
+            form = json.loads((root / "forms" / "Main.form.json").read_text(encoding="utf-8"))
+            form["components"] = []
+            (root / "forms" / "Main.form.json").write_text(json.dumps(form), encoding="utf-8")
+            (root / "forms" / "Main.droid").write_text(
+                "procedure Show();\nvar\n  Name: String;\nbegin\n"
+                "  TakePhoto(Name)\n  OpenDocument(Name)\n  TakePhoto('Missing')\n"
+                "  TakePhoto('None')\n  TakePhoto('Num')\n  TakePhoto('Count')\n"
+                "  TakePhoto('Wide')\n  OpenCamera('x')\nend;\n"
+                "procedure None();\nbegin\nend;\n"
+                "function Num(Path: String): Integer;\nbegin\n  Result := 0\nend;\n"
+                "procedure Count(Path: String; Extra: Integer);\nbegin\nend;\n"
+                "procedure Wide(Path: Integer);\nbegin\nend;\n",
+                encoding="utf-8",
+            )
+            compiled = compile_project(root, codegen=False)
+            messages = [err["message"] for err in compiled["errors"]]
+            for needle in (
+                "TakePhoto needs a string literal procedure name",
+                "OpenDocument needs a string literal procedure name",
+                "unknown procedure Missing",
+                "None takes one String",
+                "Num must be a procedure",
+                "Count takes one String",
+                "Wide takes one String",
+                "OpenCamera expects 0 arguments",
+            ):
+                self.assertTrue(any(needle in msg for msg in messages), (needle, messages))
+            self.assertFalse(any("Num takes one String" in msg for msg in messages), messages)
+
+    def test_open_form_arguments_compile(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "Args"
+            Project.create(root, "Args", "com.example.pass")
+            form = json.loads((root / "forms" / "Main.form.json").read_text(encoding="utf-8"))
+            form["components"] = []
+            (root / "forms" / "Main.form.json").write_text(json.dumps(form), encoding="utf-8")
+            (root / "forms" / "Main.droid").write_text(
+                "procedure Show();\nvar\n  Name: String;\n  Count: Integer;\n"
+                "  Flag: Boolean;\n  Extra: String;\nbegin\n"
+                "  OpenForm('Detail')\n  if Flag then\n    OpenForm('Detail', Name)\n"
+                "  OpenForm('Detail', 'hello', 7, true)\n"
+                "  OpenForm('detail', Name, Count, Flag, Extra)\nend;\n"
+                "procedure Plain();\nbegin\n  OpenForm('Detail')\nend;\n",
+                encoding="utf-8",
+            )
+            (root / "forms" / "Detail.form.json").write_text(
+                '{"name":"Detail","title":"Detail","background":"#F7F8FA",'
+                '"width":360,"height":640,"events":{"OnCreate":"Start"},"components":[]}',
+                encoding="utf-8",
+            )
+            (root / "forms" / "Detail.droid").write_text(
+                "procedure Start();\nbegin\n  Toast(Arg(0))\nend;\n"
+                "procedure Read();\nvar\n  Title: String;\n  Count: Integer;\n  On: Boolean;\n"
+                "begin\n  Title := Arg(0)\n  Count := ArgInt(1)\n  On := ArgBool(2)\nend;\n"
+                "procedure Indexed(N: Integer);\nvar\n  Title: String;\nbegin\n"
+                "  Title := Arg(N)\nend;\n",
+                encoding="utf-8",
+            )
+            compiled = compile_project(root)
+            self.assertEqual(compiled["errors"], [], compiled["errors"])
+            verify_image(compiled["dex"].image)
+            listing = "\n".join(compiled["dex"].listing)
+            plain = _method_body(listing, "Plain(")
+            self.assertIn("setClass", plain)
+            self.assertIn("startActivity", plain)
+            self.assertNotIn("putExtra", plain)
+            self.assertNotIn('"Detail"', plain)
+            show = _method_body(listing, "Show(")
+            self.assertLess(show.index("startActivity"), show.index("putExtra"))
+            self.assertEqual(show.count("->putExtra"), 16, show)
+            self.assertLess(show.index('"a0"'), show.index('"t0"'))
+            self.assertLess(show.index('"a3"'), show.index('"t3"'))
+            for needle in ('"S"', '"I"', '"B"', '"hello"'):
+                self.assertIn(needle, show, needle)
+            self.assertIn("pass/Detail;", listing)
+            self.assertNotIn("pass/detail;", listing)
+            start = _method_body(listing, "Start(")
+            self.assertIn("->arg", start)
+            read = _method_body(listing, "Read(")
+            self.assertIn("->arg", read)
+            self.assertIn("->argInt", read)
+            self.assertIn("->argBool", read)
+            indexed = _method_body(listing, "Indexed(")
+            self.assertIn("->arg", indexed)
+            self.assertNotIn('"a0"', indexed)
+            created = _method_body(listing, "onCreate(")
+            self.assertIn("->Start", created)
+            arg = _method_body(listing, "arg(")
+            self.assertIn("getIntent", arg)
+            self.assertIn("getStringExtra", arg)
+            self.assertIn("equals", arg)
+            self.assertIn('"t0"', arg)
+            self.assertIn('"a3"', arg)
+            self.assertIn('"S"', arg)
+            self.assertNotIn("getIntExtra", arg)
+            self.assertNotIn("getBooleanExtra", arg)
+            self.assertEqual(arg.count("return-object"), 2, arg)
+            arg_int = _method_body(listing, "argInt(")
+            self.assertIn("getIntExtra", arg_int)
+            self.assertIn('"I"', arg_int)
+            self.assertNotIn("getBooleanExtra", arg_int)
+            self.assertEqual(arg_int.count("return v"), 2, arg_int)
+            arg_bool = _method_body(listing, "argBool(")
+            self.assertIn("getBooleanExtra", arg_bool)
+            self.assertIn('"B"', arg_bool)
+            self.assertEqual(arg_bool.count("return v"), 2, arg_bool)
+            methods = compiled["dex"].image["methods"]
+            for name, ret in (("arg", "Ljava/lang/String;"), ("argInt", "I"), ("argBool", "Z")):
+                self.assertIn(
+                    ("Lcom/example/pass/DroideRt;", name, ret, ("Landroid/app/Activity;", "I")),
+                    methods,
+                    name,
+                )
+            for params in (
+                ("Ljava/lang/String;", "Ljava/lang/String;"),
+                ("Ljava/lang/String;", "I"),
+                ("Ljava/lang/String;", "Z"),
+            ):
+                self.assertIn(
+                    ("Landroid/content/Intent;", "putExtra", "Landroid/content/Intent;", params),
+                    methods,
+                    params,
+                )
+            self.assertIn(
+                ("Landroid/app/Activity;", "getIntent", "Landroid/content/Intent;", ()),
+                methods,
+            )
+
+    def test_open_form_arguments_reject(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "BadArgs"
+            Project.create(root, "BadArgs", "com.example.badargs")
+            form = json.loads((root / "forms" / "Main.form.json").read_text(encoding="utf-8"))
+            form["components"] = []
+            (root / "forms" / "Main.form.json").write_text(json.dumps(form), encoding="utf-8")
+            (root / "forms" / "Detail.form.json").write_text(
+                '{"name":"Detail","title":"Detail","background":"#F7F8FA",'
+                '"width":360,"height":640,"events":{},"components":[]}',
+                encoding="utf-8",
+            )
+            (root / "forms" / "Detail.droid").write_text(
+                "procedure Unused();\nbegin\nend;\n", encoding="utf-8",
+            )
+            (root / "forms" / "Main.droid").write_text(
+                "procedure Show(Sender: View);\nvar\n  Name: String;\nbegin\n"
+                "  OpenForm()\n  OpenForm(Name)\n  OpenForm('Missing')\n"
+                "  OpenForm('Detail', Sender)\n  OpenForm('Detail', 1, 2, 3, 4, 5)\n"
+                "  Arg('no')\n  ArgInt(true)\n  ArgBool()\nend;\n",
+                encoding="utf-8",
+            )
+            (root / "units" / "Utils.droid").write_text(
+                "unit Utils;\n\nfunction Clamp(Value: Integer): Integer;\nbegin\n"
+                "  Result := Arg(Value)\nend;\n",
+                encoding="utf-8",
+            )
+            compiled = compile_project(root, codegen=False)
+            messages = [err["message"] for err in compiled["errors"]]
+            for needle in (
+                "OpenForm needs a string literal form name",
+                "unknown form Missing",
+                "OpenForm cannot pass a View",
+                "OpenForm passes at most 4 arguments",
+                "Arg expects Integer, got String",
+                "ArgInt expects Integer, got Boolean",
+                "ArgBool expects 1 arguments",
+                "Arg is only available on a form",
+            ):
+                self.assertTrue(any(needle in msg for msg in messages), (needle, messages))
+            self.assertFalse(any("OpenForm expects" in msg for msg in messages), messages)
 
     def test_panel_holds_children(self):
         with tempfile.TemporaryDirectory() as tmp:

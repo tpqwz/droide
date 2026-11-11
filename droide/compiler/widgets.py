@@ -193,8 +193,12 @@ WIDGETS = {
         "android": "android.widget.ListView",
         "desc": "Landroid/widget/ListView;",
         "group": "Lists",
-        "defaults": {"width": 328, "height": 200, "props": {"Items": "One\nTwo\nThree", "Color": "#FBF9F4"}},
-        "props": ["Items", "Color", "Enabled", "Visible"],
+        "defaults": {
+            "width": 328,
+            "height": 200,
+            "props": {"Items": "One\nTwo\nThree", "Details": "", "Color": "#FBF9F4"},
+        },
+        "props": ["Items", "Details", "Color", "Bottom", "Enabled", "Visible"],
         "events": ["OnItemClick", "OnItemLongClick"],
     },
     "Spinner": {
@@ -216,6 +220,14 @@ WIDGETS = {
         "defaults": {"width": 328, "height": 200, "props": {"Html": "", "Url": ""}},
         "props": ["Html", "Url", "Enabled", "Visible"],
         "events": ["OnClick", "OnLongClick"],
+    },
+    "Timer": {
+        "android": "android.os.Handler",
+        "desc": "Ljava/lang/Runnable;",
+        "group": "Time",
+        "defaults": {"width": 160, "height": 36, "props": {"Interval": 1000, "Enabled": False}},
+        "props": ["Interval", "Enabled"],
+        "events": ["OnTimer"],
     },
 }
 
@@ -248,8 +260,11 @@ PROP_TYPES = {
     "Html": "String",
     "Url": "String",
     "Items": "String",
+    "Details": "String",
     "Selection": "Integer",
     "Direction": "String",
+    "Interval": "Integer",
+    "Bottom": "Boolean",
 }
 
 # (owner class descriptor, method, return, parameter descriptors, mode)
@@ -259,6 +274,7 @@ SETTERS = {
     "TextSize": ("Landroid/widget/TextView;", "setTextSize", "V", ("F",), "float"),
     "TextColor": ("Landroid/widget/TextView;", "setTextColor", "V", ("I",), "int"),
     "Color": ("Landroid/view/View;", "setBackgroundColor", "V", ("I",), "int"),
+    "Bottom": ("Landroid/widget/AbsListView;", "setStackFromBottom", "V", ("Z",), "stack"),
     "Enabled": ("Landroid/view/View;", "setEnabled", "V", ("Z",), "bool"),
     "Visible": ("Landroid/view/View;", "setVisibility", "V", ("I",), "vis"),
     "Checked": ("Landroid/widget/CompoundButton;", "setChecked", "V", ("Z",), "bool"),
@@ -287,10 +303,14 @@ SETTERS = {
     "Url": ("Landroid/webkit/WebView;", "loadUrl", "V", ("Ljava/lang/String;",), "web-url"),
     # Newline-separated text. List calls DroideRt.setLines. Spinner calls DroideRt.setSpinner.
     "Items": ("Landroid/widget/AbsListView;", "setAdapter", "V", ("Landroid/widget/ListAdapter;",), "lines"),
+    # Second line of each List row, matched by index. Empty keeps the one-line row.
+    "Details": ("Landroid/widget/ListView;", "setAdapter", "V", ("Landroid/widget/ListAdapter;",), "details"),
     # Applied after the adapter. The listener is attached later, so the first index does not fire.
     "Selection": ("Landroid/widget/AdapterView;", "setSelection", "V", ("I",), "int"),
     # Vertical is 1 and Horizontal is 0. place_widget writes the design-time value.
     "Direction": ("Landroid/widget/LinearLayout;", "setOrientation", "V", ("I",), "orient"),
+    # Stored on the timer object. The call site is DroideTick.setInterval, not a view method.
+    "Interval": ("Ljava/lang/Object;", "setInterval", "V", ("I",), "timer"),
 }
 
 GETTERS = {
@@ -318,6 +338,10 @@ GETTERS = {
     "Month": ("Landroid/widget/DatePicker;", "getMonth", "I", (), "month"),
     "Day": ("Landroid/widget/DatePicker;", "getDayOfMonth", "I", (), "int"),
     "Selection": ("Landroid/widget/AdapterView;", "getSelectedItemPosition", "I", (), "int"),
+    # The strings last written into the list. A spinner has items and no details.
+    "Items": ("Landroid/view/View;", "getTag", "Ljava/lang/Object;", ("I",), "items"),
+    "Details": ("Landroid/view/View;", "getTag", "Ljava/lang/Object;", ("I",), "details"),
+    "Interval": ("Ljava/lang/Object;", "interval", "I", (), "int"),
 }
 
 FORM_EVENTS = ["OnCreate"]

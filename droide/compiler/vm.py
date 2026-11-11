@@ -24,10 +24,10 @@ def _s16(value):
 
 def _len_at(words, pc):
     op = words[pc] & 0xFF
-    if op in (0x00, 0x0E, 0x0F, 0x11, 0x12, 0x01, 0x07, 0x0A, 0x0B, 0x0C, 0x7B, 0x82, 0x87):
+    if op in (0x00, 0x0E, 0x0F, 0x11, 0x12, 0x01, 0x07, 0x0A, 0x0B, 0x0C, 0x21, 0x7B, 0x81, 0x82, 0x87):
         return 1
     if op in (0x13, 0x16, 0x1A, 0x1C, 0x1F, 0x22, 0x23, 0x29, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37,
-              0x38, 0x39, 0x4D, 0x52, 0x54, 0x59, 0x5B, 0x60, 0x90, 0x91, 0x92, 0x93, 0x94, 0xA6,
+              0x38, 0x39, 0x46, 0x4D, 0x52, 0x54, 0x55, 0x59, 0x5B, 0x5C, 0x60, 0x62, 0x90, 0x91, 0x92, 0x93, 0x94, 0xA6,
               0xA7, 0xA8, 0xA9):
         return 2
     if op in (0x14, 0x6E, 0x6F, 0x70, 0x71, 0x72):
@@ -173,7 +173,7 @@ def _verify_method(image, desc, key, method):
                     raise CompileError(f"const-wide v{reg} is odd")
                 put(reg, "int")
                 put(reg + 1, "int")
-            elif op == 0x60:
+            elif op in (0x60, 0x62):
                 reg = (words[pc] >> 8) & 0xFF
                 put(reg, _field_type(image, words[pc + 1]))
             elif op in (0x1A, 0x1C, 0x22):
@@ -212,6 +212,15 @@ def _verify_method(image, desc, key, method):
                 src = (words[pc] >> 12) & 0xF
                 need(src, "int")
                 put(dest, "int")
+            elif op == 0x81:
+                # int-to-long. The long occupies dest and dest + 1, so dest is even.
+                dest = (words[pc] >> 8) & 0xF
+                src = (words[pc] >> 12) & 0xF
+                if dest % 2:
+                    raise CompileError(f"int-to-long v{dest} is odd")
+                need(src, "int")
+                put(dest, "int")
+                put(dest + 1, "int")
             elif op == 0x82:
                 dest = (words[pc] >> 8) & 0xF
                 src = (words[pc] >> 12) & 0xF
@@ -230,12 +239,12 @@ def _verify_method(image, desc, key, method):
                 need(a, kind)
                 need(b, kind)
                 put(dest, kind)
-            elif op in (0x52, 0x54):
+            elif op in (0x52, 0x54, 0x55):
                 dest = (words[pc] >> 8) & 0xF
                 obj = (words[pc] >> 12) & 0xF
                 need(obj, "ref")
                 put(dest, _field_type(image, words[pc + 1]))
-            elif op in (0x59, 0x5B):
+            elif op in (0x59, 0x5B, 0x5C):
                 src = (words[pc] >> 8) & 0xF
                 obj = (words[pc] >> 12) & 0xF
                 need(obj, "ref")
@@ -272,10 +281,22 @@ def _verify_method(image, desc, key, method):
                 reg = (words[pc] >> 8) & 0xFF
                 need(reg, "ref")
                 put(reg, "ref")
+            elif op == 0x21:
+                dest = (words[pc] >> 8) & 0xF
+                array = (words[pc] >> 12) & 0xF
+                need(array, "ref")
+                put(dest, "int")
             elif op == 0x23:
                 dest = (words[pc] >> 8) & 0xF
                 size = (words[pc] >> 12) & 0xF
                 need(size, "int")
+                put(dest, "ref")
+            elif op == 0x46:
+                dest = (words[pc] >> 8) & 0xFF
+                array = words[pc + 1] & 0xFF
+                index = (words[pc + 1] >> 8) & 0xFF
+                need(array, "ref")
+                need(index, "int")
                 put(dest, "ref")
             elif op == 0x4D:
                 value = (words[pc] >> 8) & 0xFF

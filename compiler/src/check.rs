@@ -145,6 +145,21 @@ fn builtin_spec(name: &str) -> Option<Builtin> {
             ret: None,
             form_only: true,
         },
+        "Arg" => Builtin {
+            args: &["Integer"],
+            ret: Some("String"),
+            form_only: true,
+        },
+        "ArgInt" => Builtin {
+            args: &["Integer"],
+            ret: Some("Integer"),
+            form_only: true,
+        },
+        "ArgBool" => Builtin {
+            args: &["Integer"],
+            ret: Some("Boolean"),
+            form_only: true,
+        },
         "Finish" => Builtin {
             args: &[],
             ret: None,
@@ -190,6 +205,16 @@ fn builtin_spec(name: &str) -> Option<Builtin> {
             ret: None,
             form_only: true,
         },
+        "TakePhoto" => Builtin {
+            args: &["String"],
+            ret: None,
+            form_only: true,
+        },
+        "OpenDocument" => Builtin {
+            args: &["String"],
+            ret: None,
+            form_only: true,
+        },
         "Share" => Builtin {
             args: &["String"],
             ret: None,
@@ -204,6 +229,81 @@ fn builtin_spec(name: &str) -> Option<Builtin> {
             args: &[],
             ret: Some("String"),
             form_only: true,
+        },
+        "Today" => Builtin {
+            args: &[],
+            ret: Some("String"),
+            form_only: true,
+        },
+        "Time" => Builtin {
+            args: &[],
+            ret: Some("String"),
+            form_only: true,
+        },
+        "LineCount" => Builtin {
+            args: &["String"],
+            ret: Some("Integer"),
+            form_only: false,
+        },
+        "ToggleLine" => Builtin {
+            args: &["String", "String"],
+            ret: Some("String"),
+            form_only: false,
+        },
+        "DropNames" => Builtin {
+            args: &["String", "String"],
+            ret: Some("String"),
+            form_only: false,
+        },
+        "DropParallel" => Builtin {
+            args: &["String", "String", "String"],
+            ret: Some("String"),
+            form_only: false,
+        },
+        "TakeParallel" => Builtin {
+            args: &["String", "String", "String"],
+            ret: Some("String"),
+            form_only: false,
+        },
+        "JoinNotes" => Builtin {
+            args: &["String"],
+            ret: Some("String"),
+            form_only: true,
+        },
+        "SameDays" => Builtin {
+            args: &["String", "String"],
+            ret: Some("String"),
+            form_only: false,
+        },
+        "JournalItems" => Builtin {
+            args: &["String", "String"],
+            ret: Some("String"),
+            form_only: false,
+        },
+        "JournalDetails" => Builtin {
+            args: &["String", "String", "String"],
+            ret: Some("String"),
+            form_only: false,
+        },
+        "LineIndex" => Builtin {
+            args: &["String", "String"],
+            ret: Some("Integer"),
+            form_only: false,
+        },
+        "DropAt" => Builtin {
+            args: &["String", "Integer"],
+            ret: Some("String"),
+            form_only: false,
+        },
+        "ReplaceAt" => Builtin {
+            args: &["String", "Integer", "String"],
+            ret: Some("String"),
+            form_only: false,
+        },
+        "LineAt" => Builtin {
+            args: &["String", "Integer"],
+            ret: Some("String"),
+            form_only: false,
         },
         "Search" => Builtin {
             args: &["String"],
@@ -232,6 +332,9 @@ fn builtin_canon(lower: &str) -> Option<&'static str> {
         "question" => Some("Question"),
         "log" => Some("Log"),
         "openform" => Some("OpenForm"),
+        "arg" => Some("Arg"),
+        "argint" => Some("ArgInt"),
+        "argbool" => Some("ArgBool"),
         "finish" => Some("Finish"),
         "inttostr" => Some("IntToStr"),
         "strtoint" => Some("StrToInt"),
@@ -241,9 +344,26 @@ fn builtin_canon(lower: &str) -> Option<&'static str> {
         "readtext" => Some("ReadText"),
         "where" => Some("Where"),
         "opencamera" => Some("OpenCamera"),
+        "takephoto" => Some("TakePhoto"),
+        "opendocument" => Some("OpenDocument"),
         "share" => Some("Share"),
         "copytext" => Some("CopyText"),
         "pastetext" => Some("PasteText"),
+        "today" => Some("Today"),
+        "time" => Some("Time"),
+        "linecount" => Some("LineCount"),
+        "toggleline" => Some("ToggleLine"),
+        "dropnames" => Some("DropNames"),
+        "dropparallel" => Some("DropParallel"),
+        "takeparallel" => Some("TakeParallel"),
+        "joinnotes" => Some("JoinNotes"),
+        "samedays" => Some("SameDays"),
+        "journalitems" => Some("JournalItems"),
+        "journaldetails" => Some("JournalDetails"),
+        "lineindex" => Some("LineIndex"),
+        "dropat" => Some("DropAt"),
+        "replaceat" => Some("ReplaceAt"),
+        "lineat" => Some("LineAt"),
         "search" => Some("Search"),
         "lookup" => Some("Lookup"),
         "ingest" => Some("Ingest"),
@@ -907,6 +1027,11 @@ impl Checker {
                 self.error(format!("{name} parents itself"), 1, 1, file);
                 continue;
             }
+            let self_kind = comp.get("type").and_then(|v| v.as_str()).unwrap_or("");
+            if self_kind == "Timer" {
+                self.error(format!("{name} cannot have a parent"), 1, 1, file);
+                continue;
+            }
             let mut seen = BTreeSet::new();
             seen.insert(low(name));
             let mut current = parent.to_string();
@@ -1270,6 +1395,8 @@ impl Checker {
                 format!("{handler} takes no parameters, a String, an Integer, or the row View")
             } else if event == "OnChange" {
                 change_hint(kind, handler)
+            } else if event == "OnTimer" {
+                format!("{handler} takes no parameters")
             } else if sig.params.len() > 1 {
                 format!("{handler} takes no parameters, or one View")
             } else {
@@ -1857,6 +1984,49 @@ impl Checker {
         Vec::new()
     }
 
+    fn check_open_form(
+        &mut self,
+        args: &[Expr],
+        arg_types: &[Option<String>],
+        form_name: &mut Option<String>,
+        line: i32,
+        col: i32,
+        file: &str,
+    ) {
+        let literal = args.first().and_then(|arg| match arg {
+            Expr::Literal(lit) => match &lit.value {
+                Lit::Str(text) => Some((text.clone(), lit.line, lit.col)),
+                _ => None,
+            },
+            _ => None,
+        });
+        if let Some((text, lit_line, lit_col)) = literal {
+            let found = self
+                .forms
+                .keys()
+                .find(|name| low(name) == low(&text))
+                .cloned();
+            if let Some(found) = found {
+                *form_name = Some(found);
+            } else {
+                self.error(format!("unknown form {text}"), lit_line, lit_col, file);
+            }
+        } else {
+            self.error("OpenForm needs a string literal form name", line, col, file);
+        }
+        let extras = arg_types.len().saturating_sub(1);
+        if extras > 4 {
+            self.error("OpenForm passes at most 4 arguments", line, col, file);
+        }
+        for (got, arg) in arg_types.iter().skip(1).zip(args.iter().skip(1)) {
+            if let Some(got) = got {
+                if got != "String" && got != "Integer" && got != "Boolean" {
+                    self.error("OpenForm cannot pass a View", arg.line(), arg.col(), file);
+                }
+            }
+        }
+    }
+
     fn check_call(
         &mut self,
         name: &str,
@@ -1907,7 +2077,10 @@ impl Checker {
                         file,
                     );
                 }
-                if arg_types.len() != spec.args.len() {
+                if canon == "OpenForm" {
+                    // Extras are optional, so the one-string catalog arity does not apply.
+                    self.check_open_form(args, &arg_types, form_name, line, col, file);
+                } else if arg_types.len() != spec.args.len() {
                     self.error(
                         format!("{canon} expects {} arguments", spec.args.len()),
                         line,
@@ -1926,29 +2099,6 @@ impl Checker {
                                 );
                             }
                         }
-                    }
-                }
-                if canon == "OpenForm" {
-                    let literal = args.first().and_then(|arg| match arg {
-                        Expr::Literal(lit) => match &lit.value {
-                            Lit::Str(text) => Some((text.clone(), lit.line, lit.col)),
-                            _ => None,
-                        },
-                        _ => None,
-                    });
-                    if let Some((text, lit_line, lit_col)) = literal {
-                        let found = self
-                            .forms
-                            .keys()
-                            .find(|form_name| low(form_name) == low(&text))
-                            .cloned();
-                        if let Some(found) = found {
-                            *form_name = Some(found);
-                        } else {
-                            self.error(format!("unknown form {text}"), lit_line, lit_col, file);
-                        }
-                    } else {
-                        self.error("OpenForm needs a string literal form name", line, col, file);
                     }
                 }
                 // Question stores the declared procedure name in form_name.
@@ -1992,6 +2142,58 @@ impl Checker {
                         } else {
                             self.error(
                                 "Question needs a string literal procedure name",
+                                line,
+                                col,
+                                file,
+                            );
+                        }
+                    }
+                }
+                // TakePhoto and OpenDocument store the declared procedure name
+                // in form_name. The procedure takes one String, the result path.
+                if (canon == "TakePhoto" || canon == "OpenDocument")
+                    && args.len() == spec.args.len()
+                {
+                    if let Some(ctx) = form {
+                        let literal = args.first().and_then(|arg| match arg {
+                            Expr::Literal(lit) => match &lit.value {
+                                Lit::Str(text) => Some((text.clone(), lit.line, lit.col)),
+                                _ => None,
+                            },
+                            _ => None,
+                        });
+                        if let Some((text, lit_line, lit_col)) = literal {
+                            if let Some(sig) = ctx.routines.get(&low(&text)) {
+                                if sig.ret.is_some() {
+                                    self.error(
+                                        format!("{} must be a procedure", sig.name),
+                                        lit_line,
+                                        lit_col,
+                                        file,
+                                    );
+                                } else if sig.params.len() != 1
+                                    || sig.params.first().map(String::as_str) != Some("String")
+                                {
+                                    self.error(
+                                        format!("{} takes one String", sig.name),
+                                        lit_line,
+                                        lit_col,
+                                        file,
+                                    );
+                                } else {
+                                    *form_name = Some(sig.name.clone());
+                                }
+                            } else {
+                                self.error(
+                                    format!("unknown procedure {text}"),
+                                    lit_line,
+                                    lit_col,
+                                    file,
+                                );
+                            }
+                        } else {
+                            self.error(
+                                format!("{canon} needs a string literal procedure name"),
                                 line,
                                 col,
                                 file,
@@ -2300,6 +2502,7 @@ fn handler_param_ok(event: &str, kind: &str, ty: &str) -> bool {
         "OnItemClick" | "OnItemLongClick" | "OnItemSelected" => {
             matches!(ty, "View" | "String" | "Integer")
         }
+        "OnTimer" => false,
         "OnChange" => match kind {
             "Edit" | "Memo" | "Number" | "Password" | "Email" | "Phone" => ty == "String",
             "Check" | "Radio" | "Switch" | "Toggle" => ty == "Boolean",

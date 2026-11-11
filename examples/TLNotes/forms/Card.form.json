@@ -1,0 +1,112 @@
+{
+  "name": "Card",
+  "title": "Note",
+  "background": "#F3EFE6",
+  "width": 360,
+  "height": 640,
+  "events": { "OnCreate": "Start" },
+  "components": [
+    {
+      "type": "Label",
+      "name": "KindLine",
+      "left": 20, "top": 12, "width": 120, "height": 22,
+      "props": { "Text": "Draft", "TextColor": "#6E665C", "TextSize": 13 },
+      "events": {}
+    },
+    {
+      "type": "Spinner",
+      "name": "KindSpin",
+      "left": 140, "top": 8, "width": 200, "height": 36,
+      "props": {
+        "Items": "Note\nDraft\nDream\nEvent\nPeriod\nTask\nLink\nQuote\nImage\nVideo",
+        "Selection": 1,
+        "Color": "#FBF8F2"
+      },
+      "events": { "OnItemSelected": "KindPick" }
+    },
+    {
+      "type": "Date",
+      "name": "WhenDate",
+      "left": 16, "top": 78, "width": 328, "height": 120,
+      "props": { "Year": 2026, "Month": 11, "Day": 11 },
+      "events": { "OnChange": "DateClick" }
+    },
+    {
+      "type": "Label",
+      "name": "WhenLine",
+      "left": 16, "top": 48, "width": 328, "height": 22,
+      "props": { "Text": "", "TextColor": "#6E665C", "TextSize": 13 },
+      "events": {}
+    },
+    {
+      "type": "Memo",
+      "name": "BodyEdit",
+      "left": 16, "top": 206, "width": 328, "height": 280,
+      "props": { "Text": "", "TextSize": 18, "Color": "#F3EFE6", "TextColor": "#1C1915", "Dock": "Fill" },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "TitleLine",
+      "left": 0, "top": -40, "width": 4, "height": 4,
+      "props": { "Text": "", "TextColor": "#F3EFE6", "TextSize": 1 },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "DoneLabel",
+      "left": 20, "top": 508, "width": 200, "height": 22,
+      "props": { "Text": "", "TextColor": "#1F6B4A", "TextSize": 13, "Dock": "Bottom" },
+      "events": {}
+    },
+    {
+      "type": "Button",
+      "name": "SaveButton",
+      "left": 16, "top": 572, "width": 72, "height": 40,
+      "props": { "Text": "Save", "TextSize": 14, "TextColor": "#1F6B4A", "Color": "#F3EFE6", "Dock": "Bottom" },
+      "events": { "OnClick": "SaveClick" }
+    },
+    {
+      "type": "Button",
+      "name": "CopyButton",
+      "left": 92, "top": 572, "width": 72, "height": 40,
+      "props": { "Text": "Copy", "TextSize": 14, "TextColor": "#1F6B4A", "Color": "#F3EFE6", "Dock": "Bottom" },
+      "events": { "OnClick": "CopyClick" }
+    },
+    {
+      "type": "Button",
+      "name": "ShareButton",
+      "left": 168, "top": 572, "width": 80, "height": 40,
+      "props": { "Text": "Share", "TextSize": 14, "TextColor": "#1F6B4A", "Color": "#F3EFE6", "Dock": "Bottom" },
+      "events": { "OnClick": "ShareClick" }
+    },
+    {
+      "type": "Button",
+      "name": "DoneButton",
+      "left": 252, "top": 572, "width": 92, "height": 40,
+      "props": { "Text": "Done", "TextSize": 14, "TextColor": "#F3FAF6", "Color": "#1F6B4A", "Dock": "Bottom" },
+      "events": { "OnClick": "DoneClick" }
+    },
+    {
+      "type": "Label",
+      "name": "GapLabel",
+      "left": 0, "top": -20, "width": 4, "height": 4,
+      "props": { "Text": "\n", "TextSize": 1, "TextColor": "#F3EFE6" },
+      "events": {}
+    },
+    {
+      "type": "Button",
+      "name": "TrashButton",
+      "left": 16, "top": 500, "width": 100, "height": 40,
+      "props": { "Text": "Trash", "TextSize": 14, "TextColor": "#6E665C", "Color": "#F3EFE6", "Dock": "Bottom" },
+      "events": { "OnClick": "TrashClick" }
+    },
+    {
+      "type": "Button",
+      "name": "CloseButton",
+      "left": 252, "top": 500, "width": 92, "height": 40,
+      "props": { "Text": "Close", "TextSize": 14, "TextColor": "#6E665C", "Color": "#F3EFE6", "Dock": "Bottom" },
+      "events": { "OnClick": "CloseClick" }
+    }
+  ]
+}

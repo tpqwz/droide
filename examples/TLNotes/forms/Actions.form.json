@@ -1,0 +1,80 @@
+{
+  "name": "Actions",
+  "title": "Note",
+  "background": "#F3EFE6",
+  "width": 360,
+  "height": 640,
+  "events": { "OnCreate": "Open" },
+  "components": [
+    {
+      "type": "Label",
+      "name": "KindLine",
+      "left": 20, "top": 24, "width": 140, "height": 22,
+      "props": { "Text": "", "TextColor": "#6E665C", "TextSize": 13 },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "WhenLine",
+      "left": 160, "top": 24, "width": 180, "height": 22,
+      "props": { "Text": "", "TextColor": "#6E665C", "TextSize": 13 },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "TitleLine",
+      "left": 20, "top": 56, "width": 320, "height": 72,
+      "props": { "Text": "", "TextColor": "#1C1915", "TextSize": 20 },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "BodyLabel",
+      "left": 0, "top": -20, "width": 4, "height": 4,
+      "props": { "Text": "", "TextColor": "#F3EFE6", "TextSize": 1 },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "GapLabel",
+      "left": 8, "top": -20, "width": 4, "height": 4,
+      "props": { "Text": "\n", "TextSize": 1, "TextColor": "#F3EFE6" },
+      "events": {}
+    },
+    {
+      "type": "Button",
+      "name": "OpenButton",
+      "left": 16, "top": 360, "width": 328, "height": 48,
+      "props": { "Text": "Open", "TextSize": 16, "TextColor": "#1C1915", "Color": "#FBF8F2", "Dock": "Bottom" },
+      "events": { "OnClick": "OpenClick" }
+    },
+    {
+      "type": "Button",
+      "name": "CopyButton",
+      "left": 16, "top": 416, "width": 328, "height": 48,
+      "props": { "Text": "Copy", "TextSize": 16, "TextColor": "#1C1915", "Color": "#FBF8F2", "Dock": "Bottom" },
+      "events": { "OnClick": "CopyClick" }
+    },
+    {
+      "type": "Button",
+      "name": "ShareButton",
+      "left": 16, "top": 472, "width": 328, "height": 48,
+      "props": { "Text": "Share", "TextSize": 16, "TextColor": "#1C1915", "Color": "#FBF8F2", "Dock": "Bottom" },
+      "events": { "OnClick": "ShareClick" }
+    },
+    {
+      "type": "Button",
+      "name": "TrashButton",
+      "left": 16, "top": 528, "width": 328, "height": 48,
+      "props": { "Text": "Trash", "TextSize": 16, "TextColor": "#6E665C", "Color": "#FBF8F2", "Dock": "Bottom" },
+      "events": { "OnClick": "TrashClick" }
+    },
+    {
+      "type": "Button",
+      "name": "CloseButton",
+      "left": 16, "top": 584, "width": 328, "height": 44,
+      "props": { "Text": "Cancel", "TextSize": 16, "TextColor": "#1F6B4A", "Color": "#F3EFE6", "Dock": "Bottom" },
+      "events": { "OnClick": "CloseClick" }
+    }
+  ]
+}

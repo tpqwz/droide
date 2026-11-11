@@ -1,0 +1,61 @@
+{
+  "name": "About",
+  "title": "About",
+  "background": "#EFEAE2",
+  "width": 360,
+  "height": 640,
+  "events": {},
+  "components": [
+    {
+      "type": "Label",
+      "name": "TitleLabel",
+      "left": 16,
+      "top": 20,
+      "width": 328,
+      "height": 36,
+      "props": {
+        "Text": "About Desk",
+        "TextColor": "#1C2430",
+        "TextSize": 22
+      },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "Blurb",
+      "left": 16,
+      "top": 68,
+      "width": 328,
+      "height": 72,
+      "props": {
+        "Text": "Notes, photos, and files stay on this device. The clock runs, and the list refreshes while the desk is open.",
+        "TextColor": "#1C2430",
+        "TextSize": 15
+      },
+      "events": {}
+    },
+    {
+      "type": "Web",
+      "name": "Page",
+      "left": 16,
+      "top": 152,
+      "width": 328,
+      "height": 220,
+      "props": {
+        "Html": "<p>Desk is the Droide sample. A row is a title and a second line. A note opens with those words.</p>",
+        "Url": ""
+      },
+      "events": {}
+    },
+    {
+      "type": "Button",
+      "name": "CloseButton",
+      "left": 16,
+      "top": 392,
+      "width": 160,
+      "height": 44,
+      "props": { "Text": "Close", "TextSize": 15 },
+      "events": { "OnClick": "CloseClick" }
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+procedure Start();
+begin
+  TitleEdit.Text := Arg(0)
+  BodyEdit.Text := Arg(1)
+  if TitleEdit.Text = '' then
+    Heading.Text := 'New note'
+  else
+    Heading.Text := TitleEdit.Text
+end;
+
+procedure SaveClick();
+var
+  Name, Titles, Details, Gap: String;
+begin
+  Name := TitleEdit.Text
+  if Name = '' then
+    Toast('Type a title')
+  else begin
+    WriteText('note-' + Name, BodyEdit.Text)
+    if ReadText('has-' + Name) = '' then begin
+      Gap := BreakLabel.Text
+      Titles := ReadText('titles')
+      Details := ReadText('details')
+      if Titles = '' then
+        Titles := Name
+      else
+        Titles := Titles + Gap + Name
+      if Details = '' then
+        Details := 'Note'
+      else
+        Details := Details + Gap + 'Note'
+      WriteText('titles', Titles)
+      WriteText('details', Details)
+      WriteText('has-' + Name, '1')
+    end
+    Toast('Saved')
+    Finish()
+  end
+end;
+
+procedure PasteClick();
+begin
+  BodyEdit.Text := PasteText()
+end;
+
+procedure ShareClick();
+begin
+  Share(TitleEdit.Text + ': ' + BodyEdit.Text)
+end;
+
+procedure CloseClick();
+begin
+  Finish()
+end;

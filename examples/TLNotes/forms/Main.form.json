@@ -1,0 +1,452 @@
+{
+  "name": "Main",
+  "title": "TLNotes",
+  "background": "#F3EFE6",
+  "width": 360,
+  "height": 640,
+  "events": { "OnCreate": "Open" },
+  "components": [
+    {
+      "type": "Panel",
+      "name": "Bar",
+      "left": 0, "top": 556, "width": 360, "height": 84,
+      "props": { "Direction": "Vertical", "Color": "#FBF8F2", "Dock": "Bottom" },
+      "events": {}
+    },
+    {
+      "type": "Panel",
+      "name": "Rule",
+      "left": 0, "top": 556, "width": 360, "height": 1,
+      "props": { "Direction": "Horizontal", "Color": "#E4DACB", "Dock": "Bottom" },
+      "events": {}
+    },
+    {
+      "type": "Panel",
+      "name": "Rail",
+      "left": 324, "top": 96, "width": 36, "height": 428,
+      "props": { "Direction": "Vertical", "Color": "#E9E1D4", "Dock": "Fill" },
+      "events": {}
+    },
+    {
+      "type": "Panel",
+      "name": "NowLeft",
+      "left": 16, "top": 540, "width": 108, "height": 2,
+      "props": { "Direction": "Horizontal", "Color": "#1F6B4A", "Dock": "Bottom" },
+      "events": {}
+    },
+    {
+      "type": "Panel",
+      "name": "NowRight",
+      "left": 176, "top": 540, "width": 136, "height": 2,
+      "props": { "Direction": "Horizontal", "Color": "#1F6B4A", "Dock": "Bottom" },
+      "events": {}
+    },
+    {
+      "type": "Panel",
+      "name": "NowRail",
+      "left": 324, "top": 540, "width": 36, "height": 2,
+      "props": { "Direction": "Horizontal", "Color": "#1F6B4A", "Dock": "Bottom" },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "TitleLabel",
+      "left": 16, "top": 18, "width": 80, "height": 16,
+      "props": { "Text": "TLNOTES", "TextColor": "#6E665C", "TextSize": 11 },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "SlashLabel",
+      "left": 96, "top": 14, "width": 12, "height": 22,
+      "props": { "Text": "/", "TextColor": "#B7AFA4", "TextSize": 18 },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "PlaceLabel",
+      "left": 112, "top": 10, "width": 220, "height": 28,
+      "props": { "Text": "2026 November 10", "TextColor": "#1C1915", "TextSize": 20 },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "NowLabel",
+      "left": 128, "top": 532, "width": 44, "height": 16,
+      "props": { "Text": "NOW", "TextColor": "#1F6B4A", "TextSize": 11, "Dock": "Bottom" },
+      "events": {}
+    },
+    {
+      "type": "Edit",
+      "name": "Query",
+      "left": 16, "top": 46, "width": 328, "height": 40,
+      "props": { "Hint": "Search the timeline", "Text": "", "TextSize": 15, "Color": "#FBF8F2", "TextColor": "#1C1915" },
+      "events": {}
+    },
+    {
+      "type": "List",
+      "name": "Timeline",
+      "left": 12, "top": 96, "width": 286, "height": 428,
+      "props": {
+        "Items": "A quiet room and a long table.\nNotes stay on the device.\nThe timeline starts here. Write a line and Add keeps it.\nKeep the journal on this device.\nTLNotes opened in Droide.",
+        "Details": "Dream\nQuote\nNote\nTask\nEvent",
+        "Bottom": true,
+        "Dock": "Fill",
+        "Color": "#F3EFE6"
+      },
+      "events": { "OnItemClick": "OpenRow", "OnItemLongClick": "HoldRow" }
+    },
+    {
+      "type": "Memo",
+      "name": "Draft",
+      "left": 12, "top": 568, "width": 188, "height": 52,
+      "props": { "Hint": "Write a note…", "Text": "", "TextSize": 16, "Color": "#FBF8F2", "TextColor": "#1C1915", "Dock": "Bottom" },
+      "events": {}
+    },
+    {
+      "type": "Button",
+      "name": "PhotoButton",
+      "left": 244, "top": 574, "width": 36, "height": 36,
+      "props": { "Text": "+", "TextSize": 18, "TextColor": "#6E665C", "Color": "#FBF8F2", "Dock": "Bottom" },
+      "events": { "OnClick": "PhotoClick" }
+    },
+    {
+      "type": "Button",
+      "name": "AddButton",
+      "left": 284, "top": 572, "width": 64, "height": 44,
+      "props": { "Text": "Add", "TextSize": 15, "TextColor": "#F3FAF6", "Color": "#1F6B4A", "Dock": "Bottom" },
+      "events": { "OnClick": "AddClick" }
+    },
+    {
+      "type": "Button",
+      "name": "BackButton",
+      "left": 308, "top": 198, "width": 44, "height": 44,
+      "props": { "Text": "Home", "TextSize": 11, "TextColor": "#F3FAF6", "Color": "#1F6B4A", "Dock": "Bottom" },
+      "events": { "OnClick": "TimelineClick" }
+    },
+    {
+      "type": "Button",
+      "name": "TasksButton",
+      "left": 308, "top": 248, "width": 44, "height": 44,
+      "props": { "Text": "Tasks", "TextSize": 10, "TextColor": "#1C1915", "Color": "#FBF8F2", "Dock": "Bottom" },
+      "events": { "OnClick": "TasksClick" }
+    },
+    {
+      "type": "Button",
+      "name": "FindButton",
+      "left": 308, "top": 298, "width": 44, "height": 44,
+      "props": { "Text": "Find", "TextSize": 11, "TextColor": "#1C1915", "Color": "#FBF8F2", "Dock": "Bottom" },
+      "events": { "OnClick": "FindClick" }
+    },
+    {
+      "type": "Button",
+      "name": "FilterButton",
+      "left": 308, "top": 348, "width": 44, "height": 44,
+      "props": { "Text": "Filter", "TextSize": 10, "TextColor": "#1C1915", "Color": "#FBF8F2", "Dock": "Bottom" },
+      "events": { "OnClick": "FilterClick" }
+    },
+    {
+      "type": "Button",
+      "name": "ScopeButton",
+      "left": 308, "top": 398, "width": 44, "height": 44,
+      "props": { "Text": "Rail", "TextSize": 11, "TextColor": "#1C1915", "Color": "#FBF8F2", "Dock": "Bottom" },
+      "events": { "OnClick": "ScopeClick" }
+    },
+    {
+      "type": "Button",
+      "name": "SettingsButton",
+      "left": 308, "top": 448, "width": 44, "height": 44,
+      "props": { "Text": "Set", "TextSize": 12, "TextColor": "#1C1915", "Color": "#FBF8F2", "Dock": "Bottom" },
+      "events": { "OnClick": "SettingsClick" }
+    },
+    {
+      "type": "Button",
+      "name": "FileButton",
+      "left": 204, "top": 574, "width": 36, "height": 36,
+      "props": { "Text": "File", "TextSize": 11, "TextColor": "#6E665C", "Color": "#FBF8F2", "Dock": "Bottom" },
+      "events": { "OnClick": "FileClick" }
+    },
+    {
+      "type": "Label",
+      "name": "BeatLabel",
+      "left": 8, "top": -40, "width": 4, "height": 4,
+      "props": { "Text": "0", "TextColor": "#F3EFE6", "TextSize": 11 },
+      "events": {}
+    },
+    {
+      "type": "Clock",
+      "name": "Wall",
+      "left": 16, "top": -40, "width": 4, "height": 4,
+      "props": { "Format": "HH:mm", "TextSize": 11, "TextColor": "#F3EFE6" },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "BreakLabel",
+      "left": 24, "top": -40, "width": 4, "height": 4,
+      "props": { "Text": "\n", "TextSize": 1, "TextColor": "#F3EFE6" },
+      "events": {}
+    },
+    {
+      "type": "Timer",
+      "name": "Pulse",
+      "left": 32, "top": -40, "width": 8, "height": 8,
+      "props": { "Interval": 2000, "Enabled": true },
+      "events": { "OnTimer": "Tick" }
+    },
+    {
+      "type": "Panel",
+      "name": "PickBar",
+      "left": 0, "top": 512, "width": 360, "height": 44,
+      "props": { "Direction": "Horizontal", "Color": "#FBF8F2", "Dock": "Bottom", "Visible": false },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "PickCount",
+      "parent": "PickBar",
+      "left": 8, "top": 4, "width": 86, "height": 36,
+      "props": { "Text": "0 selected", "TextColor": "#1C1915", "TextSize": 13 },
+      "events": {}
+    },
+    {
+      "type": "Button",
+      "name": "PickOpen",
+      "parent": "PickBar",
+      "left": 2, "top": 2, "width": 46, "height": 40,
+      "props": { "Text": "Open", "TextSize": 13, "TextColor": "#1F6B4A", "Color": "#FBF8F2" },
+      "events": { "OnClick": "OpenPicked" }
+    },
+    {
+      "type": "Button",
+      "name": "PickCopy",
+      "parent": "PickBar",
+      "left": 2, "top": 2, "width": 46, "height": 40,
+      "props": { "Text": "Copy", "TextSize": 13, "TextColor": "#1F6B4A", "Color": "#FBF8F2" },
+      "events": { "OnClick": "CopyPicked" }
+    },
+    {
+      "type": "Button",
+      "name": "PickShare",
+      "parent": "PickBar",
+      "left": 2, "top": 2, "width": 52, "height": 40,
+      "props": { "Text": "Share", "TextSize": 13, "TextColor": "#1F6B4A", "Color": "#FBF8F2" },
+      "events": { "OnClick": "SharePicked" }
+    },
+    {
+      "type": "Button",
+      "name": "PickTrash",
+      "parent": "PickBar",
+      "left": 2, "top": 2, "width": 52, "height": 40,
+      "props": { "Text": "Trash", "TextSize": 13, "TextColor": "#1C1915", "Color": "#FBF8F2" },
+      "events": { "OnClick": "TrashPicked" }
+    },
+    {
+      "type": "Button",
+      "name": "PickDone",
+      "parent": "PickBar",
+      "left": 2, "top": 2, "width": 48, "height": 40,
+      "props": { "Text": "Done", "TextSize": 13, "TextColor": "#6E665C", "Color": "#FBF8F2" },
+      "events": { "OnClick": "DonePicked" }
+    },
+    {
+      "type": "Panel",
+      "name": "FilterSheet",
+      "left": 8, "top": 136, "width": 344, "height": 420,
+      "props": { "Direction": "Vertical", "Color": "#FBF8F2", "Dock": "Bottom", "Visible": false },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "FilterTitle",
+      "parent": "FilterSheet",
+      "left": 12, "top": 10, "width": 312, "height": 28,
+      "props": { "Text": "Filter timeline", "TextColor": "#1C1915", "TextSize": 18 },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "FilterAbout",
+      "parent": "FilterSheet",
+      "left": 12, "top": 2, "width": 312, "height": 40,
+      "props": { "Text": "A tap adds or removes a type.", "TextColor": "#6E665C", "TextSize": 14 },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "TypesHead",
+      "parent": "FilterSheet",
+      "left": 12, "top": 6, "width": 312, "height": 20,
+      "props": { "Text": "Note types", "TextColor": "#1C1915", "TextSize": 14 },
+      "events": {}
+    },
+    {
+      "type": "Panel",
+      "name": "TypeRow1",
+      "parent": "FilterSheet",
+      "left": 8, "top": 4, "width": 320, "height": 36,
+      "props": { "Direction": "Horizontal", "Color": "#FBF8F2" },
+      "events": {}
+    },
+    {
+      "type": "Check",
+      "name": "NoteCheck",
+      "parent": "TypeRow1",
+      "left": 4, "top": 0, "width": 150, "height": 36,
+      "props": { "Text": "Note", "Checked": true, "TextSize": 14, "TextColor": "#1C1915" },
+      "events": {}
+    },
+    {
+      "type": "Check",
+      "name": "DraftCheck",
+      "parent": "TypeRow1",
+      "left": 4, "top": 0, "width": 150, "height": 36,
+      "props": { "Text": "Draft", "Checked": true, "TextSize": 14, "TextColor": "#1C1915" },
+      "events": {}
+    },
+    {
+      "type": "Panel",
+      "name": "TypeRow2",
+      "parent": "FilterSheet",
+      "left": 8, "top": 2, "width": 320, "height": 36,
+      "props": { "Direction": "Horizontal", "Color": "#FBF8F2" },
+      "events": {}
+    },
+    {
+      "type": "Check",
+      "name": "DreamCheck",
+      "parent": "TypeRow2",
+      "left": 4, "top": 0, "width": 150, "height": 36,
+      "props": { "Text": "Dream", "Checked": true, "TextSize": 14, "TextColor": "#1C1915" },
+      "events": {}
+    },
+    {
+      "type": "Check",
+      "name": "EventCheck",
+      "parent": "TypeRow2",
+      "left": 4, "top": 0, "width": 150, "height": 36,
+      "props": { "Text": "Event", "Checked": true, "TextSize": 14, "TextColor": "#1C1915" },
+      "events": {}
+    },
+    {
+      "type": "Panel",
+      "name": "TypeRow3",
+      "parent": "FilterSheet",
+      "left": 8, "top": 2, "width": 320, "height": 36,
+      "props": { "Direction": "Horizontal", "Color": "#FBF8F2" },
+      "events": {}
+    },
+    {
+      "type": "Check",
+      "name": "PeriodCheck",
+      "parent": "TypeRow3",
+      "left": 4, "top": 0, "width": 150, "height": 36,
+      "props": { "Text": "Period", "Checked": true, "TextSize": 14, "TextColor": "#1C1915" },
+      "events": {}
+    },
+    {
+      "type": "Check",
+      "name": "TaskCheck",
+      "parent": "TypeRow3",
+      "left": 4, "top": 0, "width": 150, "height": 36,
+      "props": { "Text": "Task", "Checked": true, "TextSize": 14, "TextColor": "#1C1915" },
+      "events": {}
+    },
+    {
+      "type": "Panel",
+      "name": "TypeRow4",
+      "parent": "FilterSheet",
+      "left": 8, "top": 2, "width": 320, "height": 36,
+      "props": { "Direction": "Horizontal", "Color": "#FBF8F2" },
+      "events": {}
+    },
+    {
+      "type": "Check",
+      "name": "LinkCheck",
+      "parent": "TypeRow4",
+      "left": 4, "top": 0, "width": 150, "height": 36,
+      "props": { "Text": "Link", "Checked": true, "TextSize": 14, "TextColor": "#1C1915" },
+      "events": {}
+    },
+    {
+      "type": "Check",
+      "name": "QuoteCheck",
+      "parent": "TypeRow4",
+      "left": 4, "top": 0, "width": 150, "height": 36,
+      "props": { "Text": "Quote", "Checked": true, "TextSize": 14, "TextColor": "#1C1915" },
+      "events": {}
+    },
+    {
+      "type": "Panel",
+      "name": "TypeRow5",
+      "parent": "FilterSheet",
+      "left": 8, "top": 2, "width": 320, "height": 36,
+      "props": { "Direction": "Horizontal", "Color": "#FBF8F2" },
+      "events": {}
+    },
+    {
+      "type": "Check",
+      "name": "ImageCheck",
+      "parent": "TypeRow5",
+      "left": 4, "top": 0, "width": 150, "height": 36,
+      "props": { "Text": "Image", "Checked": true, "TextSize": 14, "TextColor": "#1C1915" },
+      "events": {}
+    },
+    {
+      "type": "Check",
+      "name": "VideoCheck",
+      "parent": "TypeRow5",
+      "left": 4, "top": 0, "width": 150, "height": 36,
+      "props": { "Text": "Video", "Checked": true, "TextSize": 14, "TextColor": "#1C1915" },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "TagsHead",
+      "parent": "FilterSheet",
+      "left": 12, "top": 8, "width": 312, "height": 20,
+      "props": { "Text": "Available tags", "TextColor": "#1C1915", "TextSize": 14 },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "TagsEmpty",
+      "parent": "FilterSheet",
+      "left": 12, "top": 2, "width": 312, "height": 36,
+      "props": { "Text": "No tags yet.", "TextColor": "#6E665C", "TextSize": 14 },
+      "events": {}
+    },
+    {
+      "type": "Panel",
+      "name": "ActRow",
+      "parent": "FilterSheet",
+      "left": 8, "top": 8, "width": 320, "height": 44,
+      "props": { "Direction": "Horizontal", "Color": "#FBF8F2" },
+      "events": {}
+    },
+    {
+      "type": "Button",
+      "name": "FilterClear",
+      "parent": "ActRow",
+      "left": 4, "top": 0, "width": 96, "height": 40,
+      "props": { "Text": "Clear", "TextSize": 14, "TextColor": "#1C1915", "Color": "#FBF8F2" },
+      "events": { "OnClick": "ClearTypes" }
+    },
+    {
+      "type": "Button",
+      "name": "FilterCancel",
+      "parent": "ActRow",
+      "left": 4, "top": 0, "width": 96, "height": 40,
+      "props": { "Text": "Cancel", "TextSize": 14, "TextColor": "#1C1915", "Color": "#FBF8F2" },
+      "events": { "OnClick": "CancelFilter" }
+    },
+    {
+      "type": "Button",
+      "name": "FilterApply",
+      "parent": "ActRow",
+      "left": 4, "top": 0, "width": 108, "height": 40,
+      "props": { "Text": "Apply", "TextSize": 14, "TextColor": "#F3FAF6", "Color": "#1F6B4A" },
+      "events": { "OnClick": "ApplyFilter" }
+    }
+  ]
+}

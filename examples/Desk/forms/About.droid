@@ -1,0 +1,4 @@
+procedure CloseClick();
+begin
+  Finish()
+end;

@@ -1,0 +1,82 @@
+procedure Open();
+begin
+  TaskList.Items := ReadText('lines-Task')
+end;
+
+procedure OpenTask(Name: String);
+begin
+  OpenForm('Card', Name, ReadText('note-' + Name), 'Task', ReadText('when-' + Name))
+end;
+
+procedure AddClick();
+var
+  Text, Name, Gap, Titles, Kinds, Marks, Line: String;
+begin
+  Text := TaskDraft.Text
+  if Text = '' then
+    Toast('Write a task')
+  else begin
+    Name := Text
+    if ReadText('has-' + Name) <> '' then
+      Name := Text + ' ' + Time()
+    WriteText('note-' + Name, Text)
+    WriteText('kind-' + Name, 'Task')
+    WriteText('has-' + Name, '1')
+    Line := Today()
+    Line := Line + '  ' + Time()
+    WriteText('when-' + Name, Line)
+    Gap := GapLabel.Text
+    Titles := ReadText('titles')
+    if ReadText('newest') = '1' then begin
+      if Titles = '' then
+        Titles := Name
+      else
+        Titles := Name + Gap + Titles
+    end else if Titles = '' then
+      Titles := Name
+    else
+      Titles := Titles + Gap + Name
+    WriteText('titles', Titles)
+    Kinds := ReadText('kinds')
+    if ReadText('newest') = '1' then begin
+      if Kinds = '' then
+        Kinds := 'Task'
+      else
+        Kinds := 'Task' + Gap + Kinds
+    end else if Kinds = '' then
+      Kinds := 'Task'
+    else
+      Kinds := Kinds + Gap + 'Task'
+    WriteText('kinds', Kinds)
+    Line := Time()
+    Line := Line + '  Task'
+    Marks := ReadText('marks')
+    if ReadText('newest') = '1' then begin
+      if Marks = '' then
+        Marks := Line
+      else
+        Marks := Line + Gap + Marks
+    end else if Marks = '' then
+      Marks := Line
+    else
+      Marks := Marks + Gap + Line
+    WriteText('marks', Marks)
+    Line := ReadText('lines-Task')
+    if Line = '' then
+      Line := Name
+    else if ReadText('newest') = '1' then
+      Line := Name + Gap + Line
+    else
+      Line := Line + Gap + Name
+    WriteText('lines-Task', Line)
+    Ingest(Name, Text, 'txt')
+    TaskDraft.Text := ''
+    TaskList.Items := ReadText('lines-Task')
+    Toast('Task added')
+  end
+end;
+
+procedure CloseClick();
+begin
+  Finish()
+end;

@@ -1,0 +1,204 @@
+procedure Start();
+begin
+  TitleLine.Text := Arg(0)
+  BodyEdit.Text := Arg(1)
+  KindLine.Text := Arg(2)
+  WhenLine.Text := Arg(3)
+  if Arg(2) = 'Note' then
+    KindSpin.Selection := 0
+  else if Arg(2) = 'Draft' then
+    KindSpin.Selection := 1
+  else if Arg(2) = 'Dream' then
+    KindSpin.Selection := 2
+  else if Arg(2) = 'Event' then
+    KindSpin.Selection := 3
+  else if Arg(2) = 'Period' then
+    KindSpin.Selection := 4
+  else if Arg(2) = 'Task' then
+    KindSpin.Selection := 5
+  else if Arg(2) = 'Link' then
+    KindSpin.Selection := 6
+  else if Arg(2) = 'Quote' then
+    KindSpin.Selection := 7
+  else if Arg(2) = 'Image' then
+    KindSpin.Selection := 8
+  else if Arg(2) = 'Video' then
+    KindSpin.Selection := 9
+  if Arg(2) = 'Task' then begin
+    if ReadText('done-' + Arg(0)) = '1' then
+      DoneLabel.Text := 'Done'
+    else
+      DoneLabel.Text := 'Open task'
+  end else
+    DoneLabel.Text := ''
+end;
+
+procedure KindPick(Name: String);
+var
+  N: Integer;
+  Old, Kinds, Marks, Line, Gap: String;
+begin
+  Old := KindLine.Text
+  if Name = Old then
+    KindLine.Text := Name
+  else begin
+    KindLine.Text := Name
+    WriteText('kind-' + TitleLine.Text, Name)
+    N := LineIndex(ReadText('titles'), TitleLine.Text)
+    if N >= 0 then begin
+      Kinds := ReadText('kinds')
+      Kinds := ReplaceAt(Kinds, N, Name)
+      WriteText('kinds', Kinds)
+      Marks := ReadText('marks')
+      if Marks <> '' then begin
+        Line := Time()
+        Line := Line + '  ' + Name
+        Marks := ReplaceAt(Marks, N, Line)
+        WriteText('marks', Marks)
+      end
+    end
+    Line := ReadText('lines-' + Old)
+    N := LineIndex(Line, TitleLine.Text)
+    if N >= 0 then begin
+      Line := DropAt(Line, N)
+      WriteText('lines-' + Old, Line)
+    end
+    Gap := GapLabel.Text
+    Line := ReadText('lines-' + Name)
+    if Line = '' then
+      Line := TitleLine.Text
+    else
+      Line := Line + Gap + TitleLine.Text
+    WriteText('lines-' + Name, Line)
+    Toast('Type kept')
+  end
+end;
+
+procedure DateClick();
+var
+  Y, M, D, N: Integer;
+  Stamp, Month, Days: String;
+begin
+  Y := WhenDate.Year
+  M := WhenDate.Month
+  D := WhenDate.Day
+  if M = 1 then
+    Month := 'January'
+  else if M = 2 then
+    Month := 'February'
+  else if M = 3 then
+    Month := 'March'
+  else if M = 4 then
+    Month := 'April'
+  else if M = 5 then
+    Month := 'May'
+  else if M = 6 then
+    Month := 'June'
+  else if M = 7 then
+    Month := 'July'
+  else if M = 8 then
+    Month := 'August'
+  else if M = 9 then
+    Month := 'September'
+  else if M = 10 then
+    Month := 'October'
+  else if M = 11 then
+    Month := 'November'
+  else
+    Month := 'December'
+  Stamp := IntToStr(Y)
+  Stamp := Stamp + ' '
+  Stamp := Stamp + Month
+  Stamp := Stamp + ' '
+  Stamp := Stamp + IntToStr(D)
+  WriteText('when-' + TitleLine.Text, Stamp)
+  WhenLine.Text := Stamp
+  N := LineIndex(ReadText('titles'), TitleLine.Text)
+  if N >= 0 then begin
+    Days := ReadText('days')
+    if Days <> '' then begin
+      Days := ReplaceAt(Days, N, Stamp)
+      WriteText('days', Days)
+    end
+  end
+end;
+
+procedure SaveClick();
+begin
+  WriteText('note-' + TitleLine.Text, BodyEdit.Text)
+  Toast('Saved')
+end;
+
+procedure CopyClick();
+begin
+  CopyText(BodyEdit.Text)
+  Toast('Copied')
+end;
+
+procedure ShareClick();
+begin
+  Share(KindLine.Text + ': ' + BodyEdit.Text)
+end;
+
+procedure DoneClick();
+begin
+  if KindLine.Text <> 'Task' then
+    Toast('Not a task')
+  else begin
+    WriteText('done-' + TitleLine.Text, '1')
+    DoneLabel.Text := 'Done'
+    Toast('Done')
+  end
+end;
+
+procedure TrashClick();
+var
+  N: Integer;
+  Titles, Kinds, Marks, Line, Trash, TrashKinds: String;
+begin
+  Titles := ReadText('titles')
+  N := LineIndex(Titles, TitleLine.Text)
+  if N < 0 then
+    Toast('Not in the timeline')
+  else begin
+    Titles := DropAt(Titles, N)
+    WriteText('titles', Titles)
+    Kinds := ReadText('kinds')
+    Kinds := DropAt(Kinds, N)
+    WriteText('kinds', Kinds)
+    Marks := ReadText('marks')
+    if Marks <> '' then begin
+      Marks := DropAt(Marks, N)
+      WriteText('marks', Marks)
+    end
+    Marks := ReadText('days')
+    if Marks <> '' then begin
+      Marks := DropAt(Marks, N)
+      WriteText('days', Marks)
+    end
+    Line := ReadText('lines-' + KindLine.Text)
+    N := LineIndex(Line, TitleLine.Text)
+    if N >= 0 then begin
+      Line := DropAt(Line, N)
+      WriteText('lines-' + KindLine.Text, Line)
+    end
+    Trash := ReadText('trash')
+    TrashKinds := ReadText('trash-kinds')
+    if Trash = '' then begin
+      Trash := TitleLine.Text
+      TrashKinds := KindLine.Text
+    end else begin
+      Trash := Trash + GapLabel.Text + TitleLine.Text
+      TrashKinds := TrashKinds + GapLabel.Text + KindLine.Text
+    end
+    WriteText('trash', Trash)
+    WriteText('trash-kinds', TrashKinds)
+    Toast('Moved to trash')
+    Finish()
+  end
+end;
+
+procedure CloseClick();
+begin
+  Finish()
+end;

@@ -283,6 +283,16 @@ impl Asm {
         );
     }
 
+    /// `sget-object`. Same shape as `sget`. A reference field such as `JPEG` uses this.
+    pub fn sget_object(&mut self, dest: u16, key: FieldRef) {
+        let name = key.name.clone();
+        let word = 0x62u16 | ((dest & 0xFF) << 8);
+        self.op(
+            vec![Part::Word(word), Part::Field(key)],
+            format!("sget-object v{dest}, {name}"),
+        );
+    }
+
     pub fn const_string(&mut self, reg: u16, text: &str) {
         let mut shown = String::new();
         for c in text.chars() {
@@ -348,6 +358,25 @@ impl Asm {
         self.op(
             vec![Part::Word(word), Part::Type(desc.to_string())],
             format!("new-array v{dest}, v{size}, {desc}"),
+        );
+    }
+
+    /// `array-length vA, vB`. Both registers are 4-bit.
+    pub fn array_length(&mut self, dest: u16, array: u16) {
+        let word = 0x21u16 | ((dest & 0xF) << 8) | ((array & 0xF) << 12);
+        self.op(
+            vec![Part::Word(word)],
+            format!("array-length v{dest}, v{array}"),
+        );
+    }
+
+    /// `aget-object vAA, vBB, vCC`: destination, array, index.
+    pub fn aget_object(&mut self, dest: u16, array: u16, index: u16) {
+        let word0 = 0x46u16 | ((dest & 0xFF) << 8);
+        let word1 = (array & 0xFF) | ((index & 0xFF) << 8);
+        self.op(
+            vec![Part::Word(word0), Part::Word(word1)],
+            format!("aget-object v{dest}, v{array}, v{index}"),
         );
     }
 
@@ -424,13 +453,13 @@ impl Asm {
 
     pub fn iget(&mut self, dest: u16, obj: u16, key: FieldRef) {
         let name = key.name.clone();
-        self.field_op(
-            0x52,
-            dest,
-            obj,
-            key,
-            format!("iget v{dest}, v{obj}, {name}"),
-        );
+        // A boolean field is iget-boolean. iput of a Z field is rejected on current ART.
+        let (op, shown) = if key.ty == "Z" {
+            (0x55u16, "iget-boolean")
+        } else {
+            (0x52, "iget")
+        };
+        self.field_op(op, dest, obj, key, format!("{shown} v{dest}, v{obj}, {name}"));
     }
 
     pub fn iget_obj(&mut self, dest: u16, obj: u16, key: FieldRef) {
@@ -446,7 +475,12 @@ impl Asm {
 
     pub fn iput(&mut self, src: u16, obj: u16, key: FieldRef) {
         let name = key.name.clone();
-        self.field_op(0x59, src, obj, key, format!("iput v{src}, v{obj}, {name}"));
+        let (op, shown) = if key.ty == "Z" {
+            (0x5Cu16, "iput-boolean")
+        } else {
+            (0x59, "iput")
+        };
+        self.field_op(op, src, obj, key, format!("{shown} v{src}, v{obj}, {name}"));
     }
 
     pub fn iput_obj(&mut self, src: u16, obj: u16, key: FieldRef) {

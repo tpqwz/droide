@@ -707,9 +707,9 @@ mod tests {
 
     fn insn_len(op: u16) -> usize {
         match op {
-            0x00 | 0x0E | 0x0F | 0x11 | 0x12 | 0x01 | 0x07 | 0x0A | 0x0B | 0x0C | 0x7B | 0x82 | 0x87 => 1,
+            0x00 | 0x0E | 0x0F | 0x11 | 0x12 | 0x01 | 0x07 | 0x0A | 0x0B | 0x0C | 0x21 | 0x7B | 0x81 | 0x82 | 0x87 => 1,
             0x13 | 0x16 | 0x1A | 0x1C | 0x1F | 0x22 | 0x23 | 0x29 | 0x32 | 0x33 | 0x34 | 0x35
-            | 0x36 | 0x37 | 0x38 | 0x39 | 0x4D | 0x52 | 0x54 | 0x59 | 0x5B | 0x60 | 0x90 | 0x91 | 0x92
+            | 0x36 | 0x37 | 0x38 | 0x39 | 0x46 | 0x4D | 0x52 | 0x54 | 0x55 | 0x59 | 0x5B | 0x5C | 0x60 | 0x62 | 0x90 | 0x91 | 0x92
             | 0x93 | 0x94 | 0xA6 | 0xA7 | 0xA8 | 0xA9 => 2,
             0x14 | 0x6E | 0x6F | 0x70 | 0x71 | 0x72 => 3,
             other => panic!("unknown opcode {other:#x}"),
@@ -1375,6 +1375,303 @@ end;
     }
 
     #[test]
+    fn list_details_compile() {
+        let dst = events_form("rows", "Rows", "com.example.rows");
+        let form_path = dst.join("forms/Main.form.json");
+        let mut form: Value = serde_json::from_str(&fs::read_to_string(&form_path).unwrap()).unwrap();
+        let mut rows = crate::widgets::new_component("List", "Rows", 16, 16);
+        rows["props"]["Items"] = json!("Ada\nGrace");
+        rows["props"]["Details"] = json!("Lovelace\nHopper");
+        rows["events"] = json!({"OnItemClick": "Pick"});
+        form["components"] = json!([rows]);
+        fs::write(&form_path, serde_json::to_string(&form).unwrap()).unwrap();
+        fs::write(
+            dst.join("forms/Main.droid"),
+            "\
+procedure Pick(Row: String);
+var
+  Title: String;
+  Sub: String;
+begin
+  Title := Rows.Items
+  Sub := Rows.Details
+  Rows.Items := Title
+  Rows.Details := Sub
+end;
+",
+        )
+        .unwrap();
+        let project = Project::open(&dst).unwrap();
+        let (meta, mut model, mut errors) = project.load(&BTreeMap::new());
+        let checked = check_model(&mut model);
+        errors.extend(checked.errors.iter().cloned());
+        errors.extend(structural(&meta, &checked));
+        assert!(errors.is_empty(), "{errors:?}");
+        let compiled = compile_dex("com.example.rows", &checked).unwrap();
+        let listing = compiled.dex.listing.join("\n");
+        let main = class_body(&listing, "Lcom/example/rows/Main;");
+        let lines_at = main.find("->setLines").expect("setLines");
+        let details_at = main.find("->setDetails").expect("setDetails");
+        assert!(lines_at < details_at, "{main}");
+        let pick = method_body(&listing, "Pick(");
+        assert!(pick.contains("->itemsOf"), "{pick}");
+        assert!(pick.contains("->detailsOf"), "{pick}");
+        assert!(pick.contains("->setLines"), "{pick}");
+        assert!(pick.contains("->setDetails"), "{pick}");
+        let click = class_body(&listing, "Lcom/example/rows/Main$Item$Rows;");
+        assert!(click.contains("getItemAtPosition"), "{click}");
+        for needle in [
+            "class Lcom/example/rows/DroideRows;",
+            "getView",
+            "array-length",
+            "aget-object",
+            "findViewById",
+            "#17367043",
+            "#17367044",
+            "#16908308",
+            "#16908309",
+            "#2130771969",
+            "#2130771970",
+            "setTag",
+            "getTag",
+            "invoke-direct {v1, v2, v3, v0, v4}, Landroid/widget/ArrayAdapter;-><init>",
+            "check-cast v2, Landroid/widget/TextView;",
+            "setCornerRadius",
+            "setDivider",
+        ] {
+            assert!(listing.contains(needle), "missing {needle}");
+        }
+        assert!(!crate::project::class_ok("DroideRows"));
+        let image = compiled.dex.image.as_ref().unwrap();
+        assert!(image.methods.iter().any(|method| {
+            method.owner == "Lcom/example/rows/DroideRows;"
+                && method.name == "<init>"
+                && method.params
+                    == [
+                        "Landroid/content/Context;",
+                        "I",
+                        "[Ljava/lang/Object;",
+                        "[Ljava/lang/String;",
+                    ]
+        }));
+        assert!(image.methods.iter().any(|method| {
+            method.owner == "Lcom/example/rows/DroideRt;"
+                && method.name == "setDetails"
+                && method.params
+                    == [
+                        "Landroid/widget/ListView;",
+                        "Landroid/content/Context;",
+                        "Ljava/lang/String;",
+                    ]
+        }));
+        assert!(image.fields.iter().any(|field| {
+            field.owner == "Lcom/example/rows/DroideRows;"
+                && field.name == "details"
+                && field.ty == "[Ljava/lang/String;"
+        }));
+        verify_image(image).unwrap();
+        let _ = fs::remove_dir_all(&dst);
+    }
+
+    #[test]
+    fn list_details_reject() {
+        let dst = events_form("badrows", "BadRows", "com.example.badrows");
+        let form_path = dst.join("forms/Main.form.json");
+        let mut form: Value = serde_json::from_str(&fs::read_to_string(&form_path).unwrap()).unwrap();
+        let rows = crate::widgets::new_component("List", "Rows", 16, 16);
+        let kind = crate::widgets::new_component("Spinner", "Kind1", 16, 80);
+        form["components"] = json!([rows, kind]);
+        fs::write(&form_path, serde_json::to_string(&form).unwrap()).unwrap();
+        fs::write(
+            dst.join("forms/Main.droid"),
+            "\
+procedure Show();
+begin
+  Kind1.Details := 'x'
+  Rows.Details := 1
+end;
+",
+        )
+        .unwrap();
+        let project = Project::open(&dst).unwrap();
+        let (_meta, mut model, mut errors) = project.load(&BTreeMap::new());
+        let checked = check_model(&mut model);
+        errors.extend(checked.errors.iter().cloned());
+        let messages: Vec<String> = errors
+            .iter()
+            .filter_map(|err| err.get("message").and_then(|v| v.as_str()).map(str::to_string))
+            .collect();
+        for needle in ["Spinner has no property Details", "Details expects String"] {
+            assert!(messages.iter().any(|msg| msg.contains(needle)), "{needle}: {messages:?}");
+        }
+        let _ = fs::remove_dir_all(&dst);
+    }
+
+    #[test]
+    fn timer_compiles() {
+        let dst = events_form("tick", "Tick", "com.example.tick");
+        let form_path = dst.join("forms/Main.form.json");
+        let mut form: Value = serde_json::from_str(&fs::read_to_string(&form_path).unwrap()).unwrap();
+        let mut clock = crate::widgets::new_component("Timer", "Clock", 16, 16);
+        clock["props"]["Interval"] = json!(250);
+        clock["props"]["Enabled"] = json!(true);
+        clock["events"] = json!({"OnTimer": "Tick"});
+        form["components"] = json!([clock]);
+        fs::write(&form_path, serde_json::to_string(&form).unwrap()).unwrap();
+        fs::write(
+            dst.join("forms/Main.droid"),
+            "\
+procedure Tick();
+var
+  N: Integer;
+  On: Boolean;
+begin
+  N := Clock.Interval
+  On := Clock.Enabled
+  Clock.Interval := 500
+  Clock.Enabled := false
+end;
+",
+        )
+        .unwrap();
+        let project = Project::open(&dst).unwrap();
+        let (meta, mut model, mut errors) = project.load(&BTreeMap::new());
+        let checked = check_model(&mut model);
+        errors.extend(checked.errors.iter().cloned());
+        errors.extend(structural(&meta, &checked));
+        assert!(errors.is_empty(), "{errors:?}");
+        let compiled = compile_dex("com.example.tick", &checked).unwrap();
+        let listing = compiled.dex.listing.join("\n");
+        let main = class_body(&listing, "Lcom/example/tick/Main;");
+        let interval_at = main.find("setInterval").expect("setInterval");
+        let enabled_at = main.find("setEnabled").expect("setEnabled");
+        assert!(interval_at < enabled_at, "{main}");
+        assert!(main.contains("#250"), "{main}");
+        assert_eq!(main.matches("->addView").count(), 1, "{main}");
+        let tick = method_body(&listing, "Tick(");
+        assert!(tick.contains("->interval"), "{tick}");
+        assert!(tick.contains("->enabled"), "{tick}");
+        assert!(tick.contains("->setInterval"), "{tick}");
+        assert!(tick.contains("->setEnabled"), "{tick}");
+        let run = class_body(&listing, "Lcom/example/tick/Main$Timer$Clock;");
+        assert!(run.contains("->Tick"), "{run}");
+        assert!(run.contains("->arm"), "{run}");
+        for needle in [
+            "class Lcom/example/tick/DroideTick;",
+            "getMainLooper",
+            "postDelayed",
+            "removeCallbacks",
+            "int-to-long",
+            "iget-boolean",
+            "iput-boolean",
+        ] {
+            assert!(listing.contains(needle), "missing {needle}");
+        }
+        assert!(!crate::project::class_ok("DroideTick"));
+        let image = compiled.dex.image.as_ref().unwrap();
+        assert!(image.methods.iter().any(|method| {
+            method.owner == "Landroid/os/Handler;"
+                && method.name == "postDelayed"
+                && method.ret == "Z"
+                && method.params == ["Ljava/lang/Runnable;", "J"]
+        }));
+        assert!(image.classes.contains_key("Lcom/example/tick/Main$Timer$Clock;"));
+        verify_image(image).unwrap();
+        let _ = fs::remove_dir_all(&dst);
+    }
+
+    #[test]
+    fn timer_rejects_a_bad_handler() {
+        let dst = events_form("badtick", "BadTick", "com.example.badtick");
+        let form_path = dst.join("forms/Main.form.json");
+        let mut form: Value = serde_json::from_str(&fs::read_to_string(&form_path).unwrap()).unwrap();
+        let mut clock = crate::widgets::new_component("Timer", "Clock", 16, 16);
+        clock["events"] = json!({"OnTimer": "Tick"});
+        clock["parent"] = json!("Box");
+        let mut panel = crate::widgets::new_component("Panel", "Box", 16, 80);
+        form["components"] = json!([clock, panel]);
+        fs::write(&form_path, serde_json::to_string(&form).unwrap()).unwrap();
+        fs::write(
+            dst.join("forms/Main.droid"),
+            "procedure Tick(Sender: View);\nbegin\nend;\n",
+        )
+        .unwrap();
+        let project = Project::open(&dst).unwrap();
+        let (_meta, mut model, mut errors) = project.load(&BTreeMap::new());
+        let checked = check_model(&mut model);
+        errors.extend(checked.errors.iter().cloned());
+        let messages: Vec<String> = errors
+            .iter()
+            .filter_map(|err| err.get("message").and_then(|v| v.as_str()).map(str::to_string))
+            .collect();
+        for needle in ["Tick takes no parameters", "Clock cannot have a parent"] {
+            assert!(messages.iter().any(|msg| msg.contains(needle)), "{needle}: {messages:?}");
+        }
+        let _ = fs::remove_dir_all(&dst);
+    }
+
+    #[test]
+    fn tlnotes_sample_compiles() {
+        let dst = copy_tree("../examples/TLNotes", "tlnotes");
+        let project = Project::open(&dst).unwrap();
+        let (meta, mut model, mut errors) = project.load(&BTreeMap::new());
+        let checked = check_model(&mut model);
+        errors.extend(checked.errors.iter().cloned());
+        errors.extend(structural(&meta, &checked));
+        assert!(errors.is_empty(), "{errors:?}");
+        let compiled = compile_dex("com.droide.tlnotes", &checked).unwrap();
+        let listing = compiled.dex.listing.join("\n");
+        for needle in [
+            "class Lcom/droide/tlnotes/Main$Timer$Pulse;",
+            "->ingest",
+            "->lookup",
+            "->takePhoto",
+            "->openDocument",
+            "->setDetails",
+            "->setStackFromBottom",
+            "->setFillViewport",
+            "->today",
+            "->time",
+            "bottomMargin",
+            "Card$Select$KindSpin",
+        ] {
+            assert!(listing.contains(needle), "missing {needle}");
+        }
+        verify_image(compiled.dex.image.as_ref().unwrap()).unwrap();
+        let _ = fs::remove_dir_all(&dst);
+    }
+
+    #[test]
+    fn desk_sample_compiles() {
+        let dst = copy_tree("../examples/Desk", "desk");
+        let project = Project::open(&dst).unwrap();
+        let (meta, mut model, mut errors) = project.load(&BTreeMap::new());
+        let checked = check_model(&mut model);
+        errors.extend(checked.errors.iter().cloned());
+        errors.extend(structural(&meta, &checked));
+        assert!(errors.is_empty(), "{errors:?}");
+        let package = meta.get("package").and_then(|v| v.as_str()).unwrap();
+        assert_eq!(package, "com.droide.desk");
+        let compiled = compile_dex(package, &checked).unwrap();
+        let listing = compiled.dex.listing.join("\n");
+        for needle in [
+            "class Lcom/droide/desk/Main$Timer$Pulse;",
+            "class Lcom/droide/desk/DroideTick;",
+            "postDelayed",
+            "->takePhoto",
+            "->openDocument",
+            "->setDetails",
+            "->arg",
+            "#17367044",
+        ] {
+            assert!(listing.contains(needle), "missing {needle}");
+        }
+        let image = compiled.dex.image.as_ref().unwrap();
+        verify_image(image).unwrap();
+        let _ = fs::remove_dir_all(&dst);
+    }
+
+    #[test]
     fn message_and_question_compile() {
         let dst = events_form("ask", "Ask", "com.example.ask");
         let form_path = dst.join("forms/Main.form.json");
@@ -1610,6 +1907,468 @@ end;
         ] {
             assert!(messages.iter().any(|msg| msg.contains(needle)), "{needle}: {messages:?}");
         }
+        let _ = fs::remove_dir_all(&dst);
+    }
+
+    #[test]
+    fn activity_results_compile() {
+        let dst = events_form("shot", "Shot", "com.example.shot");
+        let form_path = dst.join("forms/Main.form.json");
+        let mut form: Value = serde_json::from_str(&fs::read_to_string(&form_path).unwrap()).unwrap();
+        form["components"] = json!([]);
+        fs::write(&form_path, serde_json::to_string(&form).unwrap()).unwrap();
+        fs::write(
+            dst.join("forms/Main.droid"),
+            "\
+procedure Show();
+begin
+  TakePhoto('Got')
+  TakePhoto('Got')
+  OpenDocument('Got')
+  OpenDocument('Other')
+  TakePhoto('Next')
+  OpenCamera()
+end;
+
+procedure Got(Path: String);
+begin
+end;
+
+procedure Other(Path: String);
+begin
+end;
+
+procedure Next(Path: String);
+begin
+end;
+",
+        )
+        .unwrap();
+        let project = Project::open(&dst).unwrap();
+        let (meta, mut model, mut errors) = project.load(&BTreeMap::new());
+        let checked = check_model(&mut model);
+        errors.extend(checked.errors.iter().cloned());
+        errors.extend(structural(&meta, &checked));
+        assert!(errors.is_empty(), "{errors:?}");
+        let compiled = compile_dex("com.example.shot", &checked).unwrap();
+        let listing = compiled.dex.listing.join("\n");
+        assert!(!listing.contains("$Ask$"), "{listing}");
+        let show = method_body(&listing, "Show(");
+        assert_eq!(show.matches("->takePhoto").count(), 3, "{show}");
+        assert_eq!(show.matches("->openDocument").count(), 2, "{show}");
+        assert_eq!(show.matches("->openCamera").count(), 1, "{show}");
+        assert_eq!(show.matches("->Got").count(), 3, "{show}");
+        let answered = method_body(&listing, "onActivityResult(");
+        assert_eq!(answered.matches("->Got").count(), 2, "{answered}");
+        assert_eq!(answered.matches("->Other").count(), 1, "{answered}");
+        assert_eq!(answered.matches("->Next").count(), 1, "{answered}");
+        assert!(answered.contains("->photoPath"), "{answered}");
+        assert!(answered.contains("->documentPath"), "{answered}");
+        let photo_code = answered.find("const/4 v0, #1").expect("photo code 1");
+        let got_doc = answered.find("const/16 v0, #256").expect("document code 256");
+        let other_doc = answered.find("const/16 v0, #257").expect("document code 257");
+        let next_code = answered.find("const/4 v0, #2").expect("photo code 2");
+        assert!(photo_code < got_doc && got_doc < other_doc && other_doc < next_code, "{answered}");
+        let got = answered.find("->Got").unwrap();
+        let got_again = answered[got + 4..].find("->Got").unwrap() + got + 4;
+        let other = answered.find("->Other").unwrap();
+        let next = answered.find("->Next").unwrap();
+        assert!(got < got_again && got_again < other && other < next, "{answered}");
+        let camera = method_body(&listing, "openCamera(");
+        assert!(camera.contains("android.media.action.IMAGE_CAPTURE"), "{camera}");
+        assert!(camera.contains("->startActivity"), "{camera}");
+        assert!(!camera.contains("startActivityForResult"), "{camera}");
+        let take = method_body(&listing, "takePhoto(");
+        assert!(take.contains("android.media.action.IMAGE_CAPTURE"), "{take}");
+        assert!(take.contains("startActivityForResult"), "{take}");
+        let query = take.find("queryIntentActivities").expect("query");
+        let start = take.find("startActivityForResult").expect("start");
+        assert!(query < start, "{take}");
+        let document = method_body(&listing, "openDocument(");
+        assert!(document.contains("android.intent.action.OPEN_DOCUMENT"), "{document}");
+        assert!(document.contains("android.intent.category.OPENABLE"), "{document}");
+        assert!(document.contains("*/*"), "{document}");
+        assert!(document.contains("addCategory"), "{document}");
+        assert!(document.contains("setType"), "{document}");
+        assert!(document.contains("startActivityForResult"), "{document}");
+        let photo = method_body(&listing, "photoPath(");
+        assert!(photo.contains("droide-photo.jpg"), "{photo}");
+        assert!(photo.contains("sget-object"), "{photo}");
+        assert!(photo.contains("JPEG"), "{photo}");
+        assert!(photo.contains("getParcelableExtra"), "{photo}");
+        assert!(photo.contains("\"data\""), "{photo}");
+        let compress = photo.find("compress").expect("compress");
+        let moved = photo[compress..].find("move-result").expect("compress result");
+        let closed = photo[compress..].find("close").expect("close");
+        assert!(moved < closed, "{photo}");
+        assert!(photo.contains("#90"), "{photo}");
+        let copied = method_body(&listing, "documentPath(");
+        assert!(copied.contains("droide-document"), "{copied}");
+        assert!(copied.contains("openInputStream"), "{copied}");
+        assert!(copied.contains("#4096"), "{copied}");
+        assert!(copied.contains("if-le"), "{copied}");
+        let read_at = copied.find("->read").expect("read");
+        let write_at = copied.find("->write").expect("write");
+        assert!(read_at < write_at, "{copied}");
+        let image = compiled.dex.image.as_ref().unwrap();
+        assert!(image.methods.iter().any(|method| {
+            method.owner == "Landroid/app/Activity;"
+                && method.name == "startActivityForResult"
+                && method.ret == "V"
+                && method.params == ["Landroid/content/Intent;", "I"]
+        }));
+        assert!(image.methods.iter().any(|method| {
+            method.owner == "Lcom/example/shot/Main;"
+                && method.name == "onActivityResult"
+                && method.ret == "V"
+                && method.params == ["I", "I", "Landroid/content/Intent;"]
+        }));
+        assert!(image.methods.iter().any(|method| {
+            method.owner == "Landroid/graphics/Bitmap;"
+                && method.name == "compress"
+                && method.ret == "Z"
+                && method.params
+                    == [
+                        "Landroid/graphics/Bitmap$CompressFormat;",
+                        "I",
+                        "Ljava/io/OutputStream;",
+                    ]
+        }));
+        assert!(image.methods.iter().any(|method| {
+            method.owner == "Landroid/content/ContentResolver;"
+                && method.name == "openInputStream"
+                && method.ret == "Ljava/io/InputStream;"
+                && method.params == ["Landroid/net/Uri;"]
+        }));
+        assert!(image.methods.iter().any(|method| {
+            method.owner == "Ljava/io/OutputStream;"
+                && method.name == "write"
+                && method.ret == "V"
+                && method.params == ["[B", "I", "I"]
+        }));
+        assert!(image.fields.iter().any(|field| {
+            field.owner == "Landroid/graphics/Bitmap$CompressFormat;"
+                && field.name == "JPEG"
+                && field.ty == "Landroid/graphics/Bitmap$CompressFormat;"
+        }));
+        verify_image(image).unwrap();
+        let _ = fs::remove_dir_all(&dst);
+    }
+
+    #[test]
+    fn activity_results_reject_a_bad_handler() {
+        let dst = events_form("badshot", "BadShot", "com.example.badshot");
+        let form_path = dst.join("forms/Main.form.json");
+        let mut form: Value = serde_json::from_str(&fs::read_to_string(&form_path).unwrap()).unwrap();
+        form["components"] = json!([]);
+        fs::write(&form_path, serde_json::to_string(&form).unwrap()).unwrap();
+        fs::write(
+            dst.join("forms/Main.droid"),
+            "\
+procedure Show();
+var
+  Name: String;
+begin
+  TakePhoto(Name)
+  OpenDocument(Name)
+  TakePhoto('Missing')
+  TakePhoto('None')
+  TakePhoto('Num')
+  TakePhoto('Count')
+  TakePhoto('Wide')
+  OpenCamera('x')
+end;
+
+procedure None();
+begin
+end;
+
+function Num(Path: String): Integer;
+begin
+  Result := 0
+end;
+
+procedure Count(Path: String; Extra: Integer);
+begin
+end;
+
+procedure Wide(Path: Integer);
+begin
+end;
+",
+        )
+        .unwrap();
+        let project = Project::open(&dst).unwrap();
+        let (_meta, mut model, mut errors) = project.load(&BTreeMap::new());
+        let checked = check_model(&mut model);
+        errors.extend(checked.errors.iter().cloned());
+        let messages: Vec<String> = errors
+            .iter()
+            .filter_map(|err| err.get("message").and_then(|v| v.as_str()).map(str::to_string))
+            .collect();
+        for needle in [
+            "TakePhoto needs a string literal procedure name",
+            "OpenDocument needs a string literal procedure name",
+            "unknown procedure Missing",
+            "None takes one String",
+            "Num must be a procedure",
+            "Count takes one String",
+            "Wide takes one String",
+            "OpenCamera expects 0 arguments",
+        ] {
+            assert!(messages.iter().any(|msg| msg.contains(needle)), "{needle}: {messages:?}");
+        }
+        assert!(
+            !messages.iter().any(|msg| msg.contains("Num takes one String")),
+            "{messages:?}"
+        );
+        let _ = fs::remove_dir_all(&dst);
+    }
+
+    #[test]
+    fn open_form_arguments_compile() {
+        let dst = events_form("args", "Args", "com.example.pass");
+        let form_path = dst.join("forms/Main.form.json");
+        let mut form: Value = serde_json::from_str(&fs::read_to_string(&form_path).unwrap()).unwrap();
+        form["components"] = json!([]);
+        fs::write(&form_path, serde_json::to_string(&form).unwrap()).unwrap();
+        fs::write(
+            dst.join("forms/Main.droid"),
+            "\
+procedure Show();
+var
+  Name: String;
+  Count: Integer;
+  Flag: Boolean;
+  Extra: String;
+begin
+  OpenForm('Detail')
+  if Flag then
+    OpenForm('Detail', Name)
+  OpenForm('Detail', 'hello', 7, true)
+  OpenForm('detail', Name, Count, Flag, Extra)
+end;
+
+procedure Plain();
+begin
+  OpenForm('Detail')
+end;
+",
+        )
+        .unwrap();
+        fs::write(
+            dst.join("forms/Detail.form.json"),
+            "\
+{
+  \"name\": \"Detail\",
+  \"title\": \"Detail\",
+  \"background\": \"#F7F8FA\",
+  \"width\": 360,
+  \"height\": 640,
+  \"events\": {\"OnCreate\": \"Start\"},
+  \"components\": []
+}
+",
+        )
+        .unwrap();
+        fs::write(
+            dst.join("forms/Detail.droid"),
+            "\
+procedure Start();
+begin
+  Toast(Arg(0))
+end;
+
+procedure Read();
+var
+  Title: String;
+  Count: Integer;
+  On: Boolean;
+begin
+  Title := Arg(0)
+  Count := ArgInt(1)
+  On := ArgBool(2)
+end;
+
+procedure Indexed(N: Integer);
+var
+  Title: String;
+begin
+  Title := Arg(N)
+end;
+",
+        )
+        .unwrap();
+        let project = Project::open(&dst).unwrap();
+        let (meta, mut model, mut errors) = project.load(&BTreeMap::new());
+        let checked = check_model(&mut model);
+        errors.extend(checked.errors.iter().cloned());
+        errors.extend(structural(&meta, &checked));
+        assert!(errors.is_empty(), "{errors:?}");
+        let compiled = compile_dex("com.example.pass", &checked).unwrap();
+        let listing = compiled.dex.listing.join("\n");
+        let plain = method_body(&listing, "Plain(");
+        assert!(plain.contains("setClass"), "{plain}");
+        assert!(plain.contains("startActivity"), "{plain}");
+        assert!(!plain.contains("putExtra"), "{plain}");
+        assert!(!plain.contains("\"Detail\""), "{plain}");
+        let show = method_body(&listing, "Show(");
+        let started = show.find("startActivity").expect("start");
+        let extra = show.find("putExtra").expect("extra");
+        assert!(started < extra, "{show}");
+        assert_eq!(show.matches("->putExtra").count(), 16, "{show}");
+        let a0 = show.find("\"a0\"").expect("a0");
+        let t0 = show.find("\"t0\"").expect("t0");
+        let a3 = show.find("\"a3\"").expect("a3");
+        let t3 = show.find("\"t3\"").expect("t3");
+        assert!(a0 < t0 && a3 < t3, "{show}");
+        for needle in ["\"S\"", "\"I\"", "\"B\"", "\"hello\""] {
+            assert!(show.contains(needle), "{needle} missing in {show}");
+        }
+        assert!(listing.contains("pass/Detail;"), "{listing}");
+        assert!(!listing.contains("pass/detail;"), "{listing}");
+        let start = method_body(&listing, "Start(");
+        assert!(start.contains("->arg"), "{start}");
+        assert!(start.contains("->Toast") || start.contains("Toast;"), "{start}");
+        let read = method_body(&listing, "Read(");
+        assert!(read.contains("->arg"), "{read}");
+        assert!(read.contains("->argInt"), "{read}");
+        assert!(read.contains("->argBool"), "{read}");
+        let indexed = method_body(&listing, "Indexed(");
+        assert!(indexed.contains("->arg"), "{indexed}");
+        assert!(!indexed.contains("\"a0\""), "{indexed}");
+        let created = method_body(&listing, "onCreate(");
+        assert!(created.contains("->Start"), "{created}");
+        let arg = method_body(&listing, "arg(");
+        assert!(arg.contains("getIntent"), "{arg}");
+        assert!(arg.contains("getStringExtra"), "{arg}");
+        assert!(arg.contains("equals"), "{arg}");
+        assert!(arg.contains("\"t0\"") && arg.contains("\"a3\""), "{arg}");
+        assert!(arg.contains("\"S\""), "{arg}");
+        assert!(!arg.contains("getIntExtra"), "{arg}");
+        assert!(!arg.contains("getBooleanExtra"), "{arg}");
+        assert_eq!(arg.matches("return-object").count(), 2, "{arg}");
+        let arg_int = method_body(&listing, "argInt(");
+        assert!(arg_int.contains("getIntExtra"), "{arg_int}");
+        assert!(arg_int.contains("\"I\""), "{arg_int}");
+        assert!(!arg_int.contains("getBooleanExtra"), "{arg_int}");
+        assert_eq!(arg_int.matches("return v").count(), 2, "{arg_int}");
+        let arg_bool = method_body(&listing, "argBool(");
+        assert!(arg_bool.contains("getBooleanExtra"), "{arg_bool}");
+        assert!(arg_bool.contains("\"B\""), "{arg_bool}");
+        assert_eq!(arg_bool.matches("return v").count(), 2, "{arg_bool}");
+        let image = compiled.dex.image.as_ref().unwrap();
+        for (name, ret) in [
+            ("arg", "Ljava/lang/String;"),
+            ("argInt", "I"),
+            ("argBool", "Z"),
+        ] {
+            assert!(image.methods.iter().any(|method| {
+                method.owner == "Lcom/example/pass/DroideRt;"
+                    && method.name == name
+                    && method.ret == ret
+                    && method.params == ["Landroid/app/Activity;", "I"]
+            }), "{name}");
+        }
+        for params in [
+            vec!["Ljava/lang/String;", "Ljava/lang/String;"],
+            vec!["Ljava/lang/String;", "I"],
+            vec!["Ljava/lang/String;", "Z"],
+        ] {
+            assert!(image.methods.iter().any(|method| {
+                method.owner == "Landroid/content/Intent;"
+                    && method.name == "putExtra"
+                    && method.ret == "Landroid/content/Intent;"
+                    && method.params == params
+            }), "{params:?}");
+        }
+        assert!(image.methods.iter().any(|method| {
+            method.owner == "Landroid/app/Activity;"
+                && method.name == "getIntent"
+                && method.ret == "Landroid/content/Intent;"
+        }));
+        verify_image(image).unwrap();
+        let _ = fs::remove_dir_all(&dst);
+    }
+
+    #[test]
+    fn open_form_arguments_reject() {
+        let dst = events_form("badargs", "BadArgs", "com.example.badargs");
+        let form_path = dst.join("forms/Main.form.json");
+        let mut form: Value = serde_json::from_str(&fs::read_to_string(&form_path).unwrap()).unwrap();
+        form["components"] = json!([]);
+        fs::write(&form_path, serde_json::to_string(&form).unwrap()).unwrap();
+        fs::write(
+            dst.join("forms/Detail.form.json"),
+            "\
+{
+  \"name\": \"Detail\",
+  \"title\": \"Detail\",
+  \"background\": \"#F7F8FA\",
+  \"width\": 360,
+  \"height\": 640,
+  \"events\": {},
+  \"components\": []
+}
+",
+        )
+        .unwrap();
+        fs::write(dst.join("forms/Detail.droid"), "procedure Unused();\nbegin\nend;\n").unwrap();
+        fs::write(
+            dst.join("forms/Main.droid"),
+            "\
+procedure Show(Sender: View);
+var
+  Name: String;
+begin
+  OpenForm()
+  OpenForm(Name)
+  OpenForm('Missing')
+  OpenForm('Detail', Sender)
+  OpenForm('Detail', 1, 2, 3, 4, 5)
+  Arg('no')
+  ArgInt(true)
+  ArgBool()
+end;
+",
+        )
+        .unwrap();
+        fs::write(
+            dst.join("units/Utils.droid"),
+            "\
+unit Utils;
+
+function Clamp(Value: Integer): Integer;
+begin
+  Result := Arg(Value)
+end;
+",
+        )
+        .unwrap();
+        let project = Project::open(&dst).unwrap();
+        let (_meta, mut model, mut errors) = project.load(&BTreeMap::new());
+        let checked = check_model(&mut model);
+        errors.extend(checked.errors.iter().cloned());
+        let messages: Vec<String> = errors
+            .iter()
+            .filter_map(|err| err.get("message").and_then(|v| v.as_str()).map(str::to_string))
+            .collect();
+        for needle in [
+            "OpenForm needs a string literal form name",
+            "unknown form Missing",
+            "OpenForm cannot pass a View",
+            "OpenForm passes at most 4 arguments",
+            "Arg expects Integer, got String",
+            "ArgInt expects Integer, got Boolean",
+            "ArgBool expects 1 arguments",
+            "Arg is only available on a form",
+        ] {
+            assert!(messages.iter().any(|msg| msg.contains(needle)), "{needle}: {messages:?}");
+        }
+        assert!(
+            !messages.iter().any(|msg| msg.contains("OpenForm expects")),
+            "{messages:?}"
+        );
         let _ = fs::remove_dir_all(&dst);
     }
 

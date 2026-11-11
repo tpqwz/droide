@@ -1,0 +1,595 @@
+{ BreakLabel.Text is a newline. Rows are joined with it. A new line sits just above the composer. The newest file is 1 only when Settings asks for newest first. }
+
+procedure Open();
+begin
+  PlaceLabel.Text := Today()
+  if ReadText('scope') = '0' then
+    Rail.Visible := false
+  if ReadText('marks') = '' then
+    if ReadText('kinds') <> '' then
+      WriteText('marks', ReadText('kinds'))
+  if ReadText('days') = '' then
+    if ReadText('titles') <> '' then
+      WriteText('days', SameDays(ReadText('titles'), Today()))
+  if ReadText('titles') = '' then
+    Seed()
+  FilterSheet.Visible := false
+  Show()
+  ShowPick()
+end;
+
+procedure Seed();
+begin
+  Remember('A quiet room and a long table.', 'Dream', 'A quiet room and a long table.')
+  Remember('Notes stay on the device.', 'Quote', 'Notes stay on the device.')
+  Remember('The timeline starts here.', 'Note', 'The timeline starts here. Write a line and Add keeps it.')
+  Remember('Keep the journal on this device.', 'Task', 'Keep the journal on this device.')
+  Remember('TLNotes opened in Droide.', 'Event', 'TLNotes opened in Droide.')
+end;
+
+procedure Show();
+var
+  Titles, Days, Marks, Filter, Kept, KeptDays, KeptMarks, Kind: String;
+  Index: Integer;
+begin
+  Filter := ReadText('filter')
+  Titles := ReadText('titles')
+  Days := ReadText('days')
+  Marks := ReadText('marks')
+  if Marks = '' then
+    Marks := ReadText('kinds')
+  if Filter = '' then begin
+    Timeline.Items := JournalItems(Titles, Days)
+    Timeline.Details := JournalDetails(Titles, Days, Marks)
+  end else if Filter = 'none' then begin
+    Timeline.Items := ''
+    Timeline.Details := ''
+  end else begin
+    Index := 0
+    Kept := ''
+    KeptDays := ''
+    KeptMarks := ''
+    while LineAt(Titles, Index) <> '' do begin
+      Kind := LineAt(ReadText('kinds'), Index)
+      if LineIndex(Filter, Kind) >= 0 then begin
+        if Kept = '' then begin
+          Kept := LineAt(Titles, Index)
+          KeptDays := LineAt(Days, Index)
+          KeptMarks := LineAt(Marks, Index)
+        end else begin
+          Kept := Kept + BreakLabel.Text + LineAt(Titles, Index)
+          KeptDays := KeptDays + BreakLabel.Text + LineAt(Days, Index)
+          KeptMarks := KeptMarks + BreakLabel.Text + LineAt(Marks, Index)
+        end
+      end
+      Index := Index + 1
+    end
+    Timeline.Items := JournalItems(Kept, KeptDays)
+    Timeline.Details := JournalDetails(Kept, KeptDays, KeptMarks)
+  end
+end;
+
+procedure Remember(Name: String; Kind: String; Body: String);
+var
+  Gap, Titles, Kinds, Marks, Line, Stamp: String;
+begin
+  WriteText('note-' + Name, Body)
+  WriteText('kind-' + Name, Kind)
+  WriteText('has-' + Name, '1')
+  Gap := BreakLabel.Text
+  Stamp := Today()
+  Line := ReadText('days')
+  if ReadText('newest') = '1' then begin
+    if Line = '' then
+      Line := Stamp
+    else
+      Line := Stamp + Gap + Line
+  end else if Line = '' then
+    Line := Stamp
+  else
+    Line := Line + Gap + Stamp
+  WriteText('days', Line)
+  Stamp := Stamp + '  ' + Time()
+  WriteText('when-' + Name, Stamp)
+  Stamp := Time()
+  Stamp := Stamp + '  ' + Kind
+  Titles := ReadText('titles')
+  Kinds := ReadText('kinds')
+  Marks := ReadText('marks')
+  if ReadText('newest') = '1' then begin
+    if Titles = '' then begin
+      Titles := Name
+      Kinds := Kind
+      Marks := Stamp
+    end else begin
+      Titles := Name + Gap + Titles
+      Kinds := Kind + Gap + Kinds
+      Marks := Stamp + Gap + Marks
+    end
+  end else if Titles = '' then begin
+    Titles := Name
+    Kinds := Kind
+    Marks := Stamp
+  end else begin
+    Titles := Titles + Gap + Name
+    Kinds := Kinds + Gap + Kind
+    Marks := Marks + Gap + Stamp
+  end
+  WriteText('titles', Titles)
+  WriteText('kinds', Kinds)
+  WriteText('marks', Marks)
+  Line := ReadText('lines-' + Kind)
+  if Line = '' then
+    Line := Name
+  else if ReadText('newest') = '1' then
+    Line := Name + Gap + Line
+  else
+    Line := Line + Gap + Name
+  WriteText('lines-' + Kind, Line)
+  Ingest(Name, Body, 'txt')
+end;
+
+procedure AddClick();
+var
+  Text, Name: String;
+begin
+  Text := Draft.Text
+  if Text = '' then
+    Toast('Write a note')
+  else begin
+    Name := Text
+    if ReadText('has-' + Name) <> '' then
+      Name := Text + ' ' + BeatLabel.Text
+    Remember(Name, 'Draft', Text)
+    Draft.Text := ''
+    WriteText('mode', '')
+    Show()
+    Toast('Draft added')
+  end
+end;
+
+procedure OpenRow(Name: String);
+begin
+  if ReadText('mode') = 'search' then
+    Toast(Name)
+  else if ReadText('picked') <> '' then begin
+    if ReadText('has-' + Name) = '1' then
+      Pick(Name)
+  end else if ReadText('has-' + Name) = '1' then
+    OpenForm('Card', Name, ReadText('note-' + Name), ReadText('kind-' + Name), ReadText('when-' + Name))
+end;
+
+procedure HoldRow(Name: String);
+begin
+  if ReadText('mode') = 'search' then
+    Toast(Name)
+  else if ReadText('has-' + Name) = '1' then
+    Pick(Name)
+end;
+
+procedure Pick(Name: String);
+var
+  Names: String;
+  At: Integer;
+begin
+  Names := ReadText('picked')
+  At := LineIndex(Names, Name)
+  if At >= 0 then
+    Names := DropAt(Names, At)
+  else if Names = '' then
+    Names := Name
+  else
+    Names := Names + BreakLabel.Text + Name
+  WriteText('picked', Names)
+  ShowPick()
+end;
+
+procedure ShowPick();
+var
+  Names: String;
+begin
+  Names := ReadText('picked')
+  if Names = '' then
+    PickBar.Visible := false
+  else begin
+    PickBar.Visible := true
+    PickCount.Text := IntToStr(LineCount(Names)) + ' selected'
+  end
+end;
+
+procedure DonePicked();
+begin
+  WriteText('picked', '')
+  ShowPick()
+end;
+
+function Joined(): String;
+var
+  Names, Name, Body: String;
+  Index: Integer;
+begin
+  Names := ReadText('picked')
+  Body := ''
+  Index := 0
+  while LineAt(Names, Index) <> '' do begin
+    Name := LineAt(Names, Index)
+    if Body = '' then
+      Body := ReadText('note-' + Name)
+    else
+      Body := Body + BreakLabel.Text + BreakLabel.Text + ReadText('note-' + Name)
+    Index := Index + 1
+  end
+  Result := Body
+end;
+
+procedure CopyPicked();
+begin
+  if ReadText('picked') = '' then
+    Toast('Nothing selected')
+  else begin
+    CopyText(Joined())
+    Toast('Copied')
+  end
+end;
+
+procedure SharePicked();
+begin
+  if ReadText('picked') = '' then
+    Toast('Nothing selected')
+  else
+    Share(Joined())
+end;
+
+procedure OpenPicked();
+var
+  Name: String;
+begin
+  Name := LineAt(ReadText('picked'), 0)
+  if LineCount(ReadText('picked')) = 1 then
+    OpenForm('Card', Name, ReadText('note-' + Name), ReadText('kind-' + Name), ReadText('when-' + Name))
+  else
+    Toast('Select one note')
+end;
+
+procedure TrashOne(Name: String);
+var
+  N: Integer;
+  Titles, Kinds, Marks, Line, Trash, TrashKinds: String;
+begin
+  Titles := ReadText('titles')
+  N := LineIndex(Titles, Name)
+  if N >= 0 then begin
+    Kinds := ReadText('kinds')
+    Line := LineAt(Kinds, N)
+    Titles := DropAt(Titles, N)
+    WriteText('titles', Titles)
+    Kinds := DropAt(Kinds, N)
+    WriteText('kinds', Kinds)
+    Marks := ReadText('marks')
+    if Marks <> '' then begin
+      Marks := DropAt(Marks, N)
+      WriteText('marks', Marks)
+    end
+    Marks := ReadText('days')
+    if Marks <> '' then begin
+      Marks := DropAt(Marks, N)
+      WriteText('days', Marks)
+    end
+    if Line <> '' then begin
+      Marks := ReadText('lines-' + Line)
+      N := LineIndex(Marks, Name)
+      if N >= 0 then begin
+        Marks := DropAt(Marks, N)
+        WriteText('lines-' + Line, Marks)
+      end
+    end
+    Trash := ReadText('trash')
+    TrashKinds := ReadText('trash-kinds')
+    if Trash = '' then begin
+      Trash := Name
+      TrashKinds := Line
+    end else begin
+      Trash := Trash + BreakLabel.Text + Name
+      TrashKinds := TrashKinds + BreakLabel.Text + Line
+    end
+    WriteText('trash', Trash)
+    WriteText('trash-kinds', TrashKinds)
+  end
+end;
+
+procedure TrashPicked();
+var
+  Names, Name: String;
+  Index: Integer;
+begin
+  Names := ReadText('picked')
+  if Names = '' then
+    Toast('Nothing selected')
+  else begin
+    Index := 0
+    while LineAt(Names, Index) <> '' do begin
+      Name := LineAt(Names, Index)
+      TrashOne(Name)
+      Index := Index + 1
+    end
+    WriteText('picked', '')
+    Show()
+    ShowPick()
+    Toast('Moved to trash')
+  end
+end;
+
+procedure CopyRow(Name: String);
+begin
+  if ReadText('mode') = 'search' then begin
+    CopyText(Name)
+    Toast('Copied')
+  end else if ReadText('has-' + Name) = '1' then begin
+    CopyText(ReadText('note-' + Name))
+    Toast('Copied')
+  end
+end;
+
+procedure FindClick();
+var
+  Hits: String;
+begin
+  if Query.Text = '' then begin
+    WriteText('mode', '')
+    Show()
+  end else begin
+    Hits := Lookup(Query.Text)
+    if Hits = '' then
+      Toast('No matches')
+    else begin
+      WriteText('mode', 'search')
+      Timeline.Items := Hits
+      Timeline.Details := ''
+    end
+  end
+end;
+
+procedure TimelineClick();
+begin
+  WriteText('mode', '')
+  WriteText('picked', '')
+  ShowPick()
+  Show()
+end;
+
+procedure FilterClick();
+begin
+  LoadFilter()
+  FilterSheet.Visible := true
+end;
+
+procedure LoadFilter();
+var
+  Filter: String;
+begin
+  Filter := ReadText('filter')
+  if Filter = '' then begin
+    NoteCheck.Checked := true
+    DraftCheck.Checked := true
+    DreamCheck.Checked := true
+    EventCheck.Checked := true
+    PeriodCheck.Checked := true
+    TaskCheck.Checked := true
+    LinkCheck.Checked := true
+    QuoteCheck.Checked := true
+    ImageCheck.Checked := true
+    VideoCheck.Checked := true
+  end else if Filter = 'none' then begin
+    NoteCheck.Checked := false
+    DraftCheck.Checked := false
+    DreamCheck.Checked := false
+    EventCheck.Checked := false
+    PeriodCheck.Checked := false
+    TaskCheck.Checked := false
+    LinkCheck.Checked := false
+    QuoteCheck.Checked := false
+    ImageCheck.Checked := false
+    VideoCheck.Checked := false
+  end else begin
+    NoteCheck.Checked := LineIndex(Filter, 'Note') >= 0
+    DraftCheck.Checked := LineIndex(Filter, 'Draft') >= 0
+    DreamCheck.Checked := LineIndex(Filter, 'Dream') >= 0
+    EventCheck.Checked := LineIndex(Filter, 'Event') >= 0
+    PeriodCheck.Checked := LineIndex(Filter, 'Period') >= 0
+    TaskCheck.Checked := LineIndex(Filter, 'Task') >= 0
+    LinkCheck.Checked := LineIndex(Filter, 'Link') >= 0
+    QuoteCheck.Checked := LineIndex(Filter, 'Quote') >= 0
+    ImageCheck.Checked := LineIndex(Filter, 'Image') >= 0
+    VideoCheck.Checked := LineIndex(Filter, 'Video') >= 0
+  end
+end;
+
+procedure ClearTypes();
+begin
+  NoteCheck.Checked := true
+  DraftCheck.Checked := true
+  DreamCheck.Checked := true
+  EventCheck.Checked := true
+  PeriodCheck.Checked := true
+  TaskCheck.Checked := true
+  LinkCheck.Checked := true
+  QuoteCheck.Checked := true
+  ImageCheck.Checked := true
+  VideoCheck.Checked := true
+end;
+
+procedure CancelFilter();
+begin
+  FilterSheet.Visible := false
+end;
+
+procedure ApplyFilter();
+var
+  Line: String;
+  Count: Integer;
+begin
+  Line := ''
+  Count := 0
+  if NoteCheck.Checked then begin
+    Line := 'Note'
+    Count := 1
+  end
+  if DraftCheck.Checked then begin
+    if Line = '' then
+      Line := 'Draft'
+    else
+      Line := Line + BreakLabel.Text + 'Draft'
+    Count := Count + 1
+  end
+  if DreamCheck.Checked then begin
+    if Line = '' then
+      Line := 'Dream'
+    else
+      Line := Line + BreakLabel.Text + 'Dream'
+    Count := Count + 1
+  end
+  if EventCheck.Checked then begin
+    if Line = '' then
+      Line := 'Event'
+    else
+      Line := Line + BreakLabel.Text + 'Event'
+    Count := Count + 1
+  end
+  if PeriodCheck.Checked then begin
+    if Line = '' then
+      Line := 'Period'
+    else
+      Line := Line + BreakLabel.Text + 'Period'
+    Count := Count + 1
+  end
+  if TaskCheck.Checked then begin
+    if Line = '' then
+      Line := 'Task'
+    else
+      Line := Line + BreakLabel.Text + 'Task'
+    Count := Count + 1
+  end
+  if LinkCheck.Checked then begin
+    if Line = '' then
+      Line := 'Link'
+    else
+      Line := Line + BreakLabel.Text + 'Link'
+    Count := Count + 1
+  end
+  if QuoteCheck.Checked then begin
+    if Line = '' then
+      Line := 'Quote'
+    else
+      Line := Line + BreakLabel.Text + 'Quote'
+    Count := Count + 1
+  end
+  if ImageCheck.Checked then begin
+    if Line = '' then
+      Line := 'Image'
+    else
+      Line := Line + BreakLabel.Text + 'Image'
+    Count := Count + 1
+  end
+  if VideoCheck.Checked then begin
+    if Line = '' then
+      Line := 'Video'
+    else
+      Line := Line + BreakLabel.Text + 'Video'
+    Count := Count + 1
+  end
+  if Count = 10 then
+    WriteText('filter', '')
+  else if Count = 0 then
+    WriteText('filter', 'none')
+  else
+    WriteText('filter', Line)
+  WriteText('mode', '')
+  FilterSheet.Visible := false
+  Show()
+  Toast('Filters applied')
+end;
+
+procedure ScopeClick();
+begin
+  if ReadText('scope') = '0' then begin
+    WriteText('scope', '1')
+    Rail.Visible := true
+  end else begin
+    WriteText('scope', '0')
+    Rail.Visible := false
+  end
+end;
+
+procedure PhotoClick();
+begin
+  TakePhoto('GotPhoto')
+end;
+
+procedure GotPhoto(Path: String);
+var
+  Name: String;
+begin
+  if Path = '' then
+    Toast('No photo')
+  else begin
+    Name := 'Photo ' + BeatLabel.Text
+    Remember(Name, 'Image', Path)
+    WriteText('mode', '')
+    Show()
+    Toast('Image kept')
+  end
+end;
+
+procedure FileClick();
+begin
+  OpenDocument('GotFile')
+end;
+
+procedure GotFile(Path: String);
+var
+  Name: String;
+begin
+  if Path = '' then
+    Toast('No file')
+  else begin
+    Name := 'File ' + BeatLabel.Text
+    Remember(Name, 'Video', Path)
+    WriteText('mode', '')
+    Show()
+    Toast('File kept')
+  end
+end;
+
+procedure TasksClick();
+begin
+  OpenForm('Tasks')
+end;
+
+procedure SettingsClick();
+begin
+  OpenForm('Settings')
+end;
+
+procedure Tick();
+var
+  N: Integer;
+  Titles: String;
+begin
+  if not IsInt(BeatLabel.Text) then
+    N := 0
+  else
+    N := StrToInt(BeatLabel.Text)
+  N := N + 1
+  if N > 9999 then
+    N := 0
+  BeatLabel.Text := IntToStr(N)
+  if ReadText('scope') = '0' then
+    Rail.Visible := false
+  else
+    Rail.Visible := true
+  if ReadText('mode') = '' then begin
+    Titles := ReadText('titles')
+    if Titles <> Timeline.Items then
+      Show()
+  end
+end;

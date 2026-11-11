@@ -1,0 +1,160 @@
+{ BreakLabel.Text is a newline. The language has no newline literal, and the
+  list is one row per line, so new rows are joined with that label. }
+
+procedure Open();
+begin
+  if ReadText('titles') = '' then begin
+    Notes.Items := 'Welcome' + BreakLabel.Text + 'Photo' + BreakLabel.Text + 'Clip'
+    Notes.Details := 'Start here' + BreakLabel.Text + 'A picture' + BreakLabel.Text + 'Text you keep'
+  end
+  Seed()
+  Notes.Items := ReadText('titles')
+  Notes.Details := ReadText('details')
+  if ChosenLabel.Text = '' then
+    ChosenLabel.Text := 'Welcome'
+end;
+
+procedure Seed();
+begin
+  if ReadText('titles') = '' then begin
+    WriteText('titles', Notes.Items)
+    WriteText('details', Notes.Details)
+    WriteText('note-Welcome', 'A desk for notes, pictures, and files.')
+    WriteText('note-Photo', 'Take a photo and the path is kept here.')
+    WriteText('note-Clip', 'Copy a line, then paste it into a note.')
+    WriteText('has-Welcome', '1')
+    WriteText('has-Photo', '1')
+    WriteText('has-Clip', '1')
+  end
+end;
+
+procedure Tick();
+var
+  N: Integer;
+  Titles, Details: String;
+begin
+  if not IsInt(BeatLabel.Text) then
+    N := 0
+  else
+    N := StrToInt(BeatLabel.Text)
+  N := N + 1
+  if N > 9999 then
+    N := 0
+  BeatLabel.Text := IntToStr(N)
+  Titles := ReadText('titles')
+  Details := ReadText('details')
+  if Titles <> '' then begin
+    if Titles <> Notes.Items then
+      Notes.Items := Titles
+    if Details <> Notes.Details then
+      Notes.Details := Details
+  end
+end;
+
+procedure OpenRow(Name: String);
+begin
+  ChosenLabel.Text := Name
+  StatusLabel.Text := Name
+  OpenForm('Note', Name, ReadText('note-' + Name))
+end;
+
+procedure CopyRow(Name: String);
+begin
+  ChosenLabel.Text := Name
+  CopyText(ReadText('note-' + Name))
+  StatusLabel.Text := 'Copied'
+end;
+
+procedure NewClick();
+begin
+  OpenForm('Note', '', '')
+end;
+
+procedure ShareClick();
+var
+  Name: String;
+begin
+  Name := ChosenLabel.Text
+  if Name = '' then
+    Toast('Pick a note')
+  else
+    Share(Name + ': ' + ReadText('note-' + Name))
+end;
+
+procedure PhotoClick();
+begin
+  TakePhoto('GotPhoto')
+end;
+
+procedure GotPhoto(Path: String);
+begin
+  if Path = '' then
+    Toast('No photo')
+  else begin
+    WriteText('note-Photo', Path)
+    StatusLabel.Text := 'Photo kept'
+    ChosenLabel.Text := 'Photo'
+  end
+end;
+
+procedure FileClick();
+begin
+  OpenDocument('GotFile')
+end;
+
+procedure GotFile(Path: String);
+begin
+  if Path = '' then
+    Toast('No file')
+  else begin
+    WriteText('note-Clip', Path)
+    StatusLabel.Text := 'File kept'
+    ChosenLabel.Text := 'Clip'
+  end
+end;
+
+procedure ReloadClick();
+begin
+  Open()
+  StatusLabel.Text := 'Reloaded'
+end;
+
+procedure PlaceClick();
+begin
+  StatusLabel.Text := Where()
+end;
+
+procedure CopyClick();
+var
+  Name: String;
+begin
+  Name := ChosenLabel.Text
+  if Name = '' then
+    Toast('Pick a note')
+  else begin
+    CopyText(ReadText('note-' + Name))
+    StatusLabel.Text := 'Copied'
+  end
+end;
+
+procedure ClearClick();
+begin
+  Question('Clear the desk?', 'DoClear')
+end;
+
+procedure DoClear();
+begin
+  WriteText('titles', '')
+  WriteText('details', '')
+  WriteText('has-Welcome', '')
+  WriteText('has-Photo', '')
+  WriteText('has-Clip', '')
+  ChosenLabel.Text := 'Welcome'
+  Open()
+  StatusLabel.Text := 'Cleared'
+end;
+
+procedure AboutClick();
+begin
+  OpenForm('About')
+end;

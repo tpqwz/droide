@@ -1,0 +1,81 @@
+procedure Open();
+begin
+  TrashList.Items := ReadText('trash')
+end;
+
+procedure Restore(Name: String);
+var
+  N: Integer;
+  Titles, Kinds, Kind, Body, Gap, Marks, Line: String;
+begin
+  Titles := ReadText('trash')
+  N := LineIndex(Titles, Name)
+  if N < 0 then
+    Toast('Not in the trash')
+  else begin
+    Kinds := ReadText('trash-kinds')
+    Kind := LineAt(Kinds, N)
+    if Kind = '' then
+      Kind := 'Note'
+    Body := ReadText('note-' + Name)
+    Gap := GapLabel.Text
+    Titles := ReadText('titles')
+    if Titles = '' then
+      Titles := Name
+    else
+      Titles := Titles + Gap + Name
+    WriteText('titles', Titles)
+    Kinds := ReadText('kinds')
+    if Kinds = '' then
+      Kinds := Kind
+    else
+      Kinds := Kinds + Gap + Kind
+    WriteText('kinds', Kinds)
+    Marks := ReadText('marks')
+    Line := Time()
+    Line := Line + '  ' + Kind
+    if Marks = '' then
+      Marks := Line
+    else
+      Marks := Marks + Gap + Line
+    WriteText('marks', Marks)
+    Line := ReadText('lines-' + Kind)
+    if Line = '' then
+      Line := Name
+    else
+      Line := Line + Gap + Name
+    WriteText('lines-' + Kind, Line)
+    Line := Today()
+    Line := Line + '  ' + Time()
+    WriteText('when-' + Name, Line)
+    Line := ReadText('days')
+    Marks := Today()
+    if Line = '' then
+      Line := Marks
+    else
+      Line := Line + Gap + Marks
+    WriteText('days', Line)
+    Ingest(Name, Body, 'txt')
+    Titles := ReadText('trash')
+    Titles := DropAt(Titles, N)
+    WriteText('trash', Titles)
+    Kinds := ReadText('trash-kinds')
+    Kinds := DropAt(Kinds, N)
+    WriteText('trash-kinds', Kinds)
+    TrashList.Items := ReadText('trash')
+    Toast('Restored')
+  end
+end;
+
+procedure EmptyClick();
+begin
+  WriteText('trash', '')
+  WriteText('trash-kinds', '')
+  TrashList.Items := ''
+  Toast('Trash emptied')
+end;
+
+procedure CloseClick();
+begin
+  Finish()
+end;

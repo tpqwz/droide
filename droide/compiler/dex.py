@@ -100,6 +100,10 @@ class Asm:
         """sget. The field index is 16 bits and the destination register is 8 bits."""
         self.op([0x60 | ((dest & 0xFF) << 8), ("f", key)], f"sget v{dest}, {key[1]}")
 
+    def sget_object(self, dest, key):
+        """sget-object. Same shape as sget. A reference field such as JPEG uses this."""
+        self.op([0x62 | ((dest & 0xFF) << 8), ("f", key)], f"sget-object v{dest}, {key[1]}")
+
     def const_string(self, reg, text):
         shown = text.replace("\\", "\\\\").replace('"', '\\"')
         self.op([0x1A | ((reg & 0xFF) << 8), ("s", text)], f'const-string v{reg}, "{shown}"')
@@ -126,6 +130,17 @@ class Asm:
     def new_array(self, dest, size, desc):
         word = 0x23 | ((dest & 0xF) << 8) | ((size & 0xF) << 12)
         self.op([word, ("t", desc)], f"new-array v{dest}, v{size}, {desc}")
+
+    def array_length(self, dest, array):
+        """array-length vA, vB. Both registers are 4-bit."""
+        word = 0x21 | ((dest & 0xF) << 8) | ((array & 0xF) << 12)
+        self.op([word], f"array-length v{dest}, v{array}")
+
+    def aget_object(self, dest, array, index):
+        """aget-object vAA, vBB, vCC: destination, array, index."""
+        word0 = 0x46 | ((dest & 0xFF) << 8)
+        word1 = (array & 0xFF) | ((index & 0xFF) << 8)
+        self.op([word0, word1], f"aget-object v{dest}, v{array}, v{index}")
 
     def aput_object(self, value, array, index):
         word0 = 0x4D | ((value & 0xFF) << 8)
@@ -160,13 +175,16 @@ class Asm:
         self.op([op | ((a & 0xF) << 8) | ((b & 0xF) << 12), ("f", key)], text)
 
     def iget(self, dest, obj, key):
-        self.field_op(0x52, dest, obj, key, f"iget v{dest}, v{obj}, {key[1]}")
+        # A boolean field is iget-boolean. iput of a Z field is rejected on current ART.
+        op, shown = (0x55, "iget-boolean") if key[2] == "Z" else (0x52, "iget")
+        self.field_op(op, dest, obj, key, f"{shown} v{dest}, v{obj}, {key[1]}")
 
     def iget_obj(self, dest, obj, key):
         self.field_op(0x54, dest, obj, key, f"iget-object v{dest}, v{obj}, {key[1]}")
 
     def iput(self, src, obj, key):
-        self.field_op(0x59, src, obj, key, f"iput v{src}, v{obj}, {key[1]}")
+        op, shown = (0x5C, "iput-boolean") if key[2] == "Z" else (0x59, "iput")
+        self.field_op(op, src, obj, key, f"{shown} v{src}, v{obj}, {key[1]}")
 
     def iput_obj(self, src, obj, key):
         self.field_op(0x5B, src, obj, key, f"iput-object v{src}, v{obj}, {key[1]}")
