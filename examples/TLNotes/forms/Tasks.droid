@@ -1,11 +1,57 @@
+uses Look;
+
 procedure Open();
 begin
-  TaskList.Items := ReadText('lines-Task')
+  ShowTasks()
+end;
+
+procedure ShowTasks();
+var
+  Names, Marks, Gap, Name: String;
+  Index: Integer;
+begin
+  Names := ReadText('lines-Task')
+  Marks := ''
+  Gap := GapLabel.Text
+  Index := 0
+  while LineAt(Names, Index) <> '' do begin
+    Name := LineAt(Names, Index)
+    if ReadText('done-' + Name) = '1' then
+      Name := 'Task done'
+    else
+      Name := 'Task'
+    if Marks = '' then
+      Marks := Name
+    else
+      Marks := Marks + Gap + Name
+    Index := Index + 1
+  end
+  TaskList.Items := Names
+  if Marks <> '' then
+    TaskList.Details := Marks
+  ApplyLook()
 end;
 
 procedure OpenTask(Name: String);
 begin
   OpenForm('Card', Name, ReadText('note-' + Name), 'Task', ReadText('when-' + Name))
+end;
+
+procedure TaskChange(Text: String);
+begin
+  Grow(TaskDraft)
+end;
+
+procedure TaskEnter(Text: String);
+begin
+  if ReadText('enter') = 'return' then begin
+    if Text = '' then
+      TaskDraft.Text := ''
+    else begin
+      TaskDraft.Text := Text
+      AddClick()
+    end
+  end
 end;
 
 procedure AddClick();
@@ -71,7 +117,7 @@ begin
     WriteText('lines-Task', Line)
     Ingest(Name, Text, 'txt')
     TaskDraft.Text := ''
-    TaskList.Items := ReadText('lines-Task')
+    ShowTasks()
     Toast('Task added')
   end
 end;
@@ -79,4 +125,52 @@ end;
 procedure CloseClick();
 begin
   Finish()
+end;
+
+procedure ApplyLook();
+var
+  Index, N, Theme: Integer;
+begin
+  if ReadText('scheme') = '' then
+    Index := 0
+  else if IsInt(ReadText('scheme')) then
+    Index := StrToInt(ReadText('scheme'))
+  else
+    Index := 0
+  if ReadText('theme') = '' then
+    Theme := 0
+  else if IsInt(ReadText('theme')) then
+    Theme := StrToInt(ReadText('theme'))
+  else
+    Theme := 0
+  N := Cast(Theme, Index, 0)
+  Page(N)
+  TaskList.Color := N
+  TaskList.Paper := N
+  CloseButton.Color := N
+  N := Cast(Theme, Index, 1)
+  TaskList.Card := N
+  Bar.Color := N
+  TaskDraft.Color := N
+  N := Cast(Theme, Index, 2)
+  TaskList.Ink := N
+  TaskDraft.TextColor := N
+  if Theme = 16 then
+    TitleLabel.TextColor := $FFF6E4C2
+  else if Theme = 7 then
+    TitleLabel.TextColor := $FFEFE4CF
+  else
+    TitleLabel.TextColor := N
+  N := Cast(Theme, Index, 3)
+  TaskList.Muted := N
+  TaskDraft.HintColor := N
+  N := Cast(Theme, Index, 4)
+  AddButton.Color := N
+  CloseButton.TextColor := N
+  N := Cast(Theme, Index, 5)
+  AddButton.TextColor := N
+  N := TypeSize(ReadText('size'))
+  TaskList.RowSize := N
+  TaskDraft.TextSize := N + 1
+  TitleLabel.TextSize := N + 7
 end;

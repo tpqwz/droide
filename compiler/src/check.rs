@@ -165,6 +165,21 @@ fn builtin_spec(name: &str) -> Option<Builtin> {
             ret: None,
             form_only: true,
         },
+        "Page" => Builtin {
+            args: &["Integer"],
+            ret: None,
+            form_only: true,
+        },
+        "Grow" => Builtin {
+            args: &["View"],
+            ret: None,
+            form_only: true,
+        },
+        "Place" => Builtin {
+            args: &["View", "Integer", "Integer"],
+            ret: None,
+            form_only: true,
+        },
         "IntToStr" => Builtin {
             args: &["Integer"],
             ret: Some("String"),
@@ -285,6 +300,31 @@ fn builtin_spec(name: &str) -> Option<Builtin> {
             ret: Some("String"),
             form_only: false,
         },
+        "DatePart" => Builtin {
+            args: &["String", "Integer"],
+            ret: Some("Integer"),
+            form_only: false,
+        },
+        "Weave" => Builtin {
+            args: &["Integer", "String", "String", "String", "String"],
+            ret: Some("String"),
+            form_only: false,
+        },
+        "AgeDay" => Builtin {
+            args: &["Integer", "Integer", "Integer", "Integer", "Integer"],
+            ret: Some("String"),
+            form_only: false,
+        },
+        "ClearAges" => Builtin {
+            args: &[],
+            ret: None,
+            form_only: true,
+        },
+        "PlaceAge" => Builtin {
+            args: &["String", "String", "String"],
+            ret: None,
+            form_only: true,
+        },
         "LineIndex" => Builtin {
             args: &["String", "String"],
             ret: Some("Integer"),
@@ -336,6 +376,9 @@ fn builtin_canon(lower: &str) -> Option<&'static str> {
         "argint" => Some("ArgInt"),
         "argbool" => Some("ArgBool"),
         "finish" => Some("Finish"),
+        "page" => Some("Page"),
+        "grow" => Some("Grow"),
+        "place" => Some("Place"),
         "inttostr" => Some("IntToStr"),
         "strtoint" => Some("StrToInt"),
         "isint" => Some("IsInt"),
@@ -360,6 +403,11 @@ fn builtin_canon(lower: &str) -> Option<&'static str> {
         "samedays" => Some("SameDays"),
         "journalitems" => Some("JournalItems"),
         "journaldetails" => Some("JournalDetails"),
+        "datepart" => Some("DatePart"),
+        "weave" => Some("Weave"),
+        "ageday" => Some("AgeDay"),
+        "clearages" => Some("ClearAges"),
+        "placeage" => Some("PlaceAge"),
         "lineindex" => Some("LineIndex"),
         "dropat" => Some("DropAt"),
         "replaceat" => Some("ReplaceAt"),
@@ -1395,6 +1443,8 @@ impl Checker {
                 format!("{handler} takes no parameters, a String, an Integer, or the row View")
             } else if event == "OnChange" {
                 change_hint(kind, handler)
+            } else if event == "OnEnter" {
+                format!("{handler} takes no parameters, or the text before the return as a String")
             } else if event == "OnTimer" {
                 format!("{handler} takes no parameters")
             } else if sig.params.len() > 1 {
@@ -2509,6 +2559,10 @@ fn handler_param_ok(event: &str, kind: &str, ty: &str) -> bool {
             "Seek" | "Rating" | "Picker" => ty == "Integer",
             _ => false,
         },
+        "OnEnter" => {
+            matches!(kind, "Edit" | "Memo" | "Number" | "Password" | "Email" | "Phone")
+                && ty == "String"
+        }
         _ => ty == "View",
     }
 }

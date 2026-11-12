@@ -63,8 +63,10 @@ fn kind_events(kind: &str) -> &'static [&'static str] {
         "List" => &["OnItemClick", "OnItemLongClick"],
         "Spinner" => &["OnItemSelected"],
         "Timer" => &["OnTimer"],
-        "Edit" | "Memo" | "Number" | "Password" | "Email" | "Phone" | "Check" | "Radio"
-        | "Switch" | "Toggle" | "Seek" | "Rating" | "Picker" | "Time" | "Date" => {
+        "Edit" | "Memo" | "Number" | "Password" | "Email" | "Phone" => {
+            &["OnClick", "OnLongClick", "OnChange", "OnEnter"]
+        }
+        "Check" | "Radio" | "Switch" | "Toggle" | "Seek" | "Rating" | "Picker" | "Time" | "Date" => {
             &["OnClick", "OnLongClick", "OnChange"]
         }
         _ => &["OnClick", "OnLongClick"],
@@ -78,7 +80,7 @@ fn kind_props(kind: &str) -> &'static [&'static str] {
         "Button" => &["Text", "TextSize", "TextColor", "Color", "Enabled", "Visible"],
         "Toggle" => &["TextOn", "TextOff", "Checked", "TextSize", "TextColor", "Enabled", "Visible"],
         "Edit" | "Memo" | "Number" | "Password" | "Email" | "Phone" => {
-            &["Text", "Hint", "TextSize", "TextColor", "Color", "Enabled", "Visible"]
+            &["Text", "Hint", "TextSize", "TextColor", "HintColor", "Color", "Enabled", "Visible"]
         }
         "Check" | "Switch" | "Radio" => &["Text", "Checked", "TextSize", "TextColor", "Enabled", "Visible"],
         "Seek" | "Progress" => &["Max", "Progress", "Enabled", "Visible"],
@@ -153,6 +155,7 @@ enum Mode {
     Design,
     Code,
     Explore,
+    Forms,
 }
 
 #[derive(Clone)]
@@ -351,6 +354,7 @@ impl Studio {
             Mode::Design => "design",
             Mode::Code => "code",
             Mode::Explore => "explore",
+            Mode::Forms => "forms",
         }
     }
 
@@ -1047,6 +1051,9 @@ impl Studio {
             if ui.selectable_label(self.mode == Mode::Explore, "Explore").clicked() {
                 self.mode = Mode::Explore;
             }
+            if ui.selectable_label(self.mode == Mode::Forms, "Forms").clicked() {
+                self.mode = Mode::Forms;
+            }
             ui.separator();
             if ui
                 .button("Duplicate")
@@ -1069,6 +1076,119 @@ impl Studio {
                 self.begin_job("run");
             }
         });
+    }
+
+    fn structure(&mut self, ui: &mut egui::Ui) {
+        ScrollArea::vertical().auto_shrink([false, false]).show(ui, |ui| {
+            ui.label(RichText::new("Structure").small().weak());
+            let Some(form) = self.current_form().cloned() else {
+                ui.label("No form.");
+                return;
+            };
+            let rows = widget_rows(&form.components);
+            if rows.is_empty() {
+                ui.label(RichText::new("No widgets.").small().weak());
+                return;
+            }
+            for row in rows {
+                let comp = &form.components[row.index];
+                let mark = structure_mark(&form, comp);
+                let label = if mark.is_empty() {
+                    format!("{}  {}", comp.name, comp.kind)
+                } else {
+                    format!("{}  {}  · {mark}", comp.name, comp.kind)
+                };
+                let on = self.selected.as_deref() == Some(comp.name.as_str());
+                ui.horizontal(|ui| {
+                    ui.add_space(row.depth as f32 * 12.0);
+                    if ui.selectable_label(on, label).clicked() {
+                        self.selected = Some(comp.name.clone());
+                    }
+                });
+            }
+        });
+    }
+
+    fn forms_map(&mut self, ui: &mut egui::Ui) {
+        let nodes = form_nodes(&self.forms, &self.buffers);
+        ui.label(RichText::new("Forms").strong().color(INK));
+        ui.label(
+            RichText::new("A line is an OpenForm call in that form's code.")
+                .small()
+                .weak(),
+        );
+        if nodes.is_empty() {
+            ui.label("This project has no form.");
+            return;
+        }
+        let mut opened = None;
+        let mut rects: Vec<(String, Rect)> = Vec::new();
+        ui.add_space(8.0);
+        ui.horizontal_wrapped(|ui| {
+            ui.spacing_mut().item_spacing = Vec2::new(18.0, 22.0);
+            for node in &nodes {
+                let on = node.index == self.form_index;
+                let response = ui.add_sized([148.0, 36.0], Button::selectable(on, &node.name));
+                rects.push((node.name.clone(), response.rect));
+                if response.clicked() {
+                    opened = Some(node.index);
+                }
+            }
+        });
+        let painter = ui.painter();
+        for node in &nodes {
+            let Some((_, from)) = rects.iter().find(|(name, _)| name == &node.name) else {
+                continue;
+            };
+            for target in &node.opens {
+                let Some((_, to)) = rects
+                    .iter()
+                    .find(|(name, _)| name.eq_ignore_ascii_case(target))
+                else {
+                    continue;
+                };
+                painter.arrow(
+                    from.right_center(),
+                    to.left_center() - from.right_center(),
+                    Stroke::new(1.0, Color32::from_rgb(0x6E, 0x66, 0x5C)),
+                );
+            }
+        }
+        ui.add_space(16.0);
+        for node in &nodes {
+            if node.opens.is_empty() {
+                ui.label(RichText::new(format!("{} opens nothing", node.name)).small().weak());
+                continue;
+            }
+            ui.label(format!("{} opens {}", node.name, node.opens.join(", ")));
+            let missing: Vec<&str> = node
+                .opens
+                .iter()
+                .filter(|target| {
+                    !nodes
+                        .iter()
+                        .any(|other| other.name.eq_ignore_ascii_case(target))
+                })
+                .map(String::as_str)
+                .collect();
+            if !missing.is_empty() {
+                ui.label(
+                    RichText::new(format!("not in this project: {}", missing.join(", ")))
+                        .small()
+                        .weak(),
+                );
+            }
+        }
+        if let Some(index) = opened {
+            self.form_index = index;
+            if let Some(doc) = self.forms.get(index) {
+                self.open_rel = doc.source_rel.clone();
+            }
+            self.selected = None;
+            self.mode = Mode::Design;
+            self.jump = None;
+            self.arm_focus = None;
+        }
     }
 
     fn palette(&mut self, ui: &mut egui::Ui) {
@@ -1934,6 +2054,10 @@ impl Studio {
                     .exact_size(168.0)
                     .resizable(false)
                     .show(ui, |ui| self.palette(ui));
+                egui::Panel::left("structure")
+                    .exact_size(220.0)
+                    .resizable(false)
+                    .show(ui, |ui| self.structure(ui));
                 if self.inspector_open() {
                     egui::Panel::right("inspector")
                         .exact_size(276.0)
@@ -1955,6 +2079,9 @@ impl Studio {
                     .resizable(false)
                     .show(ui, |ui| self.index(ui));
                 CentralPanel::default_margins().show(ui, |ui| self.explore_detail(ui));
+            }
+            Mode::Forms => {
+                CentralPanel::default_margins().show(ui, |ui| self.forms_map(ui));
             }
         }
     }
@@ -3749,6 +3876,143 @@ fn main() -> eframe::Result {
     )
 }
 
+struct WidgetRow {
+    index: usize,
+    depth: u32,
+}
+
+/// Parents first, then the widgets they hold. A cycle is listed once.
+fn widget_rows(components: &[Component]) -> Vec<WidgetRow> {
+    let mut out = Vec::new();
+    let mut seen = vec![false; components.len()];
+    fn walk(
+        components: &[Component],
+        parent: &str,
+        depth: u32,
+        seen: &mut [bool],
+        out: &mut Vec<WidgetRow>,
+    ) {
+        for (index, comp) in components.iter().enumerate() {
+            if seen[index] || !comp.parent.eq_ignore_ascii_case(parent) {
+                continue;
+            }
+            seen[index] = true;
+            out.push(WidgetRow { index, depth });
+            walk(components, &comp.name, depth.saturating_add(1), seen, out);
+        }
+    }
+    walk(components, "", 0, &mut seen, &mut out);
+    for index in 0..components.len() {
+        if seen[index] {
+            continue;
+        }
+        seen[index] = true;
+        out.push(WidgetRow { index, depth: 0 });
+        walk(components, &components[index].name, 1, &mut seen, &mut out);
+    }
+    out
+}
+
+fn off_form(form: &Form, comp: &Component) -> bool {
+    comp.left + comp.width <= 0
+        || comp.top + comp.height <= 0
+        || comp.left >= form.width
+        || comp.top >= form.height
+}
+
+fn structure_mark(form: &Form, comp: &Component) -> String {
+    let hidden = !prop_bool(comp, "Visible", true);
+    let off = comp.parent.is_empty() && off_form(form, comp);
+    match (hidden, off) {
+        (true, true) => "hidden, off the page".into(),
+        (true, false) => "hidden".into(),
+        (false, true) => "off the page".into(),
+        (false, false) => String::new(),
+    }
+}
+
+struct FormNode {
+    name: String,
+    index: usize,
+    opens: Vec<String>,
+}
+
+fn form_nodes(forms: &[FormDoc], buffers: &BTreeMap<String, String>) -> Vec<FormNode> {
+    forms
+        .iter()
+        .enumerate()
+        .map(|(index, doc)| {
+            let opens = buffers
+                .get(&doc.source_rel)
+                .map(|text| open_form_targets(text))
+                .unwrap_or_default();
+            FormNode {
+                name: doc.form.name.clone(),
+                index,
+                opens,
+            }
+        })
+        .collect()
+}
+
+/// Form names passed as the first argument of `OpenForm`, in source order.
+fn open_form_targets(source: &str) -> Vec<String> {
+    let mut names: Vec<String> = Vec::new();
+    let bytes = source.as_bytes();
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] & 0b1100_0000 == 0b1000_0000 {
+            i += 1;
+            continue;
+        }
+        if bytes[i] == b'{' {
+            while i < bytes.len() && bytes[i] != b'}' {
+                i += 1;
+            }
+            if i < bytes.len() {
+                i += 1;
+            }
+            continue;
+        }
+        if bytes[i] == b'/' && bytes.get(i + 1) == Some(&b'/') {
+            while i < bytes.len() && bytes[i] != b'\n' {
+                i += 1;
+            }
+            continue;
+        }
+        if i + 8 <= bytes.len() && source[i..i + 8].eq_ignore_ascii_case("openform") {
+            let mut j = i + 8;
+            while j < bytes.len() && bytes[j].is_ascii_whitespace() {
+                j += 1;
+            }
+            if bytes.get(j) == Some(&b'(') {
+                j += 1;
+                while j < bytes.len() && bytes[j].is_ascii_whitespace() {
+                    j += 1;
+                }
+                let quote = bytes.get(j).copied();
+                if quote == Some(b'\'') || quote == Some(b'"') {
+                    j += 1;
+                    let start = j;
+                    while j < bytes.len() && bytes[j] != quote.unwrap() {
+                        j += 1;
+                    }
+                    if let Ok(name) = std::str::from_utf8(&bytes[start..j]) {
+                        if !name.is_empty() && !names.iter().any(|have| have.eq_ignore_ascii_case(name))
+                        {
+                            names.push(name.to_string());
+                        }
+                    }
+                }
+            }
+            i = j.max(i + 1);
+            continue;
+        }
+        i += 1;
+    }
+    names
+}
+
 #[cfg(test)]
 mod nav_tests {
     use std::collections::BTreeMap;
@@ -3826,7 +4090,10 @@ mod nav_tests {
 
     #[test]
     fn kind_events_keep_click_first() {
-        assert_eq!(kind_events("Edit"), &["OnClick", "OnLongClick", "OnChange"]);
+        assert_eq!(
+            kind_events("Edit"),
+            &["OnClick", "OnLongClick", "OnChange", "OnEnter"]
+        );
         assert_eq!(kind_events("List"), &["OnItemClick", "OnItemLongClick"]);
         assert_eq!(kind_events("Button"), &["OnClick", "OnLongClick"]);
         assert_eq!(kind_events("Spinner"), &["OnItemSelected"]);
@@ -3851,8 +4118,8 @@ mod design_tests {
     use serde_json::json;
 
     use super::{
-        assign_parent, component_origin, drop_parent, duplicate_component, host_panel, parent_choices,
-        Component, Form,
+        assign_parent, component_origin, drop_parent, duplicate_component, host_panel,
+        open_form_targets, parent_choices, structure_mark, widget_rows, Component, Form,
     };
 
     fn button(name: &str, left: i32, top: i32) -> Component {
@@ -4005,5 +4272,51 @@ mod design_tests {
         assert_eq!(drop_parent(&form.components, 1, 4, 4), "");
         assert!(parent_choices(&form.components, 0).is_empty());
         assert_eq!(parent_choices(&form.components, 1), vec!["Box".to_string()]);
+    }
+
+    #[test]
+    fn the_structure_lists_children_under_their_panel() {
+        let mut hidden = button("Sheet", 8, 400);
+        hidden.props.insert("Visible".into(), json!(false));
+        let mut note = button("NoteCheck", 4, 0);
+        note.parent = "Sheet".into();
+        let mut parked = button("Gap", 0, -40);
+        parked.height = 4;
+        let form = form_with(vec![hidden, note, parked]);
+        let rows = widget_rows(&form.components);
+        let names: Vec<&str> = rows
+            .iter()
+            .map(|row| form.components[row.index].name.as_str())
+            .collect();
+        assert_eq!(names, vec!["Sheet", "NoteCheck", "Gap"]);
+        assert_eq!(rows[1].depth, 1);
+        assert_eq!(structure_mark(&form, &form.components[0]), "hidden");
+        assert_eq!(structure_mark(&form, &form.components[1]), "");
+        assert_eq!(structure_mark(&form, &form.components[2]), "off the page");
+    }
+
+    #[test]
+    fn a_parent_cycle_is_listed_once() {
+        let mut a = button("A", 0, 0);
+        a.parent = "B".into();
+        let mut b = button("B", 0, 40);
+        b.parent = "A".into();
+        let rows = widget_rows(&[a, b]);
+        assert_eq!(rows.len(), 2);
+    }
+
+    #[test]
+    fn open_form_reads_the_first_name() {
+        let source = "\
+// OpenForm('Skip')
+procedure Go();
+begin
+  OpenForm('Card', Name)
+  OpenForm(\"Tasks\")
+  openform('card')
+  { OpenForm('Trash') }
+end;
+";
+        assert_eq!(open_form_targets(source), vec!["Card".to_string(), "Tasks".to_string()]);
     }
 }

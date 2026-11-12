@@ -49,6 +49,13 @@
       "events": {}
     },
     {
+      "type": "Panel",
+      "name": "Header",
+      "left": 0, "top": 0, "width": 360, "height": 44,
+      "props": { "Direction": "Horizontal", "Color": "#F3EFE6" },
+      "events": {}
+    },
+    {
       "type": "Label",
       "name": "TitleLabel",
       "left": 16, "top": 18, "width": 80, "height": 16,
@@ -101,7 +108,7 @@
       "name": "Draft",
       "left": 12, "top": 568, "width": 188, "height": 52,
       "props": { "Hint": "Write a note…", "Text": "", "TextSize": 16, "Color": "#FBF8F2", "TextColor": "#1C1915", "Dock": "Bottom" },
-      "events": {}
+      "events": { "OnChange": "DraftChange", "OnEnter": "DraftEnter" }
     },
     {
       "type": "Button",
@@ -165,6 +172,13 @@
       "left": 204, "top": 574, "width": 36, "height": 36,
       "props": { "Text": "File", "TextSize": 11, "TextColor": "#6E665C", "Color": "#FBF8F2", "Dock": "Bottom" },
       "events": { "OnClick": "FileClick" }
+    },
+    {
+      "type": "Label",
+      "name": "ShownLabel",
+      "left": 40, "top": -40, "width": 4, "height": 4,
+      "props": { "Text": "", "TextColor": "#F3EFE6", "TextSize": 1 },
+      "events": {}
     },
     {
       "type": "Label",

@@ -28,6 +28,40 @@ begin
   ShowCounts()
 end;
 
+procedure LayAges();
+var
+  Y, M, D, Age: Integer;
+  Born, EndDay, Title: String;
+begin
+  Y := BornDate.Year
+  M := BornDate.Month
+  D := BornDate.Day
+  Born := AgeDay(Y, M, D, 0, 0)
+  if Born = '' then
+    Toast('That is not a day.')
+  else begin
+    ClearAges()
+    Age := 0
+    while Age < 151 do begin
+      Born := AgeDay(Y, M, D, Age, 0)
+      if Born = '' then
+        Age := 151
+      else begin
+        EndDay := AgeDay(Y, M, D, Age, 1)
+        Title := 'Age '
+        Title := Title + IntToStr(Age)
+        PlaceAge(Title, Born, EndDay)
+        Age := Age + 1
+      end
+    end
+    if Born = '' then
+      Toast('Ages laid')
+    else
+      Toast('That span is longer than the journal will keep.')
+    Finish()
+  end
+end;
+
 procedure NewestClick();
 begin
   if NewestCheck.Checked then

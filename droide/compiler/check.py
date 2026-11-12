@@ -14,6 +14,9 @@ BUILTINS = {
     "ArgInt": {"args": ["Integer"], "ret": "Integer", "where": "form"},
     "ArgBool": {"args": ["Integer"], "ret": "Boolean", "where": "form"},
     "Finish": {"args": [], "ret": None, "where": "form"},
+    "Page": {"args": ["Integer"], "ret": None, "where": "form"},
+    "Grow": {"args": ["View"], "ret": None, "where": "form"},
+    "Place": {"args": ["View", "Integer", "Integer"], "ret": None, "where": "form"},
     "IntToStr": {"args": ["Integer"], "ret": "String", "where": "any"},
     "StrToInt": {"args": ["String"], "ret": "Integer", "where": "any"},
     "IsInt": {"args": ["String"], "ret": "Boolean", "where": "any"},
@@ -32,6 +35,11 @@ BUILTINS = {
     "SameDays": {"args": ["String", "String"], "ret": "String", "where": "any"},
     "JournalItems": {"args": ["String", "String"], "ret": "String", "where": "any"},
     "JournalDetails": {"args": ["String", "String", "String"], "ret": "String", "where": "any"},
+    "DatePart": {"args": ["String", "Integer"], "ret": "Integer", "where": "any"},
+    "Weave": {"args": ["Integer", "String", "String", "String", "String"], "ret": "String", "where": "any"},
+    "AgeDay": {"args": ["Integer", "Integer", "Integer", "Integer", "Integer"], "ret": "String", "where": "any"},
+    "ClearAges": {"args": [], "ret": None, "where": "form"},
+    "PlaceAge": {"args": ["String", "String", "String"], "ret": None, "where": "form"},
     "LineIndex": {"args": ["String", "String"], "ret": "Integer", "where": "any"},
     "DropAt": {"args": ["String", "Integer"], "ret": "String", "where": "any"},
     "ReplaceAt": {"args": ["String", "Integer", "String"], "ret": "String", "where": "any"},
@@ -48,6 +56,8 @@ def _event_param_ok(event, kind, ty):
         return ty in ("View", "String", "Integer")
     if event == "OnTimer":
         return False
+    if event == "OnEnter":
+        return kind in ("Edit", "Memo", "Number", "Password", "Email", "Phone") and ty == "String"
     if event == "OnChange":
         if kind in ("Edit", "Memo", "Number", "Password", "Email", "Phone"):
             return ty == "String"
@@ -730,6 +740,12 @@ class Checker:
                         )
                     elif event == "OnChange":
                         self.error(_change_hint(comp["type"], handler), rec["routine"], file)
+                    elif event == "OnEnter":
+                        self.error(
+                            f"{handler} takes no parameters, or the text before the return as a String",
+                            rec["routine"],
+                            file,
+                        )
                     elif event == "OnTimer":
                         self.error(f"{handler} takes no parameters", rec["routine"], file)
                     elif len(rec["params"]) > 1:

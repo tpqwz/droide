@@ -358,6 +358,42 @@ class RoutineGen:
         if mode == "stack":
             self._emit_list_bottom(wreg, vreg)
             return
+        if mode == "row":
+            which = {"paper": 0, "card": 1, "ink": 2, "muted": 3}.get(prop.lower(), 4)
+            slot = self.alloc()
+            self.asm.const(slot, which)
+            self.invoke(
+                "static",
+                (self.cx.rt_desc, "paintRow", "V", ("Landroid/widget/ListView;", "I", "I")),
+                [wreg, slot, vreg],
+            )
+            return
+        if mode == "dp-h":
+            self.invoke(
+                "static",
+                (
+                    self.cx.rt_desc,
+                    "setDpHeight",
+                    "V",
+                    ("Landroid/view/View;", "Landroid/content/Context;", "I"),
+                ),
+                [wreg, self.frame.this, vreg],
+            )
+            return
+        if mode == "picked":
+            self.invoke(
+                "static",
+                (self.cx.rt_desc, "paintPicked", "V", ("Landroid/widget/ListView;", "Ljava/lang/String;")),
+                [wreg, vreg],
+            )
+            return
+        if mode == "recolor":
+            self.invoke(
+                "static",
+                (self.cx.rt_desc, "recolor", "V", ("Landroid/view/View;", "I")),
+                [wreg, vreg],
+            )
+            return
         if mode in ("lines", "details"):
             if mode == "details":
                 name, view = "setDetails", "Landroid/widget/ListView;"
@@ -900,6 +936,30 @@ class RoutineGen:
             self.invoke("virtual", ("Landroid/app/Activity;", "finish", "V", ()), [self.frame.this])
             self.release_to(start)
             return None
+        if name == "Page":
+            self.invoke(
+                "static",
+                (self.cx.rt_desc, "page", "V", ("Landroid/app/Activity;", "I")),
+                [self.frame.this, arg_regs[0]],
+            )
+            self.release_to(start)
+            return None
+        if name == "Grow":
+            self.invoke(
+                "static",
+                (self.cx.rt_desc, "grow", "V", ("Landroid/view/View;",)),
+                [arg_regs[0]],
+            )
+            self.release_to(start)
+            return None
+        if name == "Place":
+            self.invoke(
+                "static",
+                (self.cx.rt_desc, "place", "V", ("Landroid/view/View;", "I", "I")),
+                [arg_regs[0], arg_regs[1], arg_regs[2]],
+            )
+            self.release_to(start)
+            return None
         if name == "OpenForm":
             form_name = _open_form_name(node)
             skipped = (
@@ -1069,6 +1129,62 @@ class RoutineGen:
             self.release_to(start + 1)
             self.sp = start + 1
             return None if as_stmt else (start, "String")
+        if name == "DatePart":
+            self.invoke(
+                "static",
+                (self.cx.rt_desc, "datePart", "I", ("Ljava/lang/String;", "I")),
+                [arg_regs[0], arg_regs[1]],
+            )
+            self.asm.move_result(start, False)
+            self.release_to(start + 1)
+            self.sp = start + 1
+            return None if as_stmt else (start, "Integer")
+        if name == "Weave":
+            self.invoke(
+                "static",
+                (
+                    self.cx.rt_desc,
+                    "weave",
+                    "Ljava/lang/String;",
+                    ("I", "Ljava/lang/String;", "Ljava/lang/String;", "Ljava/lang/String;", "Ljava/lang/String;"),
+                ),
+                [arg_regs[0], arg_regs[1], arg_regs[2], arg_regs[3], arg_regs[4]],
+            )
+            self.asm.move_result(start, True)
+            self.release_to(start + 1)
+            self.sp = start + 1
+            return None if as_stmt else (start, "String")
+        if name == "AgeDay":
+            self.invoke(
+                "static",
+                (self.cx.rt_desc, "ageDay", "Ljava/lang/String;", ("I", "I", "I", "I", "I")),
+                [arg_regs[0], arg_regs[1], arg_regs[2], arg_regs[3], arg_regs[4]],
+            )
+            self.asm.move_result(start, True)
+            self.release_to(start + 1)
+            self.sp = start + 1
+            return None if as_stmt else (start, "String")
+        if name == "ClearAges":
+            self.invoke(
+                "static",
+                (self.cx.rt_desc, "clearAges", "V", ("Landroid/content/Context;",)),
+                [self.frame.this],
+            )
+            self.release_to(start)
+            return None
+        if name == "PlaceAge":
+            self.invoke(
+                "static",
+                (
+                    self.cx.rt_desc,
+                    "placeAge",
+                    "V",
+                    ("Landroid/content/Context;", "Ljava/lang/String;", "Ljava/lang/String;", "Ljava/lang/String;"),
+                ),
+                [self.frame.this, arg_regs[0], arg_regs[1], arg_regs[2]],
+            )
+            self.release_to(start)
+            return None
         if name == "JournalDetails":
             self.invoke(
                 "static",
@@ -2479,6 +2595,116 @@ def emit_tick_init(asm, tick):
     asm.ret(0, "void")
 
 
+def emit_set_dp_height(asm, rt):
+    # v5 view, v6 context, v7 dp.
+    asm.invoke("static", (rt, "dp", "I", ("Landroid/content/Context;", "I")), [6, 7])
+    asm.move_result(0, False)
+    asm.invoke(
+        "virtual",
+        ("Landroid/view/View;", "getLayoutParams", "Landroid/view/ViewGroup$LayoutParams;", ()),
+        [5],
+    )
+    asm.move_result(1, True)
+    asm.if_zero("eqz", 1, "skip")
+    asm.iput(0, 1, ("Landroid/view/ViewGroup$LayoutParams;", "height", "I"))
+    asm.invoke(
+        "virtual",
+        ("Landroid/view/View;", "setLayoutParams", "V", ("Landroid/view/ViewGroup$LayoutParams;",)),
+        [5, 1],
+    )
+    asm.ret(0, "void")
+    asm.label("skip")
+    asm.ret(0, "void")
+
+
+def emit_recolor(asm):
+    # v6 view, v7 colour. A plaque stays oval. A list gutter stays clipped.
+    asm.invoke(
+        "virtual",
+        ("Landroid/view/View;", "getBackground", "Landroid/graphics/drawable/Drawable;", ()),
+        [6],
+    )
+    asm.move_result(0, True)
+    asm.if_zero("eqz", 0, "plain_null")
+    asm.invoke("virtual", ("Ljava/lang/Object;", "getClass", "Ljava/lang/Class;", ()), [0])
+    asm.move_result(1, True)
+    asm.invoke("virtual", ("Ljava/lang/Class;", "getName", "Ljava/lang/String;", ()), [1])
+    asm.move_result(1, True)
+    asm.const_string(2, "GradientDrawable")
+    asm.invoke("virtual", ("Ljava/lang/String;", "endsWith", "Z", ("Ljava/lang/String;",)), [1, 2])
+    asm.move_result(3, False)
+    asm.if_zero("nez", 3, "grad")
+    asm.const_string(2, "DroideInset")
+    asm.invoke("virtual", ("Ljava/lang/String;", "endsWith", "Z", ("Ljava/lang/String;",)), [1, 2])
+    asm.move_result(3, False)
+    asm.if_zero("nez", 3, "ink")
+    asm.const_string(2, "ColorDrawable")
+    asm.invoke("virtual", ("Ljava/lang/String;", "endsWith", "Z", ("Ljava/lang/String;",)), [1, 2])
+    asm.move_result(3, False)
+    asm.if_zero("eqz", 3, "plain_other")
+    asm.label("ink")
+    asm.check_cast(0, "Landroid/graphics/drawable/ColorDrawable;")
+    asm.invoke(
+        "virtual",
+        ("Landroid/graphics/drawable/ColorDrawable;", "setColor", "V", ("I",)),
+        [0, 7],
+    )
+    asm.ret(0, "void")
+    asm.label("grad")
+    asm.check_cast(0, "Landroid/graphics/drawable/GradientDrawable;")
+    asm.invoke(
+        "virtual",
+        ("Landroid/graphics/drawable/GradientDrawable;", "setColor", "V", ("I",)),
+        [0, 7],
+    )
+    asm.ret(0, "void")
+    asm.label("plain_null")
+    asm.invoke("virtual", ("Landroid/view/View;", "setBackgroundColor", "V", ("I",)), [6, 7])
+    asm.ret(0, "void")
+    asm.label("plain_other")
+    asm.invoke("virtual", ("Landroid/view/View;", "setBackgroundColor", "V", ("I",)), [6, 7])
+    asm.ret(0, "void")
+
+
+def emit_page(asm, rt):
+    # v6 activity, v7 colour.
+    asm.const(0, 0x01020002)
+    asm.invoke(
+        "virtual",
+        ("Landroid/app/Activity;", "findViewById", "Landroid/view/View;", ("I",)),
+        [6, 0],
+    )
+    asm.move_result(0, True)
+    asm.if_zero("eqz", 0, "no_content")
+    asm.check_cast(0, "Landroid/view/ViewGroup;")
+    asm.const(1, 0)
+    asm.invoke(
+        "virtual",
+        ("Landroid/view/ViewGroup;", "getChildAt", "Landroid/view/View;", ("I",)),
+        [0, 1],
+    )
+    asm.move_result(1, True)
+    asm.if_zero("eqz", 1, "no_scroll")
+    asm.invoke("static", (rt, "recolor", "V", ("Landroid/view/View;", "I")), [1, 7])
+    asm.check_cast(1, "Landroid/view/ViewGroup;")
+    asm.const(0, 0)
+    asm.invoke(
+        "virtual",
+        ("Landroid/view/ViewGroup;", "getChildAt", "Landroid/view/View;", ("I",)),
+        [1, 0],
+    )
+    asm.move_result(0, True)
+    asm.if_zero("eqz", 0, "no_frame")
+    asm.invoke("static", (rt, "recolor", "V", ("Landroid/view/View;", "I")), [0, 7])
+    asm.ret(0, "void")
+    asm.label("no_content")
+    asm.ret(0, "void")
+    asm.label("no_scroll")
+    asm.ret(0, "void")
+    asm.label("no_frame")
+    asm.ret(0, "void")
+
+
 def emit_tick_class(dex, package):
     tick = _tick_desc(package)
     cls = ClassModel(
@@ -2669,6 +2895,12 @@ class Compiler:
         asm.unop(0x87, 0, 2, "float-to-int")
         asm.ret(0, "int")
         cls.method(MethodModel("dp", "I", ("Landroid/content/Context;", "I"), ACC_PUBLIC | ACC_STATIC, asm, 8, 2, 1))
+        grow = Asm()
+        grow.ret(0, "void")
+        cls.method(MethodModel("grow", "V", ("Landroid/view/View;",), ACC_PUBLIC | ACC_STATIC, grow, 2, 1, 1))
+        place = Asm()
+        place.ret(0, "void")
+        cls.method(MethodModel("place", "V", ("Landroid/view/View;", "I", "I"), ACC_PUBLIC | ACC_STATIC, place, 4, 3, 1))
         is_int = Asm()
         emit_is_int(is_int)
         cls.method(MethodModel("isInt", "Z", ("Ljava/lang/String;",), ACC_PUBLIC | ACC_STATIC, is_int, 5, 1, 2))
@@ -2855,6 +3087,34 @@ class Compiler:
             ("Landroid/widget/Spinner;", "Landroid/content/Context;", "Ljava/lang/String;"),
             ACC_PUBLIC | ACC_STATIC, spinner, 8, 3, 4,
         ))
+        height = Asm()
+        emit_set_dp_height(height, self.rt_desc)
+        cls.method(MethodModel(
+            "setDpHeight", "V",
+            ("Landroid/view/View;", "Landroid/content/Context;", "I"),
+            ACC_PUBLIC | ACC_STATIC, height, 8, 3, 2,
+        ))
+        recolor = Asm()
+        emit_recolor(recolor)
+        cls.method(MethodModel(
+            "recolor", "V",
+            ("Landroid/view/View;", "I"),
+            ACC_PUBLIC | ACC_STATIC, recolor, 8, 2, 2,
+        ))
+        page = Asm()
+        emit_page(page, self.rt_desc)
+        cls.method(MethodModel(
+            "page", "V",
+            ("Landroid/app/Activity;", "I"),
+            ACC_PUBLIC | ACC_STATIC, page, 8, 2, 2,
+        ))
+        paint = Asm()
+        paint.ret(0, "void")
+        cls.method(MethodModel(
+            "paintRow", "V",
+            ("Landroid/widget/ListView;", "I", "I"),
+            ACC_PUBLIC | ACC_STATIC, paint, 8, 3, 1,
+        ))
         attach_search(self.dex, self.package, cls)
         attach_index(self.dex, self.package, cls)
         self.dex.add(cls)
@@ -3010,6 +3270,8 @@ class Compiler:
         # A short form grows to the window so a bottom-docked bar meets the nav.
         asm.const(2, 1)
         asm.invoke("virtual", ("Landroid/widget/ScrollView;", "setFillViewport", "V", ("Z",)), [0, 2])
+        asm.const(2, 0)
+        asm.invoke("virtual", ("Landroid/view/View;", "setScrollBarStyle", "V", ("I",)), [0, 2])
         asm.new_instance(1, "Landroid/widget/FrameLayout;")
         asm.invoke("direct", ("Landroid/widget/FrameLayout;", "<init>", "V", ("Landroid/content/Context;",)), [1, this])
         asm.const(2, bg)
@@ -3044,7 +3306,8 @@ class Compiler:
         return MethodModel("onCreate", "V", ("Landroid/os/Bundle;",), ACC_PUBLIC, asm, 8, 2, 5)
 
     def place_frame(self, asm, this, width, height):
-        self.emit_dp(asm, this, 4, width)
+        del width
+        asm.const(4, -1)
         self.emit_dp(asm, this, 5, height)
         asm.new_instance(3, "Landroid/widget/FrameLayout$LayoutParams;")
         asm.invoke(
@@ -3231,6 +3494,7 @@ class Compiler:
                     )),
                     [2, this, 3],
                 )
+
         if kind == "Spinner":
             asm.const_string(3, str((props or {}).get("Items") or ""))
             asm.invoke(
@@ -3272,7 +3536,13 @@ class Compiler:
         height = int(comp["height"])
         dock = str((comp.get("props") or {}).get("Dock") or "")
         gap = max(0, form_h - top - height)
-        self.emit_dp(asm, this, 4, int(comp["width"]))
+        form_w = int(form["form"].get("width") or 360)
+        comp_w = int(comp["width"])
+        comp_l = int(comp["left"])
+        if not parented and comp_l + comp_w >= form_w:
+            asm.const(4, -1)
+        else:
+            self.emit_dp(asm, this, 4, comp_w)
         if (not parented) and dock.lower() == "fill":
             asm.const(5, -1)
         else:

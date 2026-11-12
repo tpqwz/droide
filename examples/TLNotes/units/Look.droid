@@ -1,0 +1,734 @@
+unit Look;
+
+{ Slot 0 is the page, 1 the card, 2 the ink, 3 the quiet ink, 4 the mark, 5 the caption on that mark, 6 the rule, 7 the rail. }
+
+function Tone(N, Slot: Integer): Integer;
+begin
+  if N = 1 then begin
+    if Slot = 0 then
+      Result := $FFF5F5F5
+    else if Slot = 1 then
+      Result := $FFFFFFFF
+    else if Slot = 2 then
+      Result := $FF333333
+    else if Slot = 3 then
+      Result := $FF666666
+    else if Slot = 4 then
+      Result := $FF4CAF50
+    else if Slot = 5 then
+      Result := $FFFFFFFF
+    else if Slot = 6 then
+      Result := $FFE0E0E0
+    else
+      Result := $FFF8F9FA
+  end
+  else if N = 2 then begin
+    if Slot = 0 then
+      Result := $FF161410
+    else if Slot = 1 then
+      Result := $FF221F1A
+    else if Slot = 2 then
+      Result := $FFF3EFE6
+    else if Slot = 3 then
+      Result := $FFB3A89A
+    else if Slot = 4 then
+      Result := $FF7DCEA0
+    else if Slot = 5 then
+      Result := $FF10241A
+    else if Slot = 6 then
+      Result := $FF3A342C
+    else
+      Result := $FF2A261F
+  end
+  else if N = 3 then begin
+    if Slot = 0 then
+      Result := $FFF7F5F0
+    else if Slot = 1 then
+      Result := $FFFFFFFF
+    else if Slot = 2 then
+      Result := $FF111111
+    else if Slot = 3 then
+      Result := $FF5C5852
+    else if Slot = 4 then
+      Result := $FF111111
+    else if Slot = 5 then
+      Result := $FFF7F5F0
+    else if Slot = 6 then
+      Result := $FFD9D4CC
+    else
+      Result := $FFECEAE4
+  end
+  else if N = 4 then begin
+    if Slot = 0 then
+      Result := $FFF3EEE4
+    else if Slot = 1 then
+      Result := $FFFBF7F1
+    else if Slot = 2 then
+      Result := $FF1C140E
+    else if Slot = 3 then
+      Result := $FF6D6256
+    else if Slot = 4 then
+      Result := $FF7A1F2B
+    else if Slot = 5 then
+      Result := $FFF6E7C1
+    else if Slot = 6 then
+      Result := $FFD5CFC6
+    else
+      Result := $FF9A7433
+  end
+  else if N = 5 then begin
+    if Slot = 0 then
+      Result := $FFFFFDF5
+    else if Slot = 1 then
+      Result := $FFFFFFFF
+    else if Slot = 2 then
+      Result := $FF111111
+    else if Slot = 3 then
+      Result := $FF333333
+    else if Slot = 4 then
+      Result := $FFFFE14A
+    else if Slot = 5 then
+      Result := $FF111111
+    else if Slot = 6 then
+      Result := $FF111111
+    else
+      Result := $FF111111
+  end
+  else if N = 6 then begin
+    if Slot = 0 then
+      Result := $FFF3ECDA
+    else if Slot = 1 then
+      Result := $FFFBF6EA
+    else if Slot = 2 then
+      Result := $FF1A120E
+    else if Slot = 3 then
+      Result := $FF6B5344
+    else if Slot = 4 then
+      Result := $FF7F1D2D
+    else if Slot = 5 then
+      Result := $FFF8F1DC
+    else if Slot = 6 then
+      Result := $FFB0893E
+    else
+      Result := $FF1F4B8A
+  end
+  else if N = 7 then begin
+    if Slot = 0 then
+      Result := $FFE9E2D4
+    else if Slot = 1 then
+      Result := $FFF6F1E7
+    else if Slot = 2 then
+      Result := $FF221E18
+    else if Slot = 3 then
+      Result := $FF6D6458
+    else if Slot = 4 then
+      Result := $FF7A2E2E
+    else if Slot = 5 then
+      Result := $FFF8F1E6
+    else if Slot = 6 then
+      Result := $FFC9BFAE
+    else
+      Result := $FFD8CFC0
+  end
+  else if N = 8 then begin
+    if Slot = 0 then
+      Result := $FFF3EFE4
+    else if Slot = 1 then
+      Result := $FFFAF7F0
+    else if Slot = 2 then
+      Result := $FF1C1A17
+    else if Slot = 3 then
+      Result := $FF6F6A62
+    else if Slot = 4 then
+      Result := $FFC44536
+    else if Slot = 5 then
+      Result := $FFFFF8F4
+    else if Slot = 6 then
+      Result := $FFDDD6C8
+    else
+      Result := $FFE7E0D2
+  end
+  else if N = 9 then begin
+    if Slot = 0 then
+      Result := $FFF4F7FB
+    else if Slot = 1 then
+      Result := $FFFFFFFF
+    else if Slot = 2 then
+      Result := $FF1C2B3A
+    else if Slot = 3 then
+      Result := $FF5C6E82
+    else if Slot = 4 then
+      Result := $FFC0392B
+    else if Slot = 5 then
+      Result := $FFFFF8F6
+    else if Slot = 6 then
+      Result := $FFB9CBE0
+    else
+      Result := $FFD5E4F2
+  end
+  else if N = 10 then begin
+    if Slot = 0 then
+      Result := $FFE4EBE6
+    else if Slot = 1 then
+      Result := $FFF7FAF7
+    else if Slot = 2 then
+      Result := $FF0E1C2F
+    else if Slot = 3 then
+      Result := $FF3D5368
+    else if Slot = 4 then
+      Result := $FFD6452F
+    else if Slot = 5 then
+      Result := $FFFFF6F3
+    else if Slot = 6 then
+      Result := $FF9AAFC4
+    else
+      Result := $FF16324F
+  end
+  else if N = 11 then begin
+    if Slot = 0 then
+      Result := $FF1A1740
+    else if Slot = 1 then
+      Result := $FF241F52
+    else if Slot = 2 then
+      Result := $FFF3E6C4
+    else if Slot = 3 then
+      Result := $FFB6A88A
+    else if Slot = 4 then
+      Result := $FFC81E4A
+    else if Slot = 5 then
+      Result := $FFFFF5F7
+    else if Slot = 6 then
+      Result := $FFC6A15B
+    else
+      Result := $FF6E5724
+  end
+  else if N = 12 then begin
+    if Slot = 0 then
+      Result := $FFE6E1CF
+    else if Slot = 1 then
+      Result := $FFF3EFE2
+    else if Slot = 2 then
+      Result := $FF2C2820
+    else if Slot = 3 then
+      Result := $FF6D6458
+    else if Slot = 4 then
+      Result := $FFC4654A
+    else if Slot = 5 then
+      Result := $FFFFF7F2
+    else if Slot = 6 then
+      Result := $FFC9BFA8
+    else
+      Result := $FF6D8A96
+  end
+  else if N = 13 then begin
+    if Slot = 0 then
+      Result := $FF9BBC0F
+    else if Slot = 1 then
+      Result := $FF8BAC0F
+    else if Slot = 2 then
+      Result := $FF0F380F
+    else if Slot = 3 then
+      Result := $FF306230
+    else if Slot = 4 then
+      Result := $FF0F380F
+    else if Slot = 5 then
+      Result := $FF9BBC0F
+    else if Slot = 6 then
+      Result := $FF306230
+    else
+      Result := $FF306230
+  end
+  else if N = 14 then begin
+    if Slot = 0 then
+      Result := $FF0D0D1A
+    else if Slot = 1 then
+      Result := $FF1A1A2E
+    else if Slot = 2 then
+      Result := $FFF0E6C8
+    else if Slot = 3 then
+      Result := $FF8A7E68
+    else if Slot = 4 then
+      Result := $FFE8C547
+    else if Slot = 5 then
+      Result := $FF1A1208
+    else if Slot = 6 then
+      Result := $FF3D3428
+    else
+      Result := $FF2A2418
+  end
+  else if N = 15 then begin
+    if Slot = 0 then
+      Result := $FF3A2415
+    else if Slot = 1 then
+      Result := $FF4A301C
+    else if Slot = 2 then
+      Result := $FFF6E4C2
+    else if Slot = 3 then
+      Result := $FFC4A27A
+    else if Slot = 4 then
+      Result := $FFE07040
+    else if Slot = 5 then
+      Result := $FF2A140C
+    else if Slot = 6 then
+      Result := $FF6B4428
+    else
+      Result := $FF2A1810
+  end
+  else if N = 16 then begin
+    if Slot = 0 then
+      Result := $FF5C5146
+    else if Slot = 1 then
+      Result := $FFF4EAD6
+    else if Slot = 2 then
+      Result := $FF2A2118
+    else if Slot = 3 then
+      Result := $FF6E5C48
+    else if Slot = 4 then
+      Result := $FFB42318
+    else if Slot = 5 then
+      Result := $FFFFF6F2
+    else if Slot = 6 then
+      Result := $FFC4B59A
+    else
+      Result := $FF3E362E
+  end
+  else if N = 17 then begin
+    if Slot = 0 then
+      Result := $FF0B3A66
+    else if Slot = 1 then
+      Result := $FF244E76
+    else if Slot = 2 then
+      Result := $FFE7F2FF
+    else if Slot = 3 then
+      Result := $FF9EC4E8
+    else if Slot = 4 then
+      Result := $FFFFFFFF
+    else if Slot = 5 then
+      Result := $FF0B3A66
+    else if Slot = 6 then
+      Result := $FF7EB6E6
+    else
+      Result := $FF082C4E
+  end
+  else if N = 18 then begin
+    if Slot = 0 then
+      Result := $FF031406
+    else if Slot = 1 then
+      Result := $FF031406
+    else if Slot = 2 then
+      Result := $FF7CFF6B
+    else if Slot = 3 then
+      Result := $FF3D9A45
+    else if Slot = 4 then
+      Result := $FFB6FF9A
+    else if Slot = 5 then
+      Result := $FF031406
+    else if Slot = 6 then
+      Result := $FF1F6B32
+    else
+      Result := $FF05210C
+  end
+  else if N = 19 then begin
+    if Slot = 0 then
+      Result := $FFF3EFE4
+    else if Slot = 1 then
+      Result := $FFFFFDF6
+    else if Slot = 2 then
+      Result := $FF1A1A1A
+    else if Slot = 3 then
+      Result := $FF4A453C
+    else if Slot = 4 then
+      Result := $FF1A1A1A
+    else if Slot = 5 then
+      Result := $FFF3EFE4
+    else if Slot = 6 then
+      Result := $FF1A1A1A
+    else
+      Result := $FFE7E1D4
+  end
+  else if N = 20 then begin
+    if Slot = 0 then
+      Result := $FF3D7370
+    else if Slot = 1 then
+      Result := $FFF4F0E6
+    else if Slot = 2 then
+      Result := $FF1A1A1A
+    else if Slot = 3 then
+      Result := $FF5C574E
+    else if Slot = 4 then
+      Result := $FF0B5C5A
+    else if Slot = 5 then
+      Result := $FFF4F1EA
+    else if Slot = 6 then
+      Result := $FF8A857C
+    else
+      Result := $FF2C5552
+  end
+  else if N = 21 then begin
+    if Slot = 0 then
+      Result := $FF4E74A8
+    else if Slot = 1 then
+      Result := $FFE7EEF6
+    else if Slot = 2 then
+      Result := $FF121212
+    else if Slot = 3 then
+      Result := $FF3D4A5C
+    else if Slot = 4 then
+      Result := $FF16386A
+    else if Slot = 5 then
+      Result := $FFF3F6FB
+    else if Slot = 6 then
+      Result := $FF6E6E6E
+    else
+      Result := $FF3A5680
+  end
+  else if N = 22 then begin
+    if Slot = 0 then
+      Result := $FFBFCAE3
+    else if Slot = 1 then
+      Result := $FFC0C0C0
+    else if Slot = 2 then
+      Result := $FF000000
+    else if Slot = 3 then
+      Result := $FF3E3F47
+    else if Slot = 4 then
+      Result := $FF840603
+    else if Slot = 5 then
+      Result := $FFFFFFFF
+    else if Slot = 6 then
+      Result := $FFFFFFFF
+    else
+      Result := $FF0000AA
+  end
+  else if N = 23 then begin
+    if Slot = 0 then
+      Result := $FFA5A4CE
+    else if Slot = 1 then
+      Result := $FFC0C0C0
+    else if Slot = 2 then
+      Result := $FF000000
+    else if Slot = 3 then
+      Result := $FF4A4878
+    else if Slot = 4 then
+      Result := $FF008000
+    else if Slot = 5 then
+      Result := $FFFFFFFF
+    else if Slot = 6 then
+      Result := $FFFFFFFF
+    else
+      Result := $FF0000FF
+  end
+  else if N = 24 then begin
+    if Slot = 0 then
+      Result := $FFBFCAE3
+    else if Slot = 1 then
+      Result := $FFAAAAAA
+    else if Slot = 2 then
+      Result := $FF000000
+    else if Slot = 3 then
+      Result := $FF3F3F47
+    else if Slot = 4 then
+      Result := $FF840603
+    else if Slot = 5 then
+      Result := $FFFFFFFF
+    else if Slot = 6 then
+      Result := $FFFFFFFF
+    else
+      Result := $FFA4A6BA
+  end
+  else if N = 25 then begin
+    if Slot = 0 then
+      Result := $FFBFCAE3
+    else if Slot = 1 then
+      Result := $FFE39814
+    else if Slot = 2 then
+      Result := $FF000000
+    else if Slot = 3 then
+      Result := $FF3F3F47
+    else if Slot = 4 then
+      Result := $FF840603
+    else if Slot = 5 then
+      Result := $FFFFFFFF
+    else if Slot = 6 then
+      Result := $FFFFFFFF
+    else
+      Result := $FFA4A6BA
+  end
+  else if N = 26 then begin
+    if Slot = 0 then
+      Result := $FFBFCAE3
+    else if Slot = 1 then
+      Result := $FF000000
+    else if Slot = 2 then
+      Result := $FFFFFFFF
+    else if Slot = 3 then
+      Result := $FFC8C8C8
+    else if Slot = 4 then
+      Result := $FF840603
+    else if Slot = 5 then
+      Result := $FFFFFFFF
+    else if Slot = 6 then
+      Result := $FFFFFFFF
+    else
+      Result := $FFA4A6BA
+  end
+  else if N = 27 then begin
+    if Slot = 0 then
+      Result := $FFBFCAE3
+    else if Slot = 1 then
+      Result := $FFFFFFFF
+    else if Slot = 2 then
+      Result := $FF000000
+    else if Slot = 3 then
+      Result := $FF3F3F47
+    else if Slot = 4 then
+      Result := $FF840603
+    else if Slot = 5 then
+      Result := $FFFFFFFF
+    else if Slot = 6 then
+      Result := $FFFFFFFF
+    else
+      Result := $FFA4A6BA
+  end
+  else if N = 28 then begin
+    if Slot = 0 then
+      Result := $FFBFCAE3
+    else if Slot = 1 then
+      Result := $FF840603
+    else if Slot = 2 then
+      Result := $FFFFFFFF
+    else if Slot = 3 then
+      Result := $FFC8C8C8
+    else if Slot = 4 then
+      Result := $FF840603
+    else if Slot = 5 then
+      Result := $FFFFFFFF
+    else if Slot = 6 then
+      Result := $FFFFFFFF
+    else
+      Result := $FFA4A6BA
+  end
+  else if N = 29 then begin
+    if Slot = 0 then
+      Result := $FFBFCAE3
+    else if Slot = 1 then
+      Result := $FFBDBDBD
+    else if Slot = 2 then
+      Result := $FF000000
+    else if Slot = 3 then
+      Result := $FF3F3F47
+    else if Slot = 4 then
+      Result := $FF840603
+    else if Slot = 5 then
+      Result := $FFFFFFFF
+    else if Slot = 6 then
+      Result := $FFFFFFFF
+    else
+      Result := $FFA4A6BA
+  end
+  else if N = 30 then begin
+    if Slot = 0 then
+      Result := $FFBFCAE3
+    else if Slot = 1 then
+      Result := $FFBFCC2B
+    else if Slot = 2 then
+      Result := $FF000000
+    else if Slot = 3 then
+      Result := $FF3F3F47
+    else if Slot = 4 then
+      Result := $FF840603
+    else if Slot = 5 then
+      Result := $FFFFFFFF
+    else if Slot = 6 then
+      Result := $FFFFFFFF
+    else
+      Result := $FFA4A6BA
+  end
+  else if N = 31 then begin
+    if Slot = 0 then
+      Result := $FFB7C0CE
+    else if Slot = 1 then
+      Result := $FFFFFFFF
+    else if Slot = 2 then
+      Result := $FF000000
+    else if Slot = 3 then
+      Result := $FF3C3C3C
+    else if Slot = 4 then
+      Result := $FF6A6AC8
+    else if Slot = 5 then
+      Result := $FFFFFFFF
+    else if Slot = 6 then
+      Result := $FF8A8A8A
+    else
+      Result := $FFE4E4E4
+  end
+  else if N = 32 then begin
+    if Slot = 0 then
+      Result := $FFE6DCC8
+    else if Slot = 1 then
+      Result := $FFF7F1E4
+    else if Slot = 2 then
+      Result := $FF1A1612
+    else if Slot = 3 then
+      Result := $FF6D624F
+    else if Slot = 4 then
+      Result := $FF6E5324
+    else if Slot = 5 then
+      Result := $FFF6F0E4
+    else if Slot = 6 then
+      Result := $FF8D7040
+    else
+      Result := $FFC4B48A
+  end
+  else begin
+    if Slot = 0 then
+      Result := $FFFFF3EFE6
+    else if Slot = 1 then
+      Result := $FFFBF8F2
+    else if Slot = 2 then
+      Result := $FF1C1915
+    else if Slot = 3 then
+      Result := $FF6E665C
+    else if Slot = 4 then
+      Result := $FF1F6B4A
+    else if Slot = 5 then
+      Result := $FFF3FAF6
+    else if Slot = 6 then
+      Result := $FFE4DACB
+    else
+      Result := $FFE9E1D4
+  end
+end;
+
+{ Catalog 7, Blueprint 8, Terminal 9, Pocket 14, Dungeon 15, and Tavern 16 paint their own page. }
+function Cast(Theme, Scheme, Slot: Integer): Integer;
+begin
+  if Theme = 7 then begin
+    if Slot = 0 then
+      Result := $FF65584C
+    else if Slot = 1 then
+      Result := $FFF7F1E4
+    else if Slot = 2 then
+      Result := $FF2A2118
+    else if Slot = 3 then
+      Result := $FF6E4B32
+    else if Slot = 4 then
+      Result := $FFB42318
+    else if Slot = 5 then
+      Result := $FFFFF6F2
+    else if Slot = 6 then
+      Result := $FFB7A78C
+    else
+      Result := $FF3E362E
+  end else if Theme = 8 then begin
+    if Slot = 0 then
+      Result := $FF0B3A66
+    else if Slot = 1 then
+      Result := $FF082C4E
+    else if Slot = 2 then
+      Result := $FFE7F2FF
+    else if Slot = 3 then
+      Result := $FF9EC4E8
+    else if Slot = 4 then
+      Result := $FFFFFFFF
+    else if Slot = 5 then
+      Result := $FF0B3A66
+    else if Slot = 6 then
+      Result := $FF7EB6E6
+    else
+      Result := $FF082C4E
+  end else if Theme = 9 then begin
+    if Slot = 0 then
+      Result := $FF031406
+    else if Slot = 1 then
+      Result := $FF031406
+    else if Slot = 2 then
+      Result := $FF7CFF6B
+    else if Slot = 3 then
+      Result := $FF3D9A45
+    else if Slot = 4 then
+      Result := $FFB6FF9A
+    else if Slot = 5 then
+      Result := $FF031406
+    else if Slot = 6 then
+      Result := $FF1F6B32
+    else
+      Result := $FF05210C
+  end else if Theme = 14 then begin
+    if Slot = 0 then
+      Result := $FF8BAC0F
+    else if Slot = 1 then
+      Result := $FF9BBC0F
+    else if Slot = 2 then
+      Result := $FF0F380F
+    else if Slot = 3 then
+      Result := $FF306230
+    else if Slot = 4 then
+      Result := $FF0F380F
+    else if Slot = 5 then
+      Result := $FF9BBC0F
+    else if Slot = 6 then
+      Result := $FF306230
+    else
+      Result := $FF306230
+  end else if Theme = 15 then begin
+    if Slot = 0 then
+      Result := $FF101018
+    else if Slot = 1 then
+      Result := $FF16162A
+    else if Slot = 2 then
+      Result := $FFF0E6C8
+    else if Slot = 3 then
+      Result := $FFC4B496
+    else if Slot = 4 then
+      Result := $FFE8C547
+    else if Slot = 5 then
+      Result := $FF1A1208
+    else if Slot = 6 then
+      Result := $FF6E5C38
+    else
+      Result := $FF1A1208
+  end else if Theme = 16 then begin
+    if Slot = 0 then
+      Result := $FF3A2415
+    else if Slot = 1 then
+      Result := $FFF3E6C8
+    else if Slot = 2 then
+      Result := $FF2A140C
+    else if Slot = 3 then
+      Result := $FF6B4428
+    else if Slot = 4 then
+      Result := $FFE07040
+    else if Slot = 5 then
+      Result := $FF2A140C
+    else if Slot = 6 then
+      Result := $FF6B4428
+    else
+      Result := $FF2A1810
+  end else
+    Result := Tone(Scheme, Slot)
+end;
+
+function TypeSize(Name: String): Integer;
+begin
+  if Name = 'smaller' then
+    Result := 13
+  else if Name = 'regular' then
+    Result := 18
+  else if Name = 'large' then
+    Result := 20
+  else if Name = 'larger' then
+    Result := 24
+  else
+    Result := 15
+end;
+
+function RuleDp(Name: String): Integer;
+begin
+  if Name = '1' then
+    Result := 1
+  else if Name = '3' then
+    Result := 4
+  else
+    Result := 2
+end;

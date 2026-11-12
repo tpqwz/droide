@@ -1,6 +1,11 @@
+uses Look;
+
 procedure Open();
 begin
   TrashList.Items := ReadText('trash')
+  if ReadText('trash-kinds') <> '' then
+    TrashList.Details := ReadText('trash-kinds')
+  ApplyLook()
 end;
 
 procedure Restore(Name: String);
@@ -63,6 +68,10 @@ begin
     Kinds := DropAt(Kinds, N)
     WriteText('trash-kinds', Kinds)
     TrashList.Items := ReadText('trash')
+    Kinds := ReadText('trash-kinds')
+    if Kinds <> '' then
+      TrashList.Details := Kinds
+    ApplyLook()
     Toast('Restored')
   end
 end;
@@ -72,10 +81,60 @@ begin
   WriteText('trash', '')
   WriteText('trash-kinds', '')
   TrashList.Items := ''
+  TrashList.Details := ''
+  ApplyLook()
   Toast('Trash emptied')
 end;
 
 procedure CloseClick();
 begin
   Finish()
+end;
+
+procedure ApplyLook();
+var
+  Index, N, Theme: Integer;
+begin
+  if ReadText('scheme') = '' then
+    Index := 0
+  else if IsInt(ReadText('scheme')) then
+    Index := StrToInt(ReadText('scheme'))
+  else
+    Index := 0
+  if ReadText('theme') = '' then
+    Theme := 0
+  else if IsInt(ReadText('theme')) then
+    Theme := StrToInt(ReadText('theme'))
+  else
+    Theme := 0
+  N := Cast(Theme, Index, 0)
+  Page(N)
+  TrashList.Color := N
+  TrashList.Paper := N
+  CloseButton.Color := N
+  N := Cast(Theme, Index, 1)
+  TrashList.Card := N
+  EmptyButton.Color := N
+  N := Cast(Theme, Index, 2)
+  TrashList.Ink := N
+  EmptyButton.TextColor := N
+  if Theme = 16 then
+    TitleLabel.TextColor := $FFF6E4C2
+  else if Theme = 7 then
+    TitleLabel.TextColor := $FFEFE4CF
+  else
+    TitleLabel.TextColor := N
+  N := Cast(Theme, Index, 3)
+  TrashList.Muted := N
+  if Theme = 16 then
+    About.TextColor := $FFE8C070
+  else if Theme = 7 then
+    About.TextColor := $FFC4B08A
+  else
+    About.TextColor := N
+  N := Cast(Theme, Index, 4)
+  CloseButton.TextColor := N
+  N := TypeSize(ReadText('size'))
+  TrashList.RowSize := N
+  TitleLabel.TextSize := N + 7
 end;

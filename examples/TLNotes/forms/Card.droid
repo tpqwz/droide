@@ -1,3 +1,5 @@
+uses Look;
+
 procedure Start();
 begin
   TitleLine.Text := Arg(0)
@@ -20,10 +22,15 @@ begin
     KindSpin.Selection := 6
   else if Arg(2) = 'Quote' then
     KindSpin.Selection := 7
-  else if Arg(2) = 'Image' then
-    KindSpin.Selection := 8
-  else if Arg(2) = 'Video' then
-    KindSpin.Selection := 9
+  else if Arg(2) = 'Image' then begin
+    KindSpin.Items := 'Image'
+    KindSpin.Selection := 0
+    KindSpin.Enabled := false
+  end else if Arg(2) = 'Video' then begin
+    KindSpin.Items := 'Video'
+    KindSpin.Selection := 0
+    KindSpin.Enabled := false
+  end
   if Arg(2) = 'Task' then begin
     if ReadText('done-' + Arg(0)) = '1' then
       DoneLabel.Text := 'Done'
@@ -31,6 +38,9 @@ begin
       DoneLabel.Text := 'Open task'
   end else
     DoneLabel.Text := ''
+  ShowEnd()
+  LoadEnd()
+  ApplyLook()
 end;
 
 procedure KindPick(Name: String);
@@ -72,43 +82,75 @@ begin
     WriteText('lines-' + Name, Line)
     Toast('Type kept')
   end
+  ShowEnd()
+end;
+
+function MonthName(M: Integer): String;
+begin
+  if M = 1 then
+    Result := 'January'
+  else if M = 2 then
+    Result := 'February'
+  else if M = 3 then
+    Result := 'March'
+  else if M = 4 then
+    Result := 'April'
+  else if M = 5 then
+    Result := 'May'
+  else if M = 6 then
+    Result := 'June'
+  else if M = 7 then
+    Result := 'July'
+  else if M = 8 then
+    Result := 'August'
+  else if M = 9 then
+    Result := 'September'
+  else if M = 10 then
+    Result := 'October'
+  else if M = 11 then
+    Result := 'November'
+  else
+    Result := 'December'
+end;
+
+procedure ShowEnd();
+begin
+  if KindLine.Text = 'Period' then begin
+    EndLabel.Visible := true
+    EndClear.Visible := true
+    EndDate.Visible := true
+  end else begin
+    EndLabel.Visible := false
+    EndClear.Visible := false
+    EndDate.Visible := false
+  end
+end;
+
+procedure LoadEnd();
+var
+  Stamp: String;
+  Y: Integer;
+begin
+  Stamp := ReadText('end-' + TitleLine.Text)
+  Y := DatePart(Stamp, 0)
+  if Y <> 0 then begin
+    EndDate.Year := Y
+    EndDate.Month := DatePart(Stamp, 1)
+    EndDate.Day := DatePart(Stamp, 2)
+  end
 end;
 
 procedure DateClick();
 var
   Y, M, D, N: Integer;
-  Stamp, Month, Days: String;
+  Stamp, Days: String;
 begin
   Y := WhenDate.Year
   M := WhenDate.Month
   D := WhenDate.Day
-  if M = 1 then
-    Month := 'January'
-  else if M = 2 then
-    Month := 'February'
-  else if M = 3 then
-    Month := 'March'
-  else if M = 4 then
-    Month := 'April'
-  else if M = 5 then
-    Month := 'May'
-  else if M = 6 then
-    Month := 'June'
-  else if M = 7 then
-    Month := 'July'
-  else if M = 8 then
-    Month := 'August'
-  else if M = 9 then
-    Month := 'September'
-  else if M = 10 then
-    Month := 'October'
-  else if M = 11 then
-    Month := 'November'
-  else
-    Month := 'December'
   Stamp := IntToStr(Y)
   Stamp := Stamp + ' '
-  Stamp := Stamp + Month
+  Stamp := Stamp + MonthName(M)
   Stamp := Stamp + ' '
   Stamp := Stamp + IntToStr(D)
   WriteText('when-' + TitleLine.Text, Stamp)
@@ -121,6 +163,33 @@ begin
       WriteText('days', Days)
     end
   end
+end;
+
+procedure EndClick();
+var
+  Y, M, D: Integer;
+  Stamp: String;
+begin
+  if KindLine.Text <> 'Period' then
+    Y := 0
+  else begin
+    Y := EndDate.Year
+    M := EndDate.Month
+    D := EndDate.Day
+    Stamp := IntToStr(Y)
+    Stamp := Stamp + ' '
+    Stamp := Stamp + MonthName(M)
+    Stamp := Stamp + ' '
+    Stamp := Stamp + IntToStr(D)
+    WriteText('end-' + TitleLine.Text, Stamp)
+    WriteText('ends', TitleLine.Text + ' ' + Time())
+  end
+end;
+
+procedure ClearEnd();
+begin
+  WriteText('end-' + TitleLine.Text, '')
+  WriteText('ends', TitleLine.Text + ' ' + Time())
 end;
 
 procedure SaveClick();
@@ -146,6 +215,7 @@ begin
     Toast('Not a task')
   else begin
     WriteText('done-' + TitleLine.Text, '1')
+    WriteText('dones', TitleLine.Text + ' ' + Time())
     DoneLabel.Text := 'Done'
     Toast('Done')
   end
@@ -201,4 +271,66 @@ end;
 procedure CloseClick();
 begin
   Finish()
+end;
+
+procedure ApplyLook();
+var
+  Index, N, Theme: Integer;
+begin
+  if ReadText('scheme') = '' then
+    Index := 0
+  else if IsInt(ReadText('scheme')) then
+    Index := StrToInt(ReadText('scheme'))
+  else
+    Index := 0
+  if ReadText('theme') = '' then
+    Theme := 0
+  else if IsInt(ReadText('theme')) then
+    Theme := StrToInt(ReadText('theme'))
+  else
+    Theme := 0
+  N := Cast(Theme, Index, 0)
+  Page(N)
+  if (Theme = 16) or (Theme = 7) then
+    BodyEdit.Color := Cast(Theme, Index, 1)
+  else
+    BodyEdit.Color := N
+  SaveButton.Color := N
+  CopyButton.Color := N
+  ShareButton.Color := N
+  TrashButton.Color := N
+  CloseButton.Color := N
+  N := Cast(Theme, Index, 1)
+  KindSpin.Color := N
+  N := Cast(Theme, Index, 2)
+  BodyEdit.TextColor := N
+  N := Cast(Theme, Index, 3)
+  KindLine.TextColor := N
+  WhenLine.TextColor := N
+  EndLabel.TextColor := N
+  TrashButton.TextColor := N
+  CloseButton.TextColor := N
+  if Theme = 16 then begin
+    KindLine.TextColor := $FFF6E4C2
+    WhenLine.TextColor := $FFE8C070
+    EndLabel.TextColor := $FFE8C070
+    TrashButton.TextColor := $FFF6E4C2
+    CloseButton.TextColor := $FFF6E4C2
+  end else if Theme = 7 then begin
+    KindLine.TextColor := $FFEFE4CF
+    WhenLine.TextColor := $FFC4B08A
+    EndLabel.TextColor := $FFC4B08A
+    TrashButton.TextColor := $FFEFE4CF
+    CloseButton.TextColor := $FFEFE4CF
+  end
+  N := Cast(Theme, Index, 4)
+  DoneLabel.TextColor := N
+  SaveButton.TextColor := N
+  CopyButton.TextColor := N
+  ShareButton.TextColor := N
+  DoneButton.Color := N
+  N := Cast(Theme, Index, 5)
+  DoneButton.TextColor := N
+  N := TypeSize(ReadText('size'))
+  BodyEdit.TextSize := N
 end;

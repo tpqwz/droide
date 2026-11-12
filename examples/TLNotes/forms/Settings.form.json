@@ -576,7 +576,7 @@
       "width": 328,
       "height": 56,
       "props": {
-        "Text": "The theme is the frame: windows, bars, and corners. This build keeps the journal paper. The choice is kept.",
+        "Text": "Six themes paint the page. Broadsheet is flat. Art Deco, Admiralty, and Chapel colour the title.",
         "TextColor": "#6E665C",
         "TextSize": 14
       },
@@ -620,7 +620,7 @@
       "width": 328,
       "height": 56,
       "props": {
-        "Text": "The colour scheme is the ink and the paper. This build keeps the journal colours. The choice is kept.",
+        "Text": "The colour scheme is the ink and the paper. It changes the page, the cards, and the Now line.",
         "TextColor": "#6E665C",
         "TextSize": 14
       },
@@ -664,7 +664,7 @@
       "width": 328,
       "height": 56,
       "props": {
-        "Text": "The faces are kept in the original app. This build cannot switch them. Size is kept and not applied.",
+        "Text": "The faces are kept in the original app. This build cannot switch them. Size changes the notes, the date, and the composer.",
         "TextColor": "#6E665C",
         "TextSize": 14
       },
@@ -934,7 +934,7 @@
       "width": 328,
       "height": 88,
       "props": {
-        "Text": "Right puts the rail and the buttons on the right. Floating is the stack you have. Strip would be a clear row. Return adds is kept. The rail stays on the right in this build.",
+        "Text": "Right puts the rail and the buttons on the right. Floating is the stack you have. Strip would be a clear row. Return adds is kept. The rail stays on the right in this build. Fine, Even, and Strong change the Now line.",
         "TextColor": "#6E665C",
         "TextSize": 14
       },
@@ -1283,6 +1283,59 @@
       "events": {
         "OnClick": "SampleClick"
       }
+    },
+    {
+      "type": "Label",
+      "name": "AgesHead",
+      "left": 16,
+      "top": 2920,
+      "width": 328,
+      "height": 26,
+      "props": {
+        "Text": "Ages",
+        "TextColor": "#1C1915",
+        "TextSize": 18
+      },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "AgesAbout",
+      "left": 16,
+      "top": 2948,
+      "width": 328,
+      "height": 56,
+      "props": {
+        "Text": "A birthday lays one period for each year of life, through the year now under way. That year stays open. Running it again replaces those periods.",
+        "TextColor": "#6E665C",
+        "TextSize": 14
+      },
+      "events": {}
+    },
+    {
+      "type": "Date",
+      "name": "BornDate",
+      "left": 16,
+      "top": 3012,
+      "width": 328,
+      "height": 110,
+      "props": { "Year": 1990, "Month": 1, "Day": 1 },
+      "events": {}
+    },
+    {
+      "type": "Button",
+      "name": "AgesButton",
+      "left": 16,
+      "top": 3132,
+      "width": 220,
+      "height": 44,
+      "props": {
+        "Text": "Lay the years",
+        "TextSize": 15,
+        "TextColor": "#1C1915",
+        "Color": "#FBF8F2"
+      },
+      "events": { "OnClick": "LayAges" }
     },
     {
       "type": "Label",

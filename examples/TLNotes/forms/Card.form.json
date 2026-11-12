@@ -18,7 +18,7 @@
       "name": "KindSpin",
       "left": 140, "top": 8, "width": 200, "height": 36,
       "props": {
-        "Items": "Note\nDraft\nDream\nEvent\nPeriod\nTask\nLink\nQuote\nImage\nVideo",
+        "Items": "Note\nDraft\nDream\nEvent\nPeriod\nTask\nLink\nQuote",
         "Selection": 1,
         "Color": "#FBF8F2"
       },
@@ -30,6 +30,27 @@
       "left": 16, "top": 78, "width": 328, "height": 120,
       "props": { "Year": 2026, "Month": 11, "Day": 11 },
       "events": { "OnChange": "DateClick" }
+    },
+    {
+      "type": "Label",
+      "name": "EndLabel",
+      "left": 16, "top": 206, "width": 200, "height": 22,
+      "props": { "Text": "Ends", "TextColor": "#6E665C", "TextSize": 13, "Visible": false },
+      "events": {}
+    },
+    {
+      "type": "Button",
+      "name": "EndClear",
+      "left": 220, "top": 200, "width": 120, "height": 36,
+      "props": { "Text": "Clear", "TextSize": 14, "TextColor": "#1F6B4A", "Color": "#F3EFE6", "Visible": false },
+      "events": { "OnClick": "ClearEnd" }
+    },
+    {
+      "type": "Date",
+      "name": "EndDate",
+      "left": 16, "top": 236, "width": 328, "height": 110,
+      "props": { "Year": 2026, "Month": 11, "Day": 11, "Visible": false },
+      "events": { "OnChange": "EndClick" }
     },
     {
       "type": "Label",

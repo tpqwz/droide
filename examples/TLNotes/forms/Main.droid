@@ -1,5 +1,7 @@
 { BreakLabel.Text is a newline. Rows are joined with it. A new line sits just above the composer. The newest file is 1 only when Settings asks for newest first. }
 
+uses Look;
+
 procedure Open();
 begin
   PlaceLabel.Text := Today()
@@ -39,6 +41,11 @@ begin
   if Marks = '' then
     Marks := ReadText('kinds')
   if Filter = '' then begin
+    Marks := StampDone(Titles, Marks)
+    WeaveSpans(Titles, Days, Marks)
+    Titles := ReadText('span-titles')
+    Days := ReadText('span-days')
+    Marks := ReadText('span-marks')
     Timeline.Items := JournalItems(Titles, Days)
     Timeline.Details := JournalDetails(Titles, Days, Marks)
   end else if Filter = 'none' then begin
@@ -64,9 +71,16 @@ begin
       end
       Index := Index + 1
     end
+    KeptMarks := StampDone(Kept, KeptMarks)
+    WeaveSpans(Kept, KeptDays, KeptMarks)
+    Kept := ReadText('span-titles')
+    KeptDays := ReadText('span-days')
+    KeptMarks := ReadText('span-marks')
     Timeline.Items := JournalItems(Kept, KeptDays)
     Timeline.Details := JournalDetails(Kept, KeptDays, KeptMarks)
   end
+  ApplyLook()
+  Timeline.Picked := ReadText('picked')
 end;
 
 procedure Remember(Name: String; Kind: String; Body: String);
@@ -129,6 +143,23 @@ begin
   Ingest(Name, Body, 'txt')
 end;
 
+procedure DraftChange(Text: String);
+begin
+  Grow(Draft)
+end;
+
+procedure DraftEnter(Text: String);
+begin
+  if ReadText('enter') = 'return' then begin
+    if Text = '' then
+      Draft.Text := ''
+    else begin
+      Draft.Text := Text
+      AddClick()
+    end
+  end
+end;
+
 procedure AddClick();
 var
   Text, Name: String;
@@ -189,6 +220,7 @@ var
   Names: String;
 begin
   Names := ReadText('picked')
+  Timeline.Picked := Names
   if Names = '' then
     PickBar.Visible := false
   else begin
@@ -589,7 +621,277 @@ begin
     Rail.Visible := true
   if ReadText('mode') = '' then begin
     Titles := ReadText('titles')
-    if Titles <> Timeline.Items then
+    Titles := Titles + BreakLabel.Text + ReadText('days')
+    Titles := Titles + BreakLabel.Text + ReadText('filter')
+    Titles := Titles + BreakLabel.Text + ReadText('dones')
+    Titles := Titles + BreakLabel.Text + ReadText('ends')
+    if Titles <> ShownLabel.Text then begin
       Show()
+      ShownLabel.Text := Titles
+    end
   end
+  Titles := ReadText('scheme')
+  Titles := Titles + BreakLabel.Text + ReadText('size')
+  Titles := Titles + BreakLabel.Text + ReadText('rule')
+  Titles := Titles + BreakLabel.Text + ReadText('theme')
+  Titles := Titles + BreakLabel.Text + ReadText('hand')
+  Titles := Titles + BreakLabel.Text + ReadText('toolbar')
+  if Titles <> ReadText('look') then
+    ApplyLook()
+end;
+
+{ Bg, surface, ink, and muted. Primary, its caption, the rule, and the rail. }
+
+procedure PaintPage(Bg: Integer; Surface: Integer; Fg: Integer; Muted: Integer);
+begin
+  Page(Bg)
+  Header.Color := Bg
+  Timeline.Color := Bg
+  Timeline.Paper := Bg
+  Timeline.Card := Surface
+  Timeline.Ink := Fg
+  Timeline.Muted := Muted
+  Query.Color := Surface
+  Query.TextColor := Fg
+  Query.HintColor := Muted
+  Draft.Color := Surface
+  Draft.TextColor := Fg
+  Draft.HintColor := Muted
+  Bar.Color := Surface
+  PickBar.Color := Surface
+  FilterSheet.Color := Surface
+  TypeRow1.Color := Surface
+  TypeRow2.Color := Surface
+  TypeRow3.Color := Surface
+  TypeRow4.Color := Surface
+  TypeRow5.Color := Surface
+  ActRow.Color := Surface
+  TitleLabel.TextColor := Muted
+  SlashLabel.TextColor := Muted
+  PlaceLabel.TextColor := Fg
+  FilterTitle.TextColor := Fg
+  FilterAbout.TextColor := Muted
+  TypesHead.TextColor := Fg
+  TagsHead.TextColor := Fg
+  TagsEmpty.TextColor := Muted
+  PickCount.TextColor := Fg
+  PickTrash.TextColor := Fg
+  PickDone.TextColor := Muted
+  NoteCheck.TextColor := Fg
+  DraftCheck.TextColor := Fg
+  DreamCheck.TextColor := Fg
+  EventCheck.TextColor := Fg
+  PeriodCheck.TextColor := Fg
+  TaskCheck.TextColor := Fg
+  LinkCheck.TextColor := Fg
+  QuoteCheck.TextColor := Fg
+  ImageCheck.TextColor := Fg
+  VideoCheck.TextColor := Fg
+  PhotoButton.Color := Surface
+  PhotoButton.TextColor := Muted
+  FileButton.Color := Surface
+  FileButton.TextColor := Muted
+  TasksButton.Color := Surface
+  TasksButton.TextColor := Fg
+  FindButton.Color := Surface
+  FindButton.TextColor := Fg
+  FilterButton.Color := Surface
+  FilterButton.TextColor := Fg
+  ScopeButton.Color := Surface
+  ScopeButton.TextColor := Fg
+  SettingsButton.Color := Surface
+  SettingsButton.TextColor := Fg
+  FilterClear.Color := Surface
+  FilterClear.TextColor := Fg
+  FilterCancel.Color := Surface
+  FilterCancel.TextColor := Fg
+end;
+
+procedure PaintMarks(Primary: Integer; OnPrimary: Integer; Border: Integer; RailColor: Integer);
+begin
+  Rail.Color := RailColor
+  Rule.Color := Border
+  NowLeft.Color := Primary
+  NowRight.Color := Primary
+  NowRail.Color := Primary
+  NowLabel.TextColor := Primary
+  AddButton.Color := Primary
+  AddButton.TextColor := OnPrimary
+  BackButton.Color := Primary
+  BackButton.TextColor := OnPrimary
+  FilterApply.Color := Primary
+  FilterApply.TextColor := OnPrimary
+  PickOpen.TextColor := Primary
+  PickCopy.TextColor := Primary
+  PickShare.TextColor := Primary
+end;
+
+procedure ApplyScheme();
+var
+  N, A, B, C, D, Theme: Integer;
+begin
+  if ReadText('scheme') = '' then
+    N := 0
+  else if IsInt(ReadText('scheme')) then
+    N := StrToInt(ReadText('scheme'))
+  else
+    N := 0
+  if ReadText('theme') = '' then
+    Theme := 0
+  else if IsInt(ReadText('theme')) then
+    Theme := StrToInt(ReadText('theme'))
+  else
+    Theme := 0
+  A := Cast(Theme, N, 0)
+  B := Cast(Theme, N, 1)
+  C := Cast(Theme, N, 2)
+  D := Cast(Theme, N, 3)
+  PaintPage(A, B, C, D)
+  if Theme = 16 then begin
+    TitleLabel.TextColor := $FFF6E4C2
+    SlashLabel.TextColor := $FFE8C070
+    PlaceLabel.TextColor := $FFF6E4C2
+  end else if Theme = 7 then begin
+    TitleLabel.TextColor := $FFEFE4CF
+    SlashLabel.TextColor := $FFC4B08A
+    PlaceLabel.TextColor := $FFEFE4CF
+  end else if Theme = 4 then begin
+    Header.Color := C
+    TitleLabel.TextColor := $FFF6E7C1
+    SlashLabel.TextColor := $FFC6A15B
+    PlaceLabel.TextColor := $FFF6E7C1
+  end else if Theme = 5 then begin
+    Header.Color := $FF16324F
+    TitleLabel.TextColor := $FFF4F7F2
+    SlashLabel.TextColor := $FFD7E2EA
+    PlaceLabel.TextColor := $FFF4F7F2
+  end else if Theme = 6 then begin
+    Header.Color := $FF12102C
+    TitleLabel.TextColor := $FFF3E6C4
+    SlashLabel.TextColor := $FFC6A15B
+    PlaceLabel.TextColor := $FFF3E6C4
+  end
+  A := Cast(Theme, N, 4)
+  B := Cast(Theme, N, 5)
+  C := Cast(Theme, N, 6)
+  D := Cast(Theme, N, 7)
+  PaintMarks(A, B, C, D)
+  if Theme = 10 then begin
+    A := Cast(Theme, N, 0)
+    Timeline.Card := A
+    Rail.Color := A
+    TitleLabel.TextColor := $FF1A1A1A
+    SlashLabel.TextColor := $FF4A453C
+    PlaceLabel.TextColor := $FF1A1A1A
+  end
+end;
+
+procedure ApplySize();
+var
+  N: Integer;
+begin
+  N := TypeSize(ReadText('size'))
+  Timeline.RowSize := N
+  Query.TextSize := N
+  Draft.TextSize := N + 1
+  PlaceLabel.TextSize := N + 6
+end;
+
+procedure ApplyRule();
+var
+  N: Integer;
+begin
+  N := RuleDp(ReadText('rule'))
+  NowLeft.Height := N
+  NowRight.Height := N
+  NowRail.Height := N
+end;
+
+procedure WeaveSpans(Titles, Days, Marks: String);
+var
+  Index: Integer;
+  Ends, Name, Gap: String;
+begin
+  Ends := ''
+  Index := 0
+  Gap := BreakLabel.Text
+  while LineAt(Titles, Index) <> '' do begin
+    Name := ReadText('end-' + LineAt(Titles, Index))
+    if Index = 0 then
+      Ends := Name
+    else
+      Ends := Ends + Gap + Name
+    Index := Index + 1
+  end
+  WriteText('span-titles', Weave(0, Titles, Days, Marks, Ends))
+  WriteText('span-days', Weave(1, Titles, Days, Marks, Ends))
+  WriteText('span-marks', Weave(2, Titles, Days, Marks, Ends))
+end;
+
+function StampDone(Titles, Marks: String): String;
+var
+  Index: Integer;
+  Name, Line, Flag: String;
+begin
+  Result := ''
+  Index := 0
+  while LineAt(Titles, Index) <> '' do begin
+    Name := LineAt(Titles, Index)
+    Line := LineAt(Marks, Index)
+    Flag := ReadText('done-' + Name)
+    if Flag = '1' then
+      Line := Line + ' done'
+    if Result = '' then
+      Result := Line
+    else
+      Result := Result + BreakLabel.Text + Line
+    Index := Index + 1
+  end
+end;
+
+procedure PlaceNav();
+var
+  Left, At: Integer;
+begin
+  if ReadText('hand') = 'left' then
+    Left := 8
+  else
+    Left := 308
+  if ReadText('toolbar') = 'strip' then begin
+    if ReadText('hand') = 'left' then
+      At := 8
+    else
+      At := 68
+    Place(BackButton, At, 92)
+    At := At + 48
+    Place(TasksButton, At, 92)
+    At := At + 48
+    Place(FindButton, At, 92)
+    At := At + 48
+    Place(FilterButton, At, 92)
+    At := At + 48
+    Place(ScopeButton, At, 92)
+    At := At + 48
+    Place(SettingsButton, At, 92)
+  end else begin
+    Place(BackButton, Left, 398)
+    Place(TasksButton, Left, 348)
+    Place(FindButton, Left, 298)
+    Place(FilterButton, Left, 248)
+    Place(ScopeButton, Left, 198)
+    Place(SettingsButton, Left, 148)
+  end
+  if ReadText('hand') = 'left' then
+    Place(Rail, 0, -1)
+  else
+    Place(Rail, 324, -1)
+end;
+
+procedure ApplyLook();
+begin
+  ApplyScheme()
+  ApplySize()
+  ApplyRule()
+  PlaceNav()
+  WriteText('look', ReadText('scheme') + BreakLabel.Text + ReadText('size') + BreakLabel.Text + ReadText('rule') + BreakLabel.Text + ReadText('theme') + BreakLabel.Text + ReadText('hand') + BreakLabel.Text + ReadText('toolbar'))
 end;
