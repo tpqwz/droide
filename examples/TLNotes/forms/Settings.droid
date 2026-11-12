@@ -529,7 +529,8 @@ begin
       WriteText('days', Titles)
       Line := Today()
       Line := Line + '  ' + Time()
-      WriteText('when-' + Name, Line)
+      WriteText('made-' + Name, Line)
+      WriteText('edit-' + Name, Line)
       Titles := ReadText('lines-' + Kind)
       if Titles = '' then
         Titles := Name
@@ -583,7 +584,8 @@ begin
     WriteText('days', Titles)
     Line := Today()
     Line := Line + '  ' + Time()
-    WriteText('when-' + Name, Line)
+    WriteText('made-' + Name, Line)
+    WriteText('edit-' + Name, Line)
     Titles := ReadText('lines-' + Kind)
     if Titles = '' then
       Titles := Name

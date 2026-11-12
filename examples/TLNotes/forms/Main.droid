@@ -104,7 +104,8 @@ begin
     Line := Line + Gap + Stamp
   WriteText('days', Line)
   Stamp := Stamp + '  ' + Time()
-  WriteText('when-' + Name, Stamp)
+  WriteText('made-' + Name, Stamp)
+  WriteText('edit-' + Name, Stamp)
   Stamp := Time()
   Stamp := Stamp + '  ' + Kind
   Titles := ReadText('titles')
@@ -364,7 +365,8 @@ end;
 
 procedure FindClick();
 var
-  Hits: String;
+  Hits, Details: String;
+  Index: Integer;
 begin
   if Query.Text = '' then begin
     WriteText('mode', '')
@@ -375,8 +377,18 @@ begin
       Toast('No matches')
     else begin
       WriteText('mode', 'search')
+      Index := 0
+      Details := ''
+      while LineAt(Hits, Index) <> '' do begin
+        if Details = '' then
+          Details := ' '
+        else
+          Details := Details + BreakLabel.Text + ' '
+        Index := Index + 1
+      end
       Timeline.Items := Hits
-      Timeline.Details := ''
+      Timeline.Details := Details
+      ApplyLook()
     end
   end
 end;

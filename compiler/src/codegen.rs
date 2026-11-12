@@ -522,7 +522,7 @@ impl Compiler {
             2,
         ));
         let mut date_key = Asm::new();
-        emit_date_key(&mut date_key);
+        emit_date_key(&mut date_key, &self.rt_desc);
         cls.method(MethodModel::new(
             "dateKey",
             "I",
@@ -7109,6 +7109,33 @@ fn emit_day_heading(asm: &mut Asm, rt: &str) {
         "Saturday",
     ];
     asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "length", "I", &[]),
+        &[9],
+    );
+    asm.move_result(0, false);
+    asm.if_zero("eqz", 0, "year_plain");
+    int_zero(asm, 0);
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "charAt", "C", &["I"]),
+        &[9, 0],
+    );
+    asm.move_result(1, false);
+    asm.const_(0, 126);
+    asm.if_cmp("eq", 1, 0, "year_mark");
+    asm.const_(0, 63);
+    asm.if_cmp("ne", 1, 0, "year_plain");
+    asm.label("year_mark");
+    asm.const_(0, 1);
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "substring", "Ljava/lang/String;", &["I"]),
+        &[9, 0],
+    );
+    asm.move_result(9, true);
+    asm.label("year_plain");
+    asm.invoke(
         "static",
         method(rt, "isInt", "Z", &["Ljava/lang/String;"]),
         &[9],
@@ -8036,7 +8063,35 @@ fn emit_place_file(asm: &mut Asm, rt: &str, name: u16, line: u16, index: u16) {
     );
 }
 
-fn emit_date_key(asm: &mut Asm) {
+fn emit_date_key(asm: &mut Asm, rt: &str) {
+    // A leading ~ is approximate and a leading ? is uncertain. They do not change the order.
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "length", "I", &[]),
+        &[7],
+    );
+    asm.move_result(0, false);
+    asm.if_zero("eqz", 0, "key_bare");
+    int_zero(asm, 0);
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "charAt", "C", &["I"]),
+        &[7, 0],
+    );
+    asm.move_result(1, false);
+    asm.const_(0, 126);
+    asm.if_cmp("eq", 1, 0, "key_mark");
+    asm.const_(0, 63);
+    asm.if_cmp("ne", 1, 0, "key_bare");
+    asm.label("key_mark");
+    asm.const_(0, 1);
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "substring", "Ljava/lang/String;", &["I"]),
+        &[7, 0],
+    );
+    asm.move_result(7, true);
+    asm.label("key_bare");
     let months = [
         "January",
         "February",
@@ -8112,6 +8167,23 @@ fn emit_date_key(asm: &mut Asm) {
         &[5, 1],
     );
     asm.move_result(5, true);
+    asm.const_(1, 32);
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "indexOf", "I", &["I"]),
+        &[5, 1],
+    );
+    asm.move_result(1, false);
+    asm.const_(0, 0);
+    asm.if_cmp("lt", 1, 0, "key_day");
+    asm.const_(0, 0);
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "substring", "Ljava/lang/String;", &["I", "I"]),
+        &[5, 0, 1],
+    );
+    asm.move_result(5, true);
+    asm.label("key_day");
     asm.invoke(
         "static",
         method("Ljava/lang/Integer;", "parseInt", "I", &["Ljava/lang/String;"]),
@@ -8137,6 +8209,10 @@ fn emit_date_key(asm: &mut Asm) {
     for index in 0..months.len() {
         asm.label(&format!("key_m{index}"));
         asm.const_(3, (index as i64) + 1);
+        int_zero(asm, 0);
+        int_zero(asm, 1);
+        asm.const_string(5, "");
+        asm.const_string(6, "");
         asm.goto("key_math");
     }
     asm.label("key_math");
@@ -8147,14 +8223,92 @@ fn emit_date_key(asm: &mut Asm) {
     asm.binop(0x90, 2, 2, 0, "add-int");
     asm.binop(0x90, 2, 2, 4, "add-int");
     asm.ret(2, "int");
-    for label in ["key_z0", "key_z1", "key_z2", "key_z3"] {
+    for label in ["key_z0", "key_z3"] {
         asm.label(label);
         asm.const_(0, 0);
         asm.ret(0, "int");
     }
+    // No spaces: a bare year sorts on 1 January, without a day of its own.
+    asm.label("key_z1");
+    asm.invoke(
+        "static",
+        method(rt, "isInt", "Z", &["Ljava/lang/String;"]),
+        &[7],
+    );
+    asm.move_result(0, false);
+    asm.if_zero("eqz", 0, "key_year_no");
+    asm.invoke(
+        "static",
+        method("Ljava/lang/Integer;", "parseInt", "I", &["Ljava/lang/String;"]),
+        &[7],
+    );
+    asm.move_result(2, false);
+    asm.const_(4, 1);
+    asm.const_(3, 1);
+    int_zero(asm, 0);
+    int_zero(asm, 1);
+    asm.const_string(5, "");
+    asm.const_string(6, "");
+    asm.goto("key_math");
+    // One space: a year and a month sort on the first of that month.
+    asm.label("key_z2");
+    asm.invoke(
+        "static",
+        method(rt, "isInt", "Z", &["Ljava/lang/String;"]),
+        &[2],
+    );
+    asm.move_result(0, false);
+    asm.if_zero("eqz", 0, "key_month_no");
+    asm.invoke(
+        "static",
+        method("Ljava/lang/Integer;", "parseInt", "I", &["Ljava/lang/String;"]),
+        &[2],
+    );
+    asm.move_result(2, false);
+    asm.const_(4, 1);
+    for (index, name) in months.iter().enumerate() {
+        asm.const_string(0, name);
+        asm.invoke(
+            "virtual",
+            method(
+                "Ljava/lang/String;",
+                "equalsIgnoreCase",
+                "Z",
+                &["Ljava/lang/String;"],
+            ),
+            &[5, 0],
+        );
+        asm.move_result(1, false);
+        asm.if_zero("nez", 1, &format!("key_n{index}"));
+    }
+    asm.goto("key_month_none");
+    for index in 0..months.len() {
+        asm.label(&format!("key_n{index}"));
+        asm.const_(3, (index as i64) + 1);
+        int_zero(asm, 0);
+        int_zero(asm, 1);
+        asm.const_string(5, "");
+        asm.const_string(6, "");
+        asm.goto("key_math");
+    }
+    asm.label("key_year_no");
+    asm.const_(0, 0);
+    asm.ret(0, "int");
+    asm.label("key_month_no");
+    asm.const_(0, 0);
+    asm.ret(0, "int");
+    asm.label("key_month_none");
+    asm.const_(0, 0);
+    asm.ret(0, "int");
 }
 
 fn emit_date_part(asm: &mut Asm, rt: &str) {
+    asm.const_(0, 3);
+    asm.if_cmp("eq", 5, 0, "part_prec");
+    asm.const_(0, 4);
+    asm.if_cmp("eq", 5, 0, "part_mark");
+    asm.const_(0, 5);
+    asm.if_cmp("eq", 5, 0, "part_clock");
     asm.invoke(
         "static",
         method(rt, "dateKey", "I", &["Ljava/lang/String;"]),
@@ -8177,6 +8331,136 @@ fn emit_date_part(asm: &mut Asm, rt: &str) {
     asm.binop(0x93, 0, 0, 1, "div-int");
     asm.const_(1, 100);
     asm.binop(0x94, 0, 0, 1, "rem-int");
+    asm.ret(0, "int");
+    asm.label("part_mark");
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "length", "I", &[]),
+        &[4],
+    );
+    asm.move_result(0, false);
+    asm.if_zero("eqz", 0, "part_m0");
+    int_zero(asm, 0);
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "charAt", "C", &["I"]),
+        &[4, 0],
+    );
+    asm.move_result(1, false);
+    asm.const_(0, 126);
+    asm.if_cmp("ne", 1, 0, "part_q");
+    asm.const_(0, 1);
+    asm.ret(0, "int");
+    asm.label("part_q");
+    asm.const_(0, 63);
+    asm.if_cmp("ne", 1, 0, "part_m0");
+    asm.const_(0, 2);
+    asm.ret(0, "int");
+    asm.label("part_m0");
+    asm.const_(0, 0);
+    asm.ret(0, "int");
+    asm.label("part_prec");
+    asm.move_(1, 4, true);
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "length", "I", &[]),
+        &[1],
+    );
+    asm.move_result(0, false);
+    asm.if_zero("eqz", 0, "part_p0");
+    int_zero(asm, 0);
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "charAt", "C", &["I"]),
+        &[1, 0],
+    );
+    asm.move_result(2, false);
+    asm.const_(0, 126);
+    asm.if_cmp("eq", 2, 0, "part_cut");
+    asm.const_(0, 63);
+    asm.if_cmp("ne", 2, 0, "part_spaces");
+    asm.label("part_cut");
+    asm.const_(0, 1);
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "substring", "Ljava/lang/String;", &["I"]),
+        &[1, 0],
+    );
+    asm.move_result(1, true);
+    asm.label("part_spaces");
+    asm.const_(0, 32);
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "indexOf", "I", &["I"]),
+        &[1, 0],
+    );
+    asm.move_result(2, false);
+    int_zero(asm, 0);
+    asm.if_cmp("ge", 2, 0, "part_more");
+    asm.invoke(
+        "static",
+        method(rt, "isInt", "Z", &["Ljava/lang/String;"]),
+        &[1],
+    );
+    asm.move_result(0, false);
+    asm.if_zero("eqz", 0, "part_p0");
+    asm.const_(0, 1);
+    asm.ret(0, "int");
+    asm.label("part_more");
+    asm.const_(0, 1);
+    asm.binop(0x90, 2, 2, 0, "add-int");
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "substring", "Ljava/lang/String;", &["I"]),
+        &[1, 2],
+    );
+    asm.move_result(1, true);
+    asm.const_(0, 32);
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "indexOf", "I", &["I"]),
+        &[1, 0],
+    );
+    asm.move_result(2, false);
+    int_zero(asm, 0);
+    asm.if_cmp("lt", 2, 0, "part_monthonly");
+    asm.const_(0, 3);
+    asm.ret(0, "int");
+    asm.label("part_monthonly");
+    asm.const_(0, 2);
+    asm.ret(0, "int");
+    asm.label("part_p0");
+    asm.const_(0, 0);
+    asm.ret(0, "int");
+    asm.label("part_clock");
+    int_zero(asm, 0);
+    int_zero(asm, 1);
+    int_zero(asm, 2);
+    int_zero(asm, 3);
+    asm.label("part_c_loop");
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "length", "I", &[]),
+        &[4],
+    );
+    asm.move_result(1, false);
+    asm.if_cmp("ge", 0, 1, "part_c_no");
+    asm.invoke(
+        "virtual",
+        method("Ljava/lang/String;", "charAt", "C", &["I"]),
+        &[4, 0],
+    );
+    asm.move_result(2, false);
+    asm.const_(3, 58);
+    asm.if_cmp("eq", 2, 3, "part_c_yes");
+    asm.const_(2, 1);
+    asm.binop(0x90, 0, 0, 2, "add-int");
+    asm.goto("part_c_loop");
+    asm.label("part_c_yes");
+    asm.const_(0, 1);
+    asm.ret(0, "int");
+    asm.label("part_c_no");
+    asm.const_(0, 0);
     asm.ret(0, "int");
 }
 
@@ -8702,6 +8986,17 @@ fn emit_journal(asm: &mut Asm, details: bool, rt: &str) {
     asm.goto("row");
     asm.label("whole");
     asm.array_length(3, 2);
+    asm.invoke(
+        "static",
+        method(rt, "dateKey", "I", &["Ljava/lang/String;"]),
+        &[6],
+    );
+    asm.move_result(8, false);
+    asm.if_zero("eqz", 8, "whole_day");
+    emit_changed(asm, 6, 9, "Year", details, "p");
+    asm.const_string(10, "");
+    asm.goto("row");
+    asm.label("whole_day");
     if details {
         asm.const_string(11, "Day");
         append_line(asm, 11, "w");

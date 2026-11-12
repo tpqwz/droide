@@ -52,7 +52,9 @@ begin
     WriteText('lines-' + Kind, Line)
     Line := Today()
     Line := Line + '  ' + Time()
-    WriteText('when-' + Name, Line)
+    if ReadText('made-' + Name) = '' then
+      WriteText('made-' + Name, Line)
+    WriteText('edit-' + Name, Line)
     Line := ReadText('days')
     Marks := Today()
     if Line = '' then

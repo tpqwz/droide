@@ -55,8 +55,43 @@
     {
       "type": "Label",
       "name": "WhenLine",
-      "left": 16, "top": 48, "width": 328, "height": 22,
+      "left": 16, "top": 48, "width": 176, "height": 22,
       "props": { "Text": "", "TextColor": "#6E665C", "TextSize": 13 },
+      "events": {}
+    },
+    {
+      "type": "Button",
+      "name": "About",
+      "left": 200, "top": 44, "width": 56, "height": 32,
+      "props": { "Text": "About", "TextSize": 12, "TextColor": "#1C1915", "Color": "#FBF8F2" },
+      "events": { "OnClick": "AboutClick" }
+    },
+    {
+      "type": "Spinner",
+      "name": "PrecSpin",
+      "left": 260, "top": 44, "width": 84, "height": 32,
+      "props": { "Items": "Day\nMonth\nYear\nWritten", "Selection": 3, "Color": "#FBF8F2" },
+      "events": { "OnItemSelected": "PrecPick" }
+    },
+    {
+      "type": "Label",
+      "name": "Hold",
+      "left": 0, "top": -30, "width": 4, "height": 4,
+      "props": { "Text": "", "TextSize": 1 },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "AboutMark",
+      "left": 4, "top": -30, "width": 4, "height": 4,
+      "props": { "Text": "", "TextSize": 1 },
+      "events": {}
+    },
+    {
+      "type": "Label",
+      "name": "RecordLine",
+      "left": 16, "top": 78, "width": 328, "height": 18,
+      "props": { "Text": "", "TextColor": "#6E665C", "TextSize": 11 },
       "events": {}
     },
     {

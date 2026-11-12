@@ -6,6 +6,9 @@ begin
   BodyEdit.Text := Arg(1)
   KindLine.Text := Arg(2)
   WhenLine.Text := Arg(3)
+  Hold.Text := '1'
+  EnsureMade()
+  LoadWhen(ReadText('when-' + Arg(0)))
   if Arg(2) = 'Note' then
     KindSpin.Selection := 0
   else if Arg(2) = 'Draft' then
@@ -40,7 +43,163 @@ begin
     DoneLabel.Text := ''
   ShowEnd()
   LoadEnd()
+  Hold.Text := ''
   ApplyLook()
+end;
+
+procedure EnsureMade();
+var
+  Made: String;
+begin
+  Made := ReadText('made-' + TitleLine.Text)
+  if Made = '' then begin
+    Made := ReadText('when-' + TitleLine.Text)
+    if DatePart(Made, 5) <> 1 then
+      Made := ''
+    if Made = '' then begin
+      Made := Today()
+      Made := Made + '  '
+      Made := Made + Time()
+    end
+    WriteText('made-' + TitleLine.Text, Made)
+  end
+  if ReadText('edit-' + TitleLine.Text) = '' then
+    WriteText('edit-' + TitleLine.Text, Made)
+  RecordLine.Text := 'Written ' + ReadText('made-' + TitleLine.Text)
+end;
+
+procedure LoadWhen(Stamp: String);
+var
+  Y, M, D, P: Integer;
+begin
+  P := DatePart(Stamp, 4)
+  if P = 1 then begin
+    AboutMark.Text := '~'
+    About.Text := '~'
+  end else if P = 2 then begin
+    AboutMark.Text := '?'
+    About.Text := '?'
+  end else begin
+    AboutMark.Text := ''
+    About.Text := 'About'
+  end
+  P := DatePart(Stamp, 3)
+  if Stamp = '' then
+    PrecSpin.Selection := 3
+  else if DatePart(Stamp, 5) = 1 then
+    PrecSpin.Selection := 3
+  else if P = 1 then
+    PrecSpin.Selection := 2
+  else if P = 2 then
+    PrecSpin.Selection := 1
+  else
+    PrecSpin.Selection := 0
+  if PrecSpin.Selection = 3 then
+    WhenLine.Text := 'As written'
+  Y := DatePart(Stamp, 0)
+  if Y <> 0 then begin
+    WhenDate.Year := Y
+    M := DatePart(Stamp, 1)
+    if M = 0 then
+      M := 1
+    WhenDate.Month := M
+    D := DatePart(Stamp, 2)
+    if D = 0 then
+      D := 1
+    WhenDate.Day := D
+  end
+end;
+
+function Dated(Y, M, D: Integer): String;
+var
+  Stamp: String;
+begin
+  if AboutMark.Text = '~' then
+    Stamp := '~'
+  else if AboutMark.Text = '?' then
+    Stamp := '?'
+  else
+    Stamp := ''
+  Stamp := Stamp + IntToStr(Y)
+  if PrecSpin.Selection = 0 then begin
+    Stamp := Stamp + ' '
+    Stamp := Stamp + MonthName(M)
+    Stamp := Stamp + ' '
+    Stamp := Stamp + IntToStr(D)
+  end else if PrecSpin.Selection = 1 then begin
+    Stamp := Stamp + ' '
+    Stamp := Stamp + MonthName(M)
+  end
+  Result := Stamp
+end;
+
+procedure WriteWhen();
+var
+  N, Y, M, D: Integer;
+  Stamp, Days, Place, Clock: String;
+begin
+  if Hold.Text = '1' then
+    N := 0
+  else begin
+    if PrecSpin.Selection = 3 then begin
+      Stamp := ''
+      WhenLine.Text := 'As written'
+      Place := ReadText('made-' + TitleLine.Text)
+      Y := DatePart(Place, 0)
+      M := DatePart(Place, 1)
+      D := DatePart(Place, 2)
+      if Y <> 0 then begin
+        Place := IntToStr(Y)
+        Place := Place + ' '
+        Place := Place + MonthName(M)
+        Place := Place + ' '
+        Place := Place + IntToStr(D)
+      end else
+        Place := ''
+    end else begin
+      Stamp := Dated(WhenDate.Year, WhenDate.Month, WhenDate.Day)
+      WhenLine.Text := Stamp
+      Place := Stamp
+    end
+    WriteText('when-' + TitleLine.Text, Stamp)
+    Clock := Today()
+    Clock := Clock + '  '
+    Clock := Clock + Time()
+    WriteText('edit-' + TitleLine.Text, Clock)
+    RecordLine.Text := 'Written ' + ReadText('made-' + TitleLine.Text)
+    N := LineIndex(ReadText('titles'), TitleLine.Text)
+    if N >= 0 then begin
+      if Place <> '' then begin
+        Days := ReadText('days')
+        if Days <> '' then begin
+          Days := ReplaceAt(Days, N, Place)
+          WriteText('days', Days)
+        end
+      end
+    end
+  end
+end;
+
+procedure PrecPick(Name: String);
+begin
+  WriteWhen()
+end;
+
+procedure AboutClick();
+begin
+  if Hold.Text <> '1' then begin
+    if AboutMark.Text = '' then begin
+      AboutMark.Text := '~'
+      About.Text := '~'
+    end else if AboutMark.Text = '~' then begin
+      AboutMark.Text := '?'
+      About.Text := '?'
+    end else begin
+      AboutMark.Text := ''
+      About.Text := 'About'
+    end
+    WriteWhen()
+  end
 end;
 
 procedure KindPick(Name: String);
@@ -141,28 +300,8 @@ begin
 end;
 
 procedure DateClick();
-var
-  Y, M, D, N: Integer;
-  Stamp, Days: String;
 begin
-  Y := WhenDate.Year
-  M := WhenDate.Month
-  D := WhenDate.Day
-  Stamp := IntToStr(Y)
-  Stamp := Stamp + ' '
-  Stamp := Stamp + MonthName(M)
-  Stamp := Stamp + ' '
-  Stamp := Stamp + IntToStr(D)
-  WriteText('when-' + TitleLine.Text, Stamp)
-  WhenLine.Text := Stamp
-  N := LineIndex(ReadText('titles'), TitleLine.Text)
-  if N >= 0 then begin
-    Days := ReadText('days')
-    if Days <> '' then begin
-      Days := ReplaceAt(Days, N, Stamp)
-      WriteText('days', Days)
-    end
-  end
+  WriteWhen()
 end;
 
 procedure EndClick();
@@ -176,11 +315,7 @@ begin
     Y := EndDate.Year
     M := EndDate.Month
     D := EndDate.Day
-    Stamp := IntToStr(Y)
-    Stamp := Stamp + ' '
-    Stamp := Stamp + MonthName(M)
-    Stamp := Stamp + ' '
-    Stamp := Stamp + IntToStr(D)
+    Stamp := Dated(Y, M, D)
     WriteText('end-' + TitleLine.Text, Stamp)
     WriteText('ends', TitleLine.Text + ' ' + Time())
   end
@@ -193,8 +328,15 @@ begin
 end;
 
 procedure SaveClick();
+var
+  Clock: String;
 begin
   WriteText('note-' + TitleLine.Text, BodyEdit.Text)
+  Clock := Today()
+  Clock := Clock + '  '
+  Clock := Clock + Time()
+  WriteText('edit-' + TitleLine.Text, Clock)
+  RecordLine.Text := 'Written ' + ReadText('made-' + TitleLine.Text)
   Toast('Saved')
 end;
 
